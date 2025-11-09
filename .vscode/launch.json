@@ -1,0 +1,16 @@
+{
+    "configurations": [
+
+        {
+            "type": "java",
+            "name": "Spring Boot-OMS",
+            "request": "launch",
+            "cwd": "${workspaceFolder}",
+            "mainClass": "com.exchange.oms.OMS",
+            "projectName": "oms",
+            "args": "",
+            "envFile": "${workspaceFolder}/.env",
+            "vmArgs": "-Dspring.profiles.active=dev"
+        }
+    ]
+}
