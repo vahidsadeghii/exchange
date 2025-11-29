@@ -29,24 +29,28 @@ public class OrderBookHandler {
     updateTime = timestamp;
 
     if (incomingOrder.getOrderSide() == OrderSide.BUY) {
-      return executeBuyOrder(timestamp, incomingOrder, bids, asks);
+      return executeBuyOrder(timestamp, incomingOrder);
     } else {
-      return executeSellOrder(timestamp, incomingOrder, bids, asks);
+      return executeSellOrder(timestamp, incomingOrder);
     }
   }
 
   public List<MatchInfo> executeBuyOrder(
       long timestamp,
-      Order buyOrder,
-      TreeMap<Long, Queue<Order>> bids,
-      TreeMap<Long, Queue<Order>> asks) {
+      Order buyOrder) {
 
     List<MatchInfo> matches = new ArrayList<>();
     // Only process the best ask levels until order is filled
     while (!asks.isEmpty() && buyOrder.getRemainingQuantity() > 0) {
       // Get the best (lowest) ask price level
       Map.Entry<Long, Queue<Order>> bestAsk = asks.firstEntry();
+
       long askPrice = bestAsk.getKey();
+
+      if(askPrice > buyOrder.getPrice()) {
+        break; // No more matching possible
+      }
+
       Queue<Order> askQueue = bestAsk.getValue();
 
       while (!askQueue.isEmpty() && buyOrder.getRemainingQuantity() > 0) {
@@ -90,9 +94,7 @@ public class OrderBookHandler {
 
   public List<MatchInfo> executeSellOrder(
       long timestamp,
-      Order sellOrder,
-      TreeMap<Long, Queue<Order>> bids,
-      TreeMap<Long, Queue<Order>> asks) {
+      Order sellOrder) {
     List<MatchInfo> matches = new ArrayList<>();
 
     // Only process the best bid levels until order is filled
