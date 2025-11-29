@@ -1,5 +1,6 @@
 package com.exchange.oms.controller.order;
 
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -22,5 +23,10 @@ public class OrderController {
             request.quantity(),
             request.price()
         );
+    }
+
+    @GetMapping("/orderbook")
+    public void getOrderBook() {
+        // Implementation for retrieving order book goes here
     }
 }

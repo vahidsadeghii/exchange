@@ -20,6 +20,9 @@ public class Order
     @Enumerated(EnumType.STRING)
     private OrderType orderType;
 
+    @Enumerated(EnumType.STRING)
+    private OrderStatus orderStatus;
+
     private double quantity;
     private double price;
 
