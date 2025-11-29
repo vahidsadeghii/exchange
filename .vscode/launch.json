@@ -1,6 +1,12 @@
 {
     "configurations": [
-
+        {
+            "type": "java",
+            "name": "ExchangeApp",
+            "request": "launch",
+            "mainClass": "com.exchange.me.ExchangeApp",
+            "projectName": "me"
+        },
         {
             "type": "java",
             "name": "Spring Boot-OMS",
