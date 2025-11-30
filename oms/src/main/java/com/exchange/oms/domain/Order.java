@@ -8,8 +8,7 @@ import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 
 @Entity
-public class Order 
-{
+public class Order {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
@@ -21,7 +20,7 @@ public class Order
     private OrderType orderType;
 
     @Enumerated(EnumType.STRING)
-    private OrderStatus orderStatus;
+    private OrderStatus status = OrderStatus.NEW;
 
     private double quantity;
     private double price;
@@ -72,5 +71,9 @@ public class Order
 
     public void setPrice(double price) {
         this.price = price;
+    }
+
+    public OrderStatus getStatus() {
+        return status;
     }
 }

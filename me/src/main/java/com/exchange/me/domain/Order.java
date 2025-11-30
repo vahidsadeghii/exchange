@@ -6,22 +6,36 @@ public class Order {
         SELL
     }
 
+    public enum OrderType {
+        LIMIT,
+        MARKET
+    }
+
+    public enum TradePair {
+        BTC_USD,
+        ETH_USD,
+        LTC_USD
+    }
+
     private final long id;
     private final long timestamp;
     private final long userId;
-    private final String symbol;
     private final OrderSide orderSide;
+    private final OrderType orderType;
+    private final TradePair tradePair;
     private final double quantity;
     private final double price;
     private double filled;
 
-    public Order(long id, long timestamp, long userId, String symbol, OrderSide orderSide, double quantity,
+    public Order(long id, long timestamp, long userId, OrderSide orderSide, OrderType orderType,
+            TradePair tradePair, double quantity,
             double price) {
         this.id = id;
         this.timestamp = timestamp;
         this.userId = userId;
-        this.symbol = symbol;
         this.orderSide = orderSide;
+        this.orderType = orderType;
+        this.tradePair = tradePair;
         this.quantity = quantity;
         this.price = price;
     }
@@ -38,12 +52,16 @@ public class Order {
         return userId;
     }
 
-    public String getSymbol() {
-        return symbol;
-    }
-
     public OrderSide getOrderSide() {
         return orderSide;
+    }
+
+    public OrderType getOrderType() {
+        return orderType;
+    }
+
+    public TradePair getTradePair() {
+        return tradePair;
     }
 
     public double getQuantity() {
