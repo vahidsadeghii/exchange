@@ -6,8 +6,14 @@ import jakarta.persistence.Enumerated;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
+import lombok.*;
 
 @Entity
+@Setter
+@Getter
+@Builder
+@NoArgsConstructor
+@AllArgsConstructor
 public class Order {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -25,55 +31,4 @@ public class Order {
     private double quantity;
     private double price;
 
-    // Constructors, getters, and setters
-
-    public Order() {
-    }
-
-    public Order(TradePair tradePair, OrderType orderType, double quantity, double price) {
-        this.tradePair = tradePair;
-        this.orderType = orderType;
-        this.quantity = quantity;
-        this.price = price;
-    }
-
-    public Long getId() {
-        return id;
-    }
-
-    public TradePair getTradePair() {
-        return tradePair;
-    }
-
-    public void setTradePair(TradePair tradePair) {
-        this.tradePair = tradePair;
-    }
-
-    public OrderType getOrderType() {
-        return orderType;
-    }
-
-    public void setOrderType(OrderType orderType) {
-        this.orderType = orderType;
-    }
-
-    public double getQuantity() {
-        return quantity;
-    }
-
-    public void setQuantity(double quantity) {
-        this.quantity = quantity;
-    }
-
-    public double getPrice() {
-        return price;
-    }
-
-    public void setPrice(double price) {
-        this.price = price;
-    }
-
-    public OrderStatus getStatus() {
-        return status;
-    }
 }
