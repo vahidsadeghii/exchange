@@ -8,6 +8,8 @@ import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import lombok.*;
 
+import java.time.LocalDateTime;
+
 @Entity
 @Setter
 @Getter
@@ -18,17 +20,19 @@ public class Order {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
-
-    @Enumerated(EnumType.STRING)
-    private TradePair tradePair;
-
+    private Long userId;
     @Enumerated(EnumType.STRING)
     private OrderType orderType;
 
     @Enumerated(EnumType.STRING)
+    private TradePair tradePair;
+    @Enumerated(EnumType.STRING)
     private OrderStatus status = OrderStatus.NEW;
-
+    private Boolean isBuyOrder;
     private double quantity;
     private double price;
+    private MatchEngineStatus matchEngineStatus;
+    private LocalDateTime createdAt;
+    private LocalDateTime updatedAt;
 
 }

@@ -8,13 +8,44 @@ repositories {
     mavenCentral()
 }
 
+ext {
+    springCloudVersion = "2023.0.3"
+    resilience4jVersion = "2.2.0"
+}
+
+dependencyManagement {
+    imports {
+        mavenBom "org.springframework.cloud:spring-cloud-dependencies:${springCloudVersion}"
+    }
+}
+
 dependencies {
+    // Spring Boot dependencies
+    implementation 'org.springframework.boot:spring-boot-starter-web'
+
+    compileOnly 'org.projectlombok:lombok'
+    annotationProcessor 'org.projectlombok:lombok'
+    implementation 'io.micrometer:micrometer-registry-prometheus'
+    implementation 'org.springframework.cloud:spring-cloud-starter-netflix-eureka-client'
+    implementation 'org.springframework.cloud:spring-cloud-starter-openfeign'
+    implementation 'org.springframework.cloud:spring-cloud-config-client'
+    runtimeOnly 'com.h2database:h2'
+
+    // ---- Resilience4j (Spring Boot 3) ----
+    implementation "io.github.resilience4j:resilience4j-spring-boot3:${resilience4jVersion}"
+
+    // ---- JSON ----
+    implementation 'com.fasterxml.jackson.datatype:jackson-datatype-jsr310'
+
+    // ----Kafka ----
+    implementation 'org.springframework.kafka:spring-kafka'
+
+
     // Use JUnit Jupiter for testing.
     testImplementation libs.junit.jupiter
     testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
 
-    // Spring Boot dependencies
-    implementation 'org.springframework.boot:spring-boot-starter-web'
+
     
     // Guava
     implementation libs.guava
