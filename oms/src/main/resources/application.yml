@@ -7,6 +7,10 @@ server:
 spring:
   application:
     name: oms
+  cloud:
+    config:
+      enabled: false
+
 
 
 springdoc:
