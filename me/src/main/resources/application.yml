@@ -1,0 +1,46 @@
+server:
+  port: 8092
+  shutdown: graceful
+  servlet:
+    context-path: /matchingengine
+
+spring:
+  application:
+    name: matchingengine
+  kafka:
+    consumer:
+      group-id: matchingengine
+    producer:
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
+
+
+springdoc:
+  swagger-ui:
+    enabled: true
+    path: /swagger-ui.html
+
+
+
+api:
+  version: v1
+  prefix:
+    secure: /api/${api.version}
+    open: /open/${api.version}
+    internal: /_api/${api.version}
+
+
+logging:
+  level:
+    org.springframework.data.mongodb.core.MongoTemplate: DEBUG
+    org.springframework.data.mongodb.core.ReactiveMongoTemplate: DEBUG
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: prometheus,health,info
+  endpoint:
+    prometheus:
+      enabled: true
+

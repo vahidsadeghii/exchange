@@ -1,28 +1,62 @@
 package com.exchange.oms.service.impl;
 
-import org.springframework.beans.factory.annotation.Autowired;
+import com.exchange.oms.client.matchingengine.MatchingEngineClient;
+import com.exchange.oms.client.matchingengine.saveOrderRequest;
+import com.exchange.oms.domain.*;
+import jakarta.persistence.EntityNotFoundException;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
-
-import com.exchange.oms.domain.Order;
-import com.exchange.oms.domain.OrderType;
-import com.exchange.oms.domain.TradePair;
 import com.exchange.oms.repository.OrderRepository;
 import com.exchange.oms.service.OrderService;
+import org.springframework.transaction.annotation.Transactional;
 
-import jakarta.transaction.Transactional;
+import java.time.LocalDateTime;
 
 @Service
+@Transactional
+@RequiredArgsConstructor
+@Slf4j
 public class OrderServiceImpl implements OrderService {
     private final OrderRepository orderRepository;
+    private final MatchingEngineClient matchingEngineClient;
 
-    public OrderServiceImpl(@Autowired OrderRepository orderRepository) {
-        this.orderRepository = orderRepository;
-    }
-
-    @Transactional
     @Override
-    public Order createOrder(TradePair tradePair, OrderType orderType, double quantity, double price) {
-        // Implementation logic to create and return an Order
-        return orderRepository.save( new Order(tradePair, orderType, quantity, price));
+    public Order createOrder(long userId, TradePair tradePair, OrderType orderType, double quantity, double price) {
+        //TODO: check the order properties
+        Order order = orderRepository.save(Order.builder()
+                .userId(userId)
+                .tradePair(tradePair)
+                .orderType(orderType)
+                .status(OrderStatus.NEW)
+                .isBuyOrder(false)
+                .quantity(quantity)
+                .price(price)
+                .createdAt(LocalDateTime.now())
+                .build());
+
+        matchingEngineClient.saveOrderMatchingEngine(new saveOrderRequest(
+                order.getId(),
+                order.getUserId(),
+                order.getTradePair(),
+                order.getOrderType(),
+                order.getIsBuyOrder(),
+                order.getQuantity(),
+                order.getPrice()));
+
+        return order;
     }
+
+    //TODO: find by orderId oder userId
+    @Override
+    public Order updateOrder(long orderId, long userId, MatchEngineStatus orderStatus) {
+        return orderRepository.findById(orderId)
+                .map(order -> {
+                    order.setMatchEngineStatus(orderStatus);
+                    return orderRepository.save(order);
+                })
+                .orElseThrow(() -> new EntityNotFoundException("Order not found with ID: " + orderId));
+    }
+
+
 }

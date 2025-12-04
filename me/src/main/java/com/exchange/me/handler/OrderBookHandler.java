@@ -8,11 +8,11 @@ import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
 
+import com.exchange.me.domain.OrderSide;
 import org.springframework.stereotype.Component;
 
 import com.exchange.me.domain.MatchInfo;
 import com.exchange.me.domain.Order;
-import com.exchange.me.domain.Order.OrderSide;
 
 @Component
 public class OrderBookHandler {
@@ -57,7 +57,7 @@ public class OrderBookHandler {
 
     List<MatchInfo> matches = new ArrayList<>();
     // Only process the best ask levels until order is filled
-    while (!asks.isEmpty() && buyOrder.getRemainingQuantity() > 0) {
+    while (!asks.isEmpty() && buyOrder.getRemainingQuantity()> 0) {
       // Get the best (lowest) ask price level
       Map.Entry<Long, LinkedList<Order>> bestAsk = asks.firstEntry();
 

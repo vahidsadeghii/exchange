@@ -1,4 +1,4 @@
-package com.exchange.oms.controller.order;
+package com.exchange.oms.controller.order.saveorder;
 
 import com.exchange.oms.domain.OrderType;
 import com.exchange.oms.domain.TradePair;

@@ -1,0 +1,14 @@
+server:
+  port: 8092
+  shutdown: graceful
+
+api:
+  version: v1
+spring:
+  application:
+    name: oms
+
+
+
+
+

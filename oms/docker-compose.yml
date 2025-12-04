@@ -1,0 +1,17 @@
+version: '3.8'
+services:
+  oms:
+    image: oms:latest
+    container_name: oms
+    restart: always
+    ports:
+      - "8092:8092"
+    environment:
+      SPRING.PROFILES.ACTIVE: docker
+      eureka.client.serviceUrl.defaultZone: http://discovery:8761/eureka
+      spring.datasource.uri: jdbc:postgresql://localhost:5432/exchange_oms
+      eureka.instance.hostname: oms
+      eureka.instance.prefer.ip.address: "false"
+      eureka.instance.metadata-map.prometheus.path: oms/actuator/prometheus
+    networks:
+      - exchange-network

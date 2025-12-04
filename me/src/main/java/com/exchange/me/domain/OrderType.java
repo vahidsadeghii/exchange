@@ -1,10 +1,11 @@
-package com.exchange.oms.domain;
+package com.exchange.me.domain;
 
 public enum OrderType {
-    BUY("BUY"),
-    SELL("SELL");
+    LIMIT("LINIT"),
+    MARKET("MARKET");
 
     private String enumValue;
+
     OrderType(String enumValue) {
         this.enumValue = enumValue;
     }

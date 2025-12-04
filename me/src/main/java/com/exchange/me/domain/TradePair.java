@@ -1,4 +1,4 @@
-package com.exchange.oms.domain;
+package com.exchange.me.domain;
 
 public enum TradePair {
     BTC_USD("BTC_USD"),

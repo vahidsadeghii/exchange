@@ -1,0 +1,13 @@
+Spring:
+  kafka:
+    bootstrap-servers: localhost:9092
+
+
+custom-config:
+  kafka:
+    updatematchingEngine-output-message:
+      topic: updatematchingEngine-message
+    savematchingEngine-output-message:
+      topic: savematchingEngine-message
+
+

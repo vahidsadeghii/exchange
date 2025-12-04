@@ -1,0 +1,44 @@
+server:
+  port: 8090
+  shutdown: graceful
+  servlet:
+    context-path: /oms
+
+spring:
+  application:
+    name: oms
+  cloud:
+    config:
+      enabled: false
+
+
+
+springdoc:
+  swagger-ui:
+    enabled: true
+    path: /swagger-ui.html
+
+
+
+api:
+  version: v1
+  prefix:
+    secure: /api/${api.version}
+    open: /open/${api.version}
+    internal: /_api/${api.version}
+
+
+logging:
+  level:
+    org.springframework.data.mongodb.core.MongoTemplate: DEBUG
+    org.springframework.data.mongodb.core.ReactiveMongoTemplate: DEBUG
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: prometheus,health,info
+  endpoint:
+    prometheus:
+      enabled: true
+
