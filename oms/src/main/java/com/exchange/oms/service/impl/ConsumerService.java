@@ -16,8 +16,10 @@ public class ConsumerService {
     private final ObjectMapper objectMapper;
 
 
-    @KafkaListener(topics = "${custom-config.kafka.updatematchingEngine-input-message.topic}",
-            groupId = "oms-consumer-group")
+    @KafkaListener(
+            topics = "${custom-config.kafka.updatematchingEngineInputMessage.topic}",
+            groupId = "oms-consumer-group"
+    )
     public void updateMatchEngineEvent(String message) {
         try {
             MatchEngineUpdate matchEngineEvent =

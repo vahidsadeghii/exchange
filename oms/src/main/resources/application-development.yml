@@ -15,7 +15,8 @@ spring:
 
 custom-config:
   kafka:
-    updatematchingEngine-input-message:
+    updatematchingEngineInputMessage:
       topic: updatematchingEngine-message
+
 
 
