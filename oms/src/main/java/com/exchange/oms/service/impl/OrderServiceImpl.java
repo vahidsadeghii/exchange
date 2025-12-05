@@ -24,6 +24,7 @@ public class OrderServiceImpl implements OrderService {
     @Override
     public Order createOrder(long userId, TradePair tradePair, OrderType orderType, double quantity, double price) {
         //TODO: check the order properties
+        //Property validation is handled in OrderServiceDecorator
         Order order = orderRepository.save(Order.builder()
                 .userId(userId)
                 .tradePair(tradePair)
@@ -48,14 +49,21 @@ public class OrderServiceImpl implements OrderService {
     }
 
     //TODO: find by orderId oder userId
+    // Currently, findById uses orderId.
+    // Consider whether userId is a better practice for locating an order.
     @Override
     public Order updateOrder(long orderId, long userId, MatchEngineStatus orderStatus) {
-        return orderRepository.findById(orderId)
+        return orderRepository.findByUserId(userId)
                 .map(order -> {
                     order.setMatchEngineStatus(orderStatus);
                     return orderRepository.save(order);
                 })
-                .orElseThrow(() -> new EntityNotFoundException("Order not found with ID: " + orderId));
+                .orElseThrow(() -> new EntityNotFoundException("Order not found with userId: " + userId));
+    }
+
+    @Override
+    public OrderBookResponse getOrder(long orderId) {
+        return null;
     }
 
 

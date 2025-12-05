@@ -7,4 +7,6 @@ public interface OrderService {
      Order createOrder(long userId, TradePair tradePair, OrderType orderType, double quantity, double price);
 
      Order updateOrder(long orderId, long userId, MatchEngineStatus orderStatus);
+
+     OrderBookResponse getOrder(long orderId);
 }

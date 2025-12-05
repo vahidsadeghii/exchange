@@ -30,35 +30,66 @@ dependencyManagement {
 
 dependencies {
     dependencies {
+        // Web starter: provides Spring MVC, REST controllers, and embedded Tomcat
         implementation 'org.springframework.boot:spring-boot-starter-web'
+
+        // JPA starter: integrates Spring Data JPA with Hibernate for ORM and database access
         implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
 
+        // Lombok: reduces boilerplate code (getters, setters, builders, etc.)
         compileOnly 'org.projectlombok:lombok'
         annotationProcessor 'org.projectlombok:lombok'
 
+        // Micrometer Prometheus registry: exposes metrics for Prometheus monitoring
         implementation 'io.micrometer:micrometer-registry-prometheus'
+
+        // PostgreSQL driver: enables connectivity to PostgreSQL database
         implementation 'org.postgresql:postgresql:42.7.3'
 
-        // Correct Flyway dependencies
+        // Core Security: provides authentication, authorization, and security filters
+        implementation 'org.springframework.boot:spring-boot-starter-security'
+
+        // AOP support: enables aspect-oriented programming (logging, auditing, custom security checks)
+        implementation 'org.springframework.boot:spring-boot-starter-aop'
+
+        // Actuator: exposes monitoring and management endpoints (can be secured with Spring Security)
+        implementation 'org.springframework.boot:spring-boot-starter-actuator'
+
+        // Flyway core: database migration tool for versioned schema changes
         implementation "org.flywaydb:flyway-core:10.20.0"
+        // Flyway PostgreSQL support: adds PostgreSQL-specific migration capabilities
         implementation "org.flywaydb:flyway-database-postgresql:10.20.0"
 
+        // Eureka client: service discovery for microservices (Netflix OSS)
         implementation 'org.springframework.cloud:spring-cloud-starter-netflix-eureka-client'
+
+        // OpenFeign: declarative REST client for inter-service communication
         implementation 'org.springframework.cloud:spring-cloud-starter-openfeign'
+
+        // Config client: fetches configuration from Spring Cloud Config Server
         implementation 'org.springframework.cloud:spring-cloud-config-client'
 
+        // H2 database: lightweight in-memory database for testing and development
         runtimeOnly 'com.h2database:h2'
 
+        // Resilience4j: fault tolerance (circuit breakers, retries, rate limiters) for Spring Boot 3
         implementation "io.github.resilience4j:resilience4j-spring-boot3:${resilience4jVersion}"
+
+        // Jackson JSR310: support for Java 8+ date/time types in JSON serialization
         implementation 'com.fasterxml.jackson.datatype:jackson-datatype-jsr310'
 
-
-        // ----Kafka ----
+        // Kafka: Spring integration for Apache Kafka messaging
         implementation 'org.springframework.kafka:spring-kafka'
 
+        // JUnit Jupiter: unit testing framework (JUnit 5)
         testImplementation libs.junit.jupiter
+
+        // JUnit platform launcher: runtime support for JUnit tests
         testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+
+        // Guava: Google core libraries (collections, caching, utilities)
         implementation libs.guava
+
     }
 
 }
