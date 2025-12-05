@@ -1,11 +1,11 @@
 package com.exchange.me.domain;
 
-public enum OrderSide {
+public enum TradeSide {
     BUY("BUY"),
     SELL("SELL");
 
     private String enumValue;
-    OrderSide(String enumValue) {
+    TradeSide(String enumValue) {
         this.enumValue = enumValue;
     }
 

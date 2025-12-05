@@ -15,7 +15,7 @@ public class Order {
     private long id;
     private long timestamp;
     private long userId;
-    private OrderSide orderSide;
+    private TradeSide orderSide;
     private OrderType orderType;
     private TradePair tradePair;
     private double quantity;

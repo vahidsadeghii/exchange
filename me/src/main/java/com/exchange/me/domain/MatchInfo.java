@@ -10,7 +10,7 @@ import lombok.*;
 public class MatchInfo {
   private long executionId;
   private long timestamp;
-  private OrderSide makerSide;
+  private TradeSide makerSide;
   private long takerOrderId;
   private long makerOrderId;
   private long takerUserId;

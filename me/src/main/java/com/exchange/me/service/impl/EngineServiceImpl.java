@@ -5,10 +5,11 @@ import com.exchange.me.handler.OrderBookHandler;
 import com.exchange.me.service.EngineService;
 import com.exchange.me.service.MatchEngineEventService;
 import lombok.RequiredArgsConstructor;
-import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
+
+import java.util.List;
 
 @Slf4j
 @Service
@@ -16,6 +17,7 @@ import org.springframework.stereotype.Service;
 public class EngineServiceImpl implements EngineService {
     private final OrderBookHandler orderBookHandler;
     private final MatchEngineEventService matchEngineEventService;
+    private final OrderBookService orderBookService;
 
     @Value("${custom-config.kafka.updatematchingEngine-output-message.topic}")
     private String updatematchingEngineTopic;
@@ -27,19 +29,21 @@ public class EngineServiceImpl implements EngineService {
     public void processOrder(long orderId, long userId, TradePair tradePair, OrderType orderType,
                              boolean isBuyOrder, double quantity,
                              double price) {
-        orderBookHandler.matchOrder(System.currentTimeMillis(),
-                Order.builder()
-                        .id(orderId)
-                        .timestamp(System.currentTimeMillis())
-                        .userId(userId)
-                        .orderSide(isBuyOrder ? OrderSide.BUY : OrderSide.SELL)
-                        .orderType(orderType)
-                        .tradePair(tradePair)
-                        .quantity(quantity)
-                        .price(price)
-                        .filled(0)
-                        .build()
-        );
+        OrderBookHandler book = orderBookService.getOrCreateBook(tradePair);
+
+        Order order = Order.builder()
+                .id(orderId)
+                .timestamp(System.currentTimeMillis())
+                .userId(userId)
+                .orderSide(isBuyOrder ? TradeSide.BUY : TradeSide.SELL)
+                .orderType(orderType)
+                .tradePair(tradePair)
+                .quantity(quantity)
+                .price(price)
+                .filled(0)
+                .build();
+
+        book.matchOrder(System.currentTimeMillis(), order);
 
         matchEngineEventService.saveMatchEngineEvent(MatchEngineEvent.builder()
                 .id(orderId)
@@ -50,7 +54,7 @@ public class EngineServiceImpl implements EngineService {
     }
 
     @Override
-    public void UpdateMatchInfo(long orderId, TradePair tradePair, OrderType orderType, double quantity, double price) {
+    public void updateMatchInfo(long orderId, TradePair tradePair, OrderType orderType, double quantity, double price) {
 //        matchEngineEventService.updateMatchEngineEvent(MatchEngineEvent.builder()
 //                .id(orderId)
 //                .status(MatchEngineEventStatus.SUCCESS)

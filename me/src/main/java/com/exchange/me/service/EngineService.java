@@ -8,5 +8,5 @@ public interface  EngineService {
                              TradePair tradePair, OrderType orderType,
                              boolean isBuyOrder, double quantity, double price);
 
-    void UpdateMatchInfo(long orderId, TradePair tradePair, OrderType orderType, double quantity, double price);
+    void updateMatchInfo(long orderId, TradePair tradePair, OrderType orderType, double quantity, double price);
 }

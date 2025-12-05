@@ -11,12 +11,12 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 @RequiredArgsConstructor
 @Slf4j
-public class SaveMatchInfoController {
+public class NewOrderController {
     private final EngineService engineService;
 
 
     @PostMapping(value = "/api/${api.prefix.internal}/match-info")
-    public void UpdateMatchInfoController(@RequestBody saveOrderRequest request) {
+    public void updateMatchInfoController(@RequestBody NewOrderRequest request) {
         engineService.processOrder(request.orderId(), request.userId(),
                 request.tradePair(), request.orderType(),request.isBuyOrder(),
                 request.quantity(), request.price());
