@@ -203,8 +203,6 @@ public class OrderBookHandler {
                 .quantity(order.getQuantity())
                 .price(order.getPrice())
                 .filled(order.getFilled())
-                .createdAt(order.getCreatedAt())
-                .updatedAt(order.getUpdatedAt())
                 .build();
     }
 }

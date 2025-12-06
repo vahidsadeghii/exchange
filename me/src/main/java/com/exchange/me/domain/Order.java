@@ -21,8 +21,6 @@ public class Order {
     private double quantity;
     private double price;
     private double filled;
-    private LocalDateTime createdAt;
-    private LocalDateTime updatedAt;
 
     public double getRemainingQuantity() {
         return quantity - filled;
