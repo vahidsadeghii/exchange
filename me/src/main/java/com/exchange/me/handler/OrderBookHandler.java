@@ -1,208 +1,312 @@
 package com.exchange.me.handler;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Map;
+import java.util.TreeMap;
 
-import com.exchange.me.domain.OrderBook;
-import com.exchange.me.domain.TradeSide;
 import org.springframework.stereotype.Component;
 
 import com.exchange.me.domain.MatchInfo;
 import com.exchange.me.domain.Order;
+import com.exchange.me.domain.Order.OrderSide;
 
 @Component
 public class OrderBookHandler {
-    private final TreeMap<Long, Queue<Order>> bids; // Descending for BUY side
-    private final TreeMap<Long, Queue<Order>> asks; // Ascending for SELL side
-    private long updateTime;
+  private final TreeMap<Long, LinkedList<Order>> bids; // Descending for BUY side
+  private final TreeMap<Long, LinkedList<Order>> asks; // Ascending for SELL side
+  private final Map<Long, OrderLocation> orderIndex; // Fast lookup by order ID
+  private long updateTime;
 
-    public OrderBookHandler() {
-        bids = new TreeMap<>(Collections.reverseOrder());
-        asks = new TreeMap<>();
+  // Helper class to track order location for fast cancellation
+  private static class OrderLocation {
+    final double price;
+    final OrderSide side;
+    final Order order;
+
+    OrderLocation(double price, OrderSide side, Order order) {
+      this.price = price;
+      this.side = side;
+      this.order = order;
     }
+  }
 
-    public List<MatchInfo> matchOrder(
-            long timestamp, Order incomingOrder) {
-        updateTime = timestamp;
+  public OrderBookHandler() {
+    bids = new TreeMap<>(Collections.reverseOrder());
+    asks = new TreeMap<>();
+    orderIndex = new HashMap<>();
+  }
 
-        if (incomingOrder.getOrderSide() == TradeSide.BUY) {
-            return executeBuyOrder(timestamp, incomingOrder);
-        } else {
-            return executeSellOrder(timestamp, incomingOrder);
+  public List<MatchInfo> matchOrder(
+      long timestamp, Order incomingOrder) {
+    updateTime = timestamp;
+
+    if (incomingOrder.getOrderSide() == OrderSide.BUY) {
+      return executeBuyOrder(timestamp, incomingOrder);
+    } else {
+      return executeSellOrder(timestamp, incomingOrder);
+    }
+  }
+
+  public List<MatchInfo> executeBuyOrder(
+      long timestamp,
+      Order buyOrder) {
+
+    List<MatchInfo> matches = new ArrayList<>();
+    // Only process the best ask levels until order is filled
+    while (!asks.isEmpty() && buyOrder.getRemainingQuantity() > 0) {
+      // Get the best (lowest) ask price level
+      Map.Entry<Long, LinkedList<Order>> bestAsk = asks.firstEntry();
+
+      long askPrice = bestAsk.getKey();
+
+      if(askPrice > buyOrder.getPrice()) {
+        break; // No more matching possible
+      }
+
+      LinkedList<Order> askQueue = bestAsk.getValue();
+
+      while (!askQueue.isEmpty() && buyOrder.getRemainingQuantity() > 0) {
+        Order askOrder = askQueue.peek();
+        if (askOrder == null)
+          break;
+
+        double tradedQuantity = Math.min(buyOrder.getRemainingQuantity(), askOrder.getRemainingQuantity());
+        buyOrder.setFilled(buyOrder.getFilled() + tradedQuantity);
+        askOrder.setFilled(askOrder.getFilled() + tradedQuantity);
+
+        matches.add(
+            new MatchInfo(
+                timestamp,
+                System.currentTimeMillis(),
+                OrderSide.SELL,
+                buyOrder.getId(),
+                askOrder.getId(),
+                buyOrder.getUserId(),
+                askOrder.getUserId(),
+                tradedQuantity,
+                askPrice,
+                buyOrder.getQuantity(),
+                buyOrder.getRemainingQuantity(),
+                askOrder.getQuantity(),
+                askOrder.getRemainingQuantity()));
+
+        if (askOrder.getRemainingQuantity() == 0) {
+          askQueue.poll();
+          orderIndex.remove(askOrder.getId()); // Remove from index
         }
+      }
+
+      // Remove empty price levels
+      if (askQueue.isEmpty()) {
+        asks.pollFirstEntry();
+      }
     }
 
-    public List<MatchInfo> executeBuyOrder(
-            long timestamp,
-            Order buyOrder) {
+    // Add unfilled buy order to book
+    if (buyOrder.getRemainingQuantity() > 0) {
+      addOrderToBook(buyOrder);
+    }
 
-        List<MatchInfo> matches = new ArrayList<>();
-        // Only process the best ask levels until order is filled
-        while (!asks.isEmpty() && buyOrder.getRemainingQuantity() > 0) {
-            // Get the best (lowest) ask price level
-            Map.Entry<Long, Queue<Order>> bestAsk = asks.firstEntry();
+    return matches;
+  }
 
-            long askPrice = bestAsk.getKey();
+  public List<MatchInfo> executeSellOrder(
+      long timestamp,
+      Order sellOrder) {
+    List<MatchInfo> matches = new ArrayList<>();
 
-            if (askPrice > buyOrder.getPrice()) {
-                break; // No more matching possible
-            }
+    // Only process the best bid levels until order is filled
+    while (!bids.isEmpty() && sellOrder.getRemainingQuantity() > 0) {
+      // Get the best (highest) bid price level
+      Map.Entry<Long, LinkedList<Order>> bestBid = bids.firstEntry();
+      long bidPrice = bestBid.getKey();
+      LinkedList<Order> bidQueue = bestBid.getValue();
 
-            Queue<Order> askQueue = bestAsk.getValue();
+      while (!bidQueue.isEmpty() && sellOrder.getRemainingQuantity() > 0) {
+        Order bidOrder = bidQueue.peek();
+        if (bidOrder == null)
+          break;
 
-            while (!askQueue.isEmpty() && buyOrder.getRemainingQuantity() > 0) {
-                Order askOrder = askQueue.peek();
-                if (askOrder == null)
-                    break;
+        double tradedQuantity = Math.min(sellOrder.getRemainingQuantity(), bidOrder.getRemainingQuantity());
+        sellOrder.setFilled(sellOrder.getFilled() + tradedQuantity);
+        bidOrder.setFilled(bidOrder.getFilled() + tradedQuantity);
 
-                double tradedQuantity = Math.min(buyOrder.getRemainingQuantity(), askOrder.getRemainingQuantity());
-                buyOrder.setFilled(buyOrder.getFilled() + tradedQuantity);
-                askOrder.setFilled(askOrder.getFilled() + tradedQuantity);
+        matches.add(
+            new MatchInfo(timestamp,
+                System.currentTimeMillis(),
+                OrderSide.BUY,
+                sellOrder.getId(),
+                bidOrder.getId(),
+                sellOrder.getUserId(),
+                bidOrder.getUserId(),
+                tradedQuantity,
+                bidPrice,
+                sellOrder.getQuantity(),
+                sellOrder.getRemainingQuantity(),
+                bidOrder.getQuantity(),
+                bidOrder.getRemainingQuantity()));
 
-                matches.add(
-                        new MatchInfo(
-                                timestamp,
-                                System.currentTimeMillis(),
-                                TradeSide.SELL,
-                                buyOrder.getId(),
-                                askOrder.getId(),
-                                buyOrder.getUserId(),
-                                askOrder.getUserId(),
-                                tradedQuantity,
-                                askPrice,
-                                buyOrder.getQuantity(),
-                                buyOrder.getRemainingQuantity(),
-                                askOrder.getQuantity(),
-                                askOrder.getRemainingQuantity()));
-
-                if (askOrder.getRemainingQuantity() == 0) {
-                    askQueue.poll();
-                }
-            }
-
-            // Remove empty price levels
-            if (askQueue.isEmpty()) {
-                asks.pollFirstEntry();
-            }
+        if (bidOrder.getRemainingQuantity() == 0) {
+          bidQueue.poll();
+          orderIndex.remove(bidOrder.getId()); // Remove from index
         }
+      }
 
-        return matches;
+      // Remove empty price levels
+      if (bidQueue.isEmpty()) {
+        bids.pollFirstEntry();
+      }
     }
 
-    public List<MatchInfo> executeSellOrder(
-            long timestamp,
-            Order sellOrder) {
-        List<MatchInfo> matches = new ArrayList<>();
+    // Add unfilled sell order to book
+    if (sellOrder.getRemainingQuantity() > 0) {
+      addOrderToBook(sellOrder);
+    }
 
-        // Only process the best bid levels until order is filled
-        while (!bids.isEmpty() && sellOrder.getRemainingQuantity() > 0) {
-            // Get the best (highest) bid price level
-            Map.Entry<Long, Queue<Order>> bestBid = bids.firstEntry();
-            long bidPrice = bestBid.getKey();
-            Queue<Order> bidQueue = bestBid.getValue();
+    return matches;
+  }
 
-            while (!bidQueue.isEmpty() && sellOrder.getRemainingQuantity() > 0) {
-                Order bidOrder = bidQueue.peek();
-                if (bidOrder == null)
-                    break;
+  /**
+   * Add order to the book (for unfilled orders after matching)
+   */
+  private void addOrderToBook(Order order) {
+    TreeMap<Long, LinkedList<Order>> book = order.getOrderSide() == OrderSide.BUY ? bids : asks;
+    long priceKey = (long) order.getPrice();
+    LinkedList<Order> queue = book.computeIfAbsent(priceKey, k -> new LinkedList<>());
+    queue.addLast(order);
+    orderIndex.put(order.getId(), new OrderLocation(order.getPrice(), order.getOrderSide(), order));
+  }
 
-                double tradedQuantity = Math.min(sellOrder.getRemainingQuantity(), bidOrder.getRemainingQuantity());
-                sellOrder.setFilled(sellOrder.getFilled() + tradedQuantity);
-                bidOrder.setFilled(bidOrder.getFilled() + tradedQuantity);
-
-                matches.add(
-                        new MatchInfo(timestamp,
-                                System.currentTimeMillis(),
-                                TradeSide.BUY,
-                                sellOrder.getId(),
-                                bidOrder.getId(),
-                                sellOrder.getUserId(),
-                                bidOrder.getUserId(),
-                                tradedQuantity,
-                                bidPrice,
-                                sellOrder.getQuantity(),
-                                sellOrder.getRemainingQuantity(),
-                                bidOrder.getQuantity(),
-                                bidOrder.getRemainingQuantity()));
-
-                if (bidOrder.getRemainingQuantity() == 0) {
-                    bidQueue.poll();
-                }
-            }
-
-            // Remove empty price levels
-            if (bidQueue.isEmpty()) {
-                bids.pollFirstEntry();
-            }
+  /**
+   * Delete order with O(1) lookup using order index
+   */
+  public void deleteOrder(long timestamp, Order order) {
+    updateTime = timestamp;
+    OrderLocation location = orderIndex.remove(order.getId());
+    
+    if (location != null) {
+      TreeMap<Long, LinkedList<Order>> book = location.side == OrderSide.BUY ? bids : asks;
+      long priceKey = (long) location.price;
+      LinkedList<Order> queue = book.get(priceKey);
+      
+      if (queue != null) {
+        queue.remove(location.order); // O(n) but on LinkedList it's faster than Queue
+        if (queue.isEmpty()) {
+          book.remove(priceKey);
         }
+      }
+    }
+  }
 
-        return matches;
+  /**
+   * Get order by ID with O(1) lookup
+   */
+  public Order getOrder(long orderId) {
+    OrderLocation location = orderIndex.get(orderId);
+    return location != null ? location.order : null;
+  }
+
+  /**
+   * Get total number of orders in the book
+   */
+  public int getTotalOrders() {
+    return orderIndex.size();
+  }
+
+  /**
+   * Get best bid price (highest buy price)
+   */
+  public Long getBestBid() {
+    return bids.isEmpty() ? null : bids.firstKey();
+  }
+
+  /**
+   * Get best ask price (lowest sell price)
+   */
+  public Long getBestAsk() {
+    return asks.isEmpty() ? null : asks.firstKey();
+  }
+
+  /**
+   * Get spread (difference between best ask and best bid)
+   */
+  public Long getSpread() {
+    Long bestBid = getBestBid();
+    Long bestAsk = getBestAsk();
+    return (bestBid != null && bestAsk != null) ? bestAsk - bestBid : null;
+  }
+
+  public void reset() {
+    bids.clear();
+    asks.clear();
+    orderIndex.clear();
+  }
+
+  public long getUpdateTime() {
+    return updateTime;
+  }
+
+  /**
+   * Get market depth snapshot
+   */
+  public MarketDepth getMarketDepth(int levels) {
+    List<PriceLevel> bidLevels = new ArrayList<>();
+    List<PriceLevel> askLevels = new ArrayList<>();
+
+    int count = 0;
+    for (Map.Entry<Long, LinkedList<Order>> entry : bids.entrySet()) {
+      if (count >= levels) break;
+      double volume = entry.getValue().stream()
+          .mapToDouble(Order::getRemainingQuantity)
+          .sum();
+      bidLevels.add(new PriceLevel(entry.getKey(), volume, entry.getValue().size()));
+      count++;
     }
 
-    public void deleteOrder(long timestamp, Order order) {
-        updateTime = timestamp;
-        TreeMap<Long, Queue<Order>> book = order.getOrderSide() == TradeSide.BUY ? bids : asks;
-        Queue<Order> queue = book.get(order.getPrice());
-        if (queue != null) {
-            queue.removeIf(o -> o.getId() == order.getId());
-            if (queue.isEmpty()) {
-                book.remove(order.getPrice());
-            }
-        }
+    count = 0;
+    for (Map.Entry<Long, LinkedList<Order>> entry : asks.entrySet()) {
+      if (count >= levels) break;
+      double volume = entry.getValue().stream()
+          .mapToDouble(Order::getRemainingQuantity)
+          .sum();
+      askLevels.add(new PriceLevel(entry.getKey(), volume, entry.getValue().size()));
+      count++;
     }
 
-    public void reset() {
-        bids.clear();
-        asks.clear();
+    return new MarketDepth(bidLevels, askLevels);
+  }
+
+  // Helper classes for market depth
+  public static class MarketDepth {
+    private final List<PriceLevel> bids;
+    private final List<PriceLevel> asks;
+
+    public MarketDepth(List<PriceLevel> bids, List<PriceLevel> asks) {
+      this.bids = bids;
+      this.asks = asks;
     }
 
-    public long getUpdateTime() {
-        return updateTime;
+    public List<PriceLevel> getBids() { return bids; }
+    public List<PriceLevel> getAsks() { return asks; }
+  }
+
+  public static class PriceLevel {
+    private final long price;
+    private final double volume;
+    private final int orderCount;
+
+    public PriceLevel(long price, double volume, int orderCount) {
+      this.price = price;
+      this.volume = volume;
+      this.orderCount = orderCount;
     }
 
-    public OrderBook getOrderBook(long userId) {
-        List<Order> askList = new ArrayList<>();
-        List<Order> bidList = new ArrayList<>();
-        List<Order> userOrders = new ArrayList<>();
-
-        asks.values().stream()
-                .flatMap(Collection::stream)
-                .forEach(order -> {
-                    askList.add(mapToOrder(order));
-                    if (userId != 0 && order.getUserId() == userId) {
-                        userOrders.add(mapToOrder(order));
-                    }
-                });
-
-        bids.values().stream()
-                .flatMap(Collection::stream)
-                .forEach(order -> {
-                    bidList.add(mapToOrder(order));
-                    if (userId != 0 && order.getUserId() == userId) {
-                        userOrders.add(mapToOrder(order));
-                    }
-                });
-        return OrderBook.builder()
-                .bids(bidList)
-                .asks(askList)
-                .userOrders(userOrders)
-                .build();
-
-    }
-
-
-    private Order mapToOrder(Order order) {
-        if (order == null) return null;
-
-        return Order.builder()
-                .id(order.getId())
-                .timestamp(order.getTimestamp())
-                .userId(order.getUserId())
-                .orderSide(order.getOrderSide())
-                .orderType(order.getOrderType())
-                .tradePair(order.getTradePair())
-                .quantity(order.getQuantity())
-                .price(order.getPrice())
-                .filled(order.getFilled())
-                .build();
-    }
+    public long getPrice() { return price; }
+    public double getVolume() { return volume; }
+    public int getOrderCount() { return orderCount; }
+  }
 }
