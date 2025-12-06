@@ -48,18 +48,9 @@ public class EngineServiceImpl implements EngineService {
         matchEngineEventService.saveMatchEngineEvent(MatchEngineEvent.builder()
                 .id(orderId)
                 .userId(userId)
-                .status(MatchEngineEventStatus.SUCCESS)
+                .status(MatchEngineEventStatus.SUBMITED)
                 .topic(savematchingEngineTopic)
                 .build());
     }
 
-
-    @Override
-    public void updateMatchInfo(long orderId, TradePair tradePair, OrderType orderType, double quantity, double price) {
-//        matchEngineEventService.updateMatchEngineEvent(MatchEngineEvent.builder()
-//                .id(orderId)
-//                .status(MatchEngineEventStatus.SUCCESS)
-//                .topic(updatematchingEngineTopic)
-//                .build());
-    }
 }

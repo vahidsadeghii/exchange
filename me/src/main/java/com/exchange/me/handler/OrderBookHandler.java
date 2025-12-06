@@ -8,11 +8,12 @@ import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
 
+import com.exchange.me.domain.TradeSide;
 import org.springframework.stereotype.Component;
 
 import com.exchange.me.domain.MatchInfo;
 import com.exchange.me.domain.Order;
-import com.exchange.me.domain.Order.OrderSide;
+
 
 @Component
 public class OrderBookHandler {
@@ -24,10 +25,10 @@ public class OrderBookHandler {
   // Helper class to track order location for fast cancellation
   private static class OrderLocation {
     final double price;
-    final OrderSide side;
+    final TradeSide side;
     final Order order;
 
-    OrderLocation(double price, OrderSide side, Order order) {
+    OrderLocation(double price, TradeSide side, Order order) {
       this.price = price;
       this.side = side;
       this.order = order;
@@ -44,7 +45,7 @@ public class OrderBookHandler {
       long timestamp, Order incomingOrder) {
     updateTime = timestamp;
 
-    if (incomingOrder.getOrderSide() == OrderSide.BUY) {
+    if (incomingOrder.getOrderSide() == TradeSide.BUY) {
       return executeBuyOrder(timestamp, incomingOrder);
     } else {
       return executeSellOrder(timestamp, incomingOrder);
@@ -82,7 +83,7 @@ public class OrderBookHandler {
             new MatchInfo(
                 timestamp,
                 System.currentTimeMillis(),
-                OrderSide.SELL,
+                    TradeSide.SELL,
                 buyOrder.getId(),
                 askOrder.getId(),
                 buyOrder.getUserId(),
@@ -138,7 +139,7 @@ public class OrderBookHandler {
         matches.add(
             new MatchInfo(timestamp,
                 System.currentTimeMillis(),
-                OrderSide.BUY,
+                    TradeSide.BUY,
                 sellOrder.getId(),
                 bidOrder.getId(),
                 sellOrder.getUserId(),
@@ -174,7 +175,7 @@ public class OrderBookHandler {
    * Add order to the book (for unfilled orders after matching)
    */
   private void addOrderToBook(Order order) {
-    TreeMap<Long, LinkedList<Order>> book = order.getOrderSide() == OrderSide.BUY ? bids : asks;
+    TreeMap<Long, LinkedList<Order>> book = order.getOrderSide() == TradeSide.BUY ? bids : asks;
     long priceKey = (long) order.getPrice();
     LinkedList<Order> queue = book.computeIfAbsent(priceKey, k -> new LinkedList<>());
     queue.addLast(order);
@@ -189,7 +190,7 @@ public class OrderBookHandler {
     OrderLocation location = orderIndex.remove(order.getId());
     
     if (location != null) {
-      TreeMap<Long, LinkedList<Order>> book = location.side == OrderSide.BUY ? bids : asks;
+      TreeMap<Long, LinkedList<Order>> book = location.side == TradeSide.BUY ? bids : asks;
       long priceKey = (long) location.price;
       LinkedList<Order> queue = book.get(priceKey);
       

@@ -1,10 +1,10 @@
 package com.exchange.me.domain;
 
 public enum MatchEngineEventStatus {
-    SUCCESS("SUCCESS"),
-    FAILURE("FAILURE"),
-    TIMEOUT("TIMEOUT"),
-    WAITING("WAITING");
+    SUBMITED("SUBMITED"),
+    FILLED("FILLED"),
+    CANCELED("CANCELED"),
+    REJECTED("REJECTED");
 
     private String enumValue;
 
