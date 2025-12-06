@@ -9,12 +9,12 @@ import java.time.LocalDateTime;
 @Builder
 @AllArgsConstructor
 @NoArgsConstructor
-public class MatchEngineEvent {
+public class MatchEvent {
     private long id;
     private long userId;
     private String topic;
     private String eventData;
-    private MatchEngineEventStatus status;
+    private MatchEventStatus status;
     private Boolean processed = false;
     private LocalDateTime processedAt;
     private LocalDateTime createdAt;

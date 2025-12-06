@@ -1,6 +1,6 @@
 package com.exchange.me.domain;
 
-public enum MatchEngineEventStatus {
+public enum MatchEventStatus {
     SUBMITED("SUBMITED"),
     FILLED("FILLED"),
     CANCELED("CANCELED"),
@@ -8,7 +8,7 @@ public enum MatchEngineEventStatus {
 
     private String enumValue;
 
-    MatchEngineEventStatus(String enumValue){
+    MatchEventStatus(String enumValue){
         this.enumValue = enumValue;
     }
 

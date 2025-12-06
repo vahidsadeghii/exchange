@@ -3,20 +3,18 @@ package com.exchange.me.service.impl;
 import com.exchange.me.domain.*;
 import com.exchange.me.handler.OrderBookHandler;
 import com.exchange.me.service.EngineService;
-import com.exchange.me.service.MatchEngineEventService;
+import com.exchange.me.service.MatchEventService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
-
-import java.util.List;
 
 @Slf4j
 @Service
 @RequiredArgsConstructor
 public class EngineServiceImpl implements EngineService {
     private final OrderBookHandler orderBookHandler;
-    private final MatchEngineEventService matchEngineEventService;
+    private final MatchEventService matchEngineEventService;
     private final OrderBookService orderBookService;
 
     @Value("${custom-config.kafka.updatematchingEngine-output-message.topic}")
@@ -45,10 +43,10 @@ public class EngineServiceImpl implements EngineService {
 
         book.matchOrder(System.currentTimeMillis(), order);
 
-        matchEngineEventService.saveMatchEngineEvent(MatchEngineEvent.builder()
+        matchEngineEventService.saveMatchEvent(MatchEvent.builder()
                 .id(orderId)
                 .userId(userId)
-                .status(MatchEngineEventStatus.SUBMITED)
+                .status(MatchEventStatus.SUBMITED)
                 .topic(savematchingEngineTopic)
                 .build());
     }

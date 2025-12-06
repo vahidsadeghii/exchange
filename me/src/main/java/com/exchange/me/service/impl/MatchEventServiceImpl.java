@@ -1,7 +1,7 @@
 package com.exchange.me.service.impl;
 
-import com.exchange.me.domain.MatchEngineEvent;
-import com.exchange.me.service.MatchEngineEventService;
+import com.exchange.me.domain.MatchEvent;
+import com.exchange.me.service.MatchEventService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.kafka.core.KafkaTemplate;
@@ -13,12 +13,12 @@ import org.springframework.transaction.annotation.Transactional;
 @Transactional
 @RequiredArgsConstructor
 @Slf4j
-public class MatchEngineEventServiceImpl implements MatchEngineEventService {
+public class MatchEventServiceImpl implements MatchEventService {
     private final KafkaTemplate<String, String> kafkaTemplateSendMessage;
 
     @Override
-    public MatchEngineEvent saveMatchEngineEvent(MatchEngineEvent matchEngineEvent) {
-        kafkaTemplateSendMessage.send(matchEngineEvent.getTopic(), matchEngineEvent.getStatus().name());
+    public MatchEvent saveMatchEvent(MatchEvent matchEvent) {
+        kafkaTemplateSendMessage.send(matchEvent.getTopic(), matchEvent.getStatus().name());
         return null;
     }
 }
