@@ -5,7 +5,6 @@ CREATE TABLE orders
     order_type          VARCHAR(50)      NOT NULL,
     trade_pair          VARCHAR(50)      NOT NULL,
     status              VARCHAR(50)      NOT NULL DEFAULT 'NEW',
-    is_buy_order        BOOLEAN          NOT NULL,
     quantity            DOUBLE PRECISION NOT NULL,
     price               DOUBLE PRECISION NOT NULL,
     match_engine_status VARCHAR(50),

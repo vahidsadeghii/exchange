@@ -21,8 +21,6 @@ public class OrderServiceDecorator implements OrderService {
     private final OrderService orderService;
     private final OrderRepository orderRepository;
 
-
-
     @Override
     public Order createOrder(long userId, TradePair tradePair, OrderType orderType, double quantity, double price) {
         if(userId == 0L) {

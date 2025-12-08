@@ -28,7 +28,6 @@ public class Order {
     private TradePair tradePair;
     @Enumerated(EnumType.STRING)
     private OrderStatus status = OrderStatus.NEW;
-    private Boolean isBuyOrder;
     private double quantity;
     private double price;
     private MatchEngineStatus matchEngineStatus;

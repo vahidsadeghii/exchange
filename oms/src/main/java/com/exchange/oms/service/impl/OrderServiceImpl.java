@@ -27,7 +27,7 @@ public class OrderServiceImpl implements OrderService {
         //TODO: check the order properties
         //Property validation is handled in OrderServiceDecorator
         Order order = orderRepository.save(Order.builder()
-                .userId(userId)
+                .userId(1L)
                 .tradePair(tradePair)
                 .orderType(orderType)
                 .status(OrderStatus.NEW)
