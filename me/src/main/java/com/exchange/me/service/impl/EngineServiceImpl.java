@@ -13,7 +13,6 @@ import org.springframework.stereotype.Service;
 @Service
 @RequiredArgsConstructor
 public class EngineServiceImpl implements EngineService {
-    private final OrderBookHandler orderBookHandler;
     private final MatchEventService matchEngineEventService;
     private final OrderBookService orderBookService;
 
@@ -44,8 +43,8 @@ public class EngineServiceImpl implements EngineService {
         book.matchOrder(System.currentTimeMillis(), order);
 
         matchEngineEventService.saveMatchEvent(MatchEvent.builder()
-                .id(orderId)
-                .userId(userId)
+                .id(order.getId())
+                .userId(order.getUserId())
                 .status(MatchEventStatus.SUBMITED)
                 .topic(savematchingEngineTopic)
                 .build());

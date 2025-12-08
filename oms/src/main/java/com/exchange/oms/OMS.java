@@ -5,6 +5,8 @@ import org.springframework.cloud.openfeign.EnableFeignClients;
 
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 
+
+//TODO:Why did you set basePackages?
 @SpringBootApplication
 @EnableFeignClients(basePackages = "com.exchange.oms.client")
 public class OMS {

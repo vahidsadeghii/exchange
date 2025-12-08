@@ -14,4 +14,6 @@ import java.util.List;
 public class OrderBookResponseClient {
     private List<Order> bids;
     private List<Order> asks;
+    private List<Order> userOrders;
+    private long updateTime;
 }

@@ -1,6 +1,6 @@
 package com.exchange.oms.service.impl;
 
-import com.exchange.oms.client.matchingengine.MatchingEngineClient;
+import com.exchange.oms.client.matchingengine.MatchingInfoClient;
 import com.exchange.oms.client.matchingengine.saveOrderRequest;
 import com.exchange.oms.controller.order.findorderbook.OrderBookResponse;
 import com.exchange.oms.domain.*;
@@ -20,7 +20,7 @@ import java.time.LocalDateTime;
 @Slf4j
 public class OrderServiceImpl implements OrderService {
     private final OrderRepository orderRepository;
-    private final MatchingEngineClient matchingEngineClient;
+    private final MatchingInfoClient matchingEngineClient;
 
     @Override
     public Order createOrder(long userId, TradePair tradePair, OrderType orderType, double quantity, double price) {

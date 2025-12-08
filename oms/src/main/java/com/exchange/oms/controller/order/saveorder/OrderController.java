@@ -28,7 +28,7 @@ public class OrderController {
             throw new MissingUserIdException();
         }
         Order order = orderService.createOrder(
-                1L,
+                onlineUser.getUserId(),
                 request.tradePair(),
                 request.orderType(),
                 request.quantity(),

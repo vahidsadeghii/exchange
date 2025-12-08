@@ -8,15 +8,18 @@ import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
 
+import com.exchange.me.domain.TradePair;
 import com.exchange.me.domain.TradeSide;
-import org.springframework.stereotype.Component;
+import lombok.RequiredArgsConstructor;
+
 
 import com.exchange.me.domain.MatchInfo;
 import com.exchange.me.domain.Order;
 
 
-@Component
+@RequiredArgsConstructor
 public class OrderBookHandler {
+    private  TradePair tradePair;
   private final TreeMap<Long, LinkedList<Order>> bids; // Descending for BUY side
   private final TreeMap<Long, LinkedList<Order>> asks; // Ascending for SELL side
   private final Map<Long, OrderLocation> orderIndex; // Fast lookup by order ID
@@ -35,7 +38,7 @@ public class OrderBookHandler {
     }
   }
 
-  public OrderBookHandler() {
+  public OrderBookHandler(TradePair tradePair) {
     bids = new TreeMap<>(Collections.reverseOrder());
     asks = new TreeMap<>();
     orderIndex = new HashMap<>();
