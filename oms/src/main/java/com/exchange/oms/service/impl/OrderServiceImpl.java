@@ -1,7 +1,7 @@
 package com.exchange.oms.service.impl;
 
 import com.exchange.oms.client.matchingengine.MatchingInfoClient;
-import com.exchange.oms.client.matchingengine.saveOrderRequest;
+import com.exchange.oms.client.matchingengine.createOrderRequest;
 import com.exchange.oms.controller.order.findorderbook.OrderBookResponse;
 import com.exchange.oms.domain.*;
 import jakarta.persistence.EntityNotFoundException;
@@ -13,6 +13,7 @@ import com.exchange.oms.service.OrderService;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
+import java.time.ZoneId;
 
 @Service
 @Transactional
@@ -23,28 +24,34 @@ public class OrderServiceImpl implements OrderService {
     private final MatchingInfoClient matchingEngineClient;
 
     @Override
-    public Order createOrder(long userId, TradePair tradePair, OrderType orderType, double quantity, double price) {
+    public Order createOrder(long userId, TradePair tradePair, TradeSide tradeSide, OrderType orderType, double quantity, double price) {
         //TODO: check the order properties
         //Property validation is handled in OrderServiceDecorator
         Order order = orderRepository.save(Order.builder()
                 .userId(1L)
                 .tradePair(tradePair)
                 .orderType(orderType)
+                .tradeSide(tradeSide)
                 .status(OrderStatus.NEW)
-                .isBuyOrder(false)
                 .quantity(quantity)
                 .price(price)
                 .createdAt(LocalDateTime.now())
                 .build());
 
-        matchingEngineClient.saveOrderMatchingEngine(new saveOrderRequest(
-                order.getId(),
-                order.getUserId(),
-                order.getTradePair(),
-                order.getOrderType(),
-                order.getIsBuyOrder(),
-                order.getQuantity(),
-                order.getPrice()));
+        long timestamp = order.getCreatedAt()
+                .atZone(ZoneId.systemDefault())
+                .toInstant()
+                .toEpochMilli();
+        matchingEngineClient.createOrderMatchingEngine(
+                timestamp,
+                new createOrderRequest(
+                        order.getId(),
+                        order.getUserId(),
+                        order.getTradePair(),
+                        order.getOrderType(),
+                        order.getTradeSide(),
+                        order.getQuantity(),
+                        order.getPrice()));
 
         return order;
     }
@@ -53,7 +60,7 @@ public class OrderServiceImpl implements OrderService {
     // Currently, findById uses orderId.
     // Consider whether userId is a better practice for locating an order.
     @Override
-    public Order updateOrder(long orderId, long userId, MatchEngineStatus orderStatus) {
+    public Order updateOrder(long orderId, long userId, MatchEventStatus orderStatus) {
         return orderRepository.findByUserId(userId)
                 .map(order -> {
                     order.setMatchEngineStatus(orderStatus);

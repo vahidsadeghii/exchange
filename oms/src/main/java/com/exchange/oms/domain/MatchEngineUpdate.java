@@ -1,4 +1,4 @@
 package com.exchange.oms.domain;
 
-public record MatchEngineUpdate(long orderId, long userId,  MatchEngineStatus status){
+public record MatchEngineUpdate(long orderId, long userId,  MatchEventStatus status){
 }

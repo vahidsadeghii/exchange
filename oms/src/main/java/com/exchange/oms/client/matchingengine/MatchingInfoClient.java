@@ -11,6 +11,8 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestParam;
 
+import java.time.LocalDateTime;
+
 @FeignClient(name = "em")
 public interface MatchingInfoClient {
     Logger logger = LoggerFactory.getLogger(MatchingInfoClient.class);
@@ -23,12 +25,13 @@ public interface MatchingInfoClient {
             return new FallBackException();
     }
 
-
-    @CircuitBreaker(name="oms-instance", fallbackMethod = "saveOrderMatchingEngineFallBack")
+    @CircuitBreaker(name="oms-instance", fallbackMethod = "createOrderMatchingEngineFallBack")
     @PostMapping(value = "/api/${api.prefix.internal}/match-info")
-    void saveOrderMatchingEngine(@RequestBody saveOrderRequest updateOrderRequest);
+    void createOrderMatchingEngine( @RequestParam long timestamp,
+                                    @RequestBody createOrderRequest updateOrderRequest);
 
-    default void saveOrderMatchingEngineFallBack(@RequestBody saveOrderRequest request, Throwable t) throws Throwable{
+    default void createOrderMatchingEngineFallBack( @RequestParam long timestamp,
+                                                    @RequestBody createOrderRequest request, Throwable t) throws Throwable{
         throw parseThrowable(t);
     }
 

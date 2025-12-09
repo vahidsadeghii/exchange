@@ -8,6 +8,7 @@ import com.exchange.oms.repository.OrderRepository;
 import com.exchange.oms.service.OrderService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang.StringUtils;
 import org.springframework.context.annotation.Primary;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -22,11 +23,11 @@ public class OrderServiceDecorator implements OrderService {
     private final OrderRepository orderRepository;
 
     @Override
-    public Order createOrder(long userId, TradePair tradePair, OrderType orderType, double quantity, double price) {
+    public Order createOrder(long userId, TradePair tradePair, TradeSide tradeSide, OrderType orderType, double quantity, double price) {
         if(userId == 0L) {
             throw new MissingUserIdException();
         }
-        if (tradePair == null) {
+        if (StringUtils.isEmpty(tradePair.name())) {
             throw new InvalidTradPairException();
         }
         if (quantity <= 0) {
@@ -35,11 +36,15 @@ public class OrderServiceDecorator implements OrderService {
         if (price <= 0) {
             throw new InvalidPriceException();
         }
-        return orderService.createOrder(userId, tradePair, orderType, quantity, price);
+
+        if(StringUtils.isEmpty(tradeSide.name())){
+            throw new InvalidTradSideException();
+        }
+        return orderService.createOrder(userId, tradePair, tradeSide , orderType, quantity, price);
     }
 
     @Override
-    public Order updateOrder(long orderId, long userId, MatchEngineStatus orderStatus) {
+    public Order updateOrder(long orderId, long userId, MatchEventStatus orderStatus) {
         if(userId == 0L) {
             throw new MissingUserIdException();
         }

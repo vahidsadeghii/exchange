@@ -23,14 +23,15 @@ public class Order {
     private Long userId;
     @Enumerated(EnumType.STRING)
     private OrderType orderType;
-
+    @Enumerated(EnumType.STRING)
+    private TradeSide tradeSide;
     @Enumerated(EnumType.STRING)
     private TradePair tradePair;
     @Enumerated(EnumType.STRING)
     private OrderStatus status = OrderStatus.NEW;
     private double quantity;
     private double price;
-    private MatchEngineStatus matchEngineStatus;
+    private MatchEventStatus matchEngineStatus;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
 

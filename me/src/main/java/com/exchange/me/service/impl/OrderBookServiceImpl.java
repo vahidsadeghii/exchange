@@ -1,6 +1,8 @@
 package com.exchange.me.service.impl;
 
 import com.exchange.me.domain.*;
+import com.exchange.me.exception.InvalidTradPairException;
+import com.exchange.me.exception.NotFoundOrderBookHandlerException;
 import com.exchange.me.handler.OrderBookHandler;
 import com.exchange.me.service.EngineService;
 import com.exchange.me.service.OrderBookService;
@@ -17,10 +19,10 @@ import java.util.concurrent.ConcurrentHashMap;
 public class OrderBookServiceImpl implements OrderBookService {
     private final EngineService engineService;
 
-    private final Map<TradePair, OrderBookHandler> books = new ConcurrentHashMap<>();
+    private final Map<TradePair, OrderBookHandler> orderBooks = new ConcurrentHashMap<>();
 
     private OrderBookHandler getOrCreateBook(TradePair pair) {
-        return books.computeIfAbsent(pair, p -> new OrderBookHandler(p));
+        return orderBooks.computeIfAbsent(pair, p -> new OrderBookHandler(p));
     }
 
     @Override
@@ -46,17 +48,36 @@ public class OrderBookServiceImpl implements OrderBookService {
         return matchInfos;
     }
 
+    @Override
+    public void deleteOrder(long timestamp, Order order) {
+        OrderBookHandler handler = orderBooks.get(order.getTradePair());
+        if (handler != null) {
+            handler.deleteOrder(timestamp, order);
+        }
+    }
 
-//    public OrderBookHandler getBook(TradePair pair) {
-//        if (pair == null) {
-//            throw new InvalidTradPairException();
-//        }
-//        OrderBookHandler handler = books.get(pair);
-//        if (handler == null) {
-//            throw new NotFoundOrderBookHandlerException();
-//        }
-//        return handler;
-//    }
+    @Override
+    public Order getOrder(TradePair pair, long orderId) {
+        if (pair == null) {
+            throw new InvalidTradPairException();
+        }
+        OrderBookHandler handler = orderBooks.get(pair);
+        if (handler == null) {
+            throw new NotFoundOrderBookHandlerException();
+        }
 
+        return handler.getOrder(orderId);
+    }
+
+    @Override
+    public OrderBookHandler.MarketDepth getMarketDepth(TradePair pair, int levels) {
+        OrderBookHandler handler = orderBooks.get(pair);
+        return handler != null ? handler.getMarketDepth(levels) : null;
+    }
+
+    @Override
+    public void resetAll() {
+        orderBooks.values().forEach(OrderBookHandler::reset);
+    }
 
 }
