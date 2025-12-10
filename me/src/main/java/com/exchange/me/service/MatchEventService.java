@@ -4,6 +4,6 @@ import com.exchange.me.domain.MatchEvent;
 
 public interface MatchEventService {
 
-    MatchEvent saveMatchEvent(MatchEvent matchEvent) ;
+    void saveMatchEvent(MatchEvent matchEvent) ;
 }
 

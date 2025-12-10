@@ -1,6 +1,5 @@
 package com.exchange.oms.repository;
 
-import com.exchange.oms.domain.MatchEngineStatus;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 import com.exchange.oms.domain.Order;
