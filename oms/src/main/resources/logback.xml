@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+
+<configuration scan="true">
+
+    <timestamp key="time" datePattern="yyyy-MM-dd'--'HH:mm:ss"/>
+
+    <appender name="Console" class="ch.qos.logback.core.ConsoleAppender">
+        <encoder class="ch.qos.logback.classic.encoder.PatternLayoutEncoder">
+            <pattern>${time} - %-4r [%t] %5p %c{1} - %m - %X{requestId} %X{ip}%n</pattern>
+        </encoder>
+    </appender>
+    <appender name="File" class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <file>logs/oms.log</file>
+        <encoder
+                class="ch.qos.logback.classic.encoder.PatternLayoutEncoder">
+            <pattern>${time} - %-4r [%t] %5p %c{1} - %m - %X{requestId} %X{ip}%n</pattern>
+        </encoder>
+
+        <rollingPolicy
+                class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+            <fileNamePattern>logs/flow-management-%d{yyyy-MM-dd}.log</fileNamePattern>
+        </rollingPolicy>
+    </appender>
+
+    <root level="INFO">
+        <!--        <appender-ref ref="GRAYLOG"/>-->
+        <appender-ref ref="Console"/>
+        <appender-ref ref="File"/>
+    </root>
+    <logger name="com.exchange.oms" level="INFO" additivity="false">
+        <!--     <appender-ref ref="GRAYLOG" />-->
+        <appender-ref ref="Console"/>
+        <appender-ref ref="File"/>
+    </logger>
+
+
+</configuration>
