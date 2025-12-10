@@ -1,0 +1,27 @@
+spring:
+  datasource:
+    username: user_profile
+    password: secretpassuserprofile
+    url: jdbc:postgresql://localhost:5432/exchange_user_profile
+    driver-class-name: org.postgresql.Driver
+
+  flyway:
+    enabled: true
+
+  kafka:
+    bootstrap-servers: localhost:9092
+
+
+
+minio:
+  endpoint: http://localhost:9000
+  secret-Key: gOUzGcRszSocFWcgpOCWbauBtnT3IYfPvjoa26FM
+  access-key: X7ttdLWc5g1E1pwdp8aN
+  bucket: profile
+  file:
+    url:
+      prefix: http://127.0.0.1:9000
+
+client:
+  url:
+    authentication: http://authentication/authentication/_api/v1/user-info

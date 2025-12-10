@@ -1,0 +1,58 @@
+server:
+  port: 8091
+  shutdown: graceful
+  servlet:
+    context-path: /profile
+
+api:
+  version: v1
+  prefix:
+    secure: /api/${api.version}
+    open: /open/${api.version}
+    internal: /_api/${api.version}
+
+spring:
+  application:
+    name: profile
+
+  kafka:
+    consumer:
+      group-id: authentication
+    producer:
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
+
+eureka:
+  instance:
+    metadata-map:
+      prometheus.path: /profile/actuator/prometheus
+      context.path: /profile
+
+
+
+springdoc:
+  swagger-ui:
+    enabled: true
+    path: /swagger-ui/index.html
+
+
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: prometheus,health,info
+  endpoint:
+    prometheus:
+      enabled: true
+
+
+base-url:
+  authentication: http://localhost:8090/authentication
+  uploadFile: http://localhost:8095/filemanager
+
+client:
+  url:
+    authentication: http://authentication/authentication/_api/v1/user-info
+    uploadFile: http://filemanager/filemanager/_api/v1/download/file
+

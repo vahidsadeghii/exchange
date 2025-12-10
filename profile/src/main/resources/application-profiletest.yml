@@ -1,0 +1,12 @@
+server:
+  port: 8091
+
+spring:
+  datasource:
+    username: user_exchange_profile_test
+    password: secretpassoms
+    url: jdbc:postgresql://localhost:5432/exchange_profile_test
+    driver-class-name: org.postgresql.Driver
+  jpa:
+    hibernate:
+      ddl-auto: create
