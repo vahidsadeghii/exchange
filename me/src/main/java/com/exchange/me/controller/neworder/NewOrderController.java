@@ -21,11 +21,8 @@ public class NewOrderController {
 
 
     @PostMapping(value = "/api/${api.prefix.internal}/{timestamp}/match-info")
-    public void createOrder(@RequestParam LocalDateTime timestamp, @RequestBody NewOrderRequest request) {
-        orderBookService.createNewOrder(timestamp
-                .atZone(ZoneId.systemDefault())
-                .toInstant()
-                .toEpochMilli(), request.orderId(),
+    public void createOrder( @RequestBody NewOrderRequest request) {
+        orderBookService.createNewOrder(request.orderId(),
                 request.userId(), request.tradeSide(),
                 request.tradePair(), request.orderType(),
                 request.quantity(), request.price());

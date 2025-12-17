@@ -7,7 +7,7 @@ import java.util.List;
 
 public interface OrderBookService {
 
-   List<MatchInfo> createNewOrder(long timestamp, long orderId, long userId,
+   List<MatchInfo> createNewOrder(long orderId, long userId,
                                   TradeSide orderSide,
                                   TradePair tradePair,
                                   OrderType orderType,

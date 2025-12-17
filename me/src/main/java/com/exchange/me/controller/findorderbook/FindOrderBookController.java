@@ -14,7 +14,7 @@ import org.springframework.web.bind.annotation.RestController;
 public class FindOrderBookController {
     private final OrderBookService orderBookService;
 
-    @GetMapping(value = "/order")
+    @GetMapping(value = "/orders")
     public Order getOrderBook(
             @RequestParam long orderId, @RequestParam TradePair tradePair) {
        return orderBookService.getOrder(tradePair, orderId);

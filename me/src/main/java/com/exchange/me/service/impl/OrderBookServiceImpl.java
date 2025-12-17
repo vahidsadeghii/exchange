@@ -9,6 +9,8 @@ import com.exchange.me.service.OrderBookService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -26,13 +28,16 @@ public class OrderBookServiceImpl implements OrderBookService {
     }
 
     @Override
-    public List<MatchInfo> createNewOrder(long timestamp, long orderId, long userId,
+    public List<MatchInfo> createNewOrder(long orderId, long userId,
                                           TradeSide tradeSide, TradePair tradePair,
                                           OrderType orderType, double quantity, double price) {
 
         OrderBookHandler handler = getOrCreateBook(tradePair);
 
-        List<MatchInfo> matchInfos = handler.matchOrder(timestamp,
+        List<MatchInfo> matchInfos = handler.matchOrder(LocalDateTime.now()
+                        .atZone(ZoneId.systemDefault())
+                        .toInstant()
+                        .toEpochMilli(),
                 Order.builder()
                         .id(orderId)
                         .userId(userId)

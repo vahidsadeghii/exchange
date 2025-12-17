@@ -38,12 +38,7 @@ public class OrderServiceImpl implements OrderService {
                 .createdAt(LocalDateTime.now())
                 .build());
 
-        long timestamp = order.getCreatedAt()
-                .atZone(ZoneId.systemDefault())
-                .toInstant()
-                .toEpochMilli();
         matchingEngineClient.createOrderMatchingEngine(
-                timestamp,
                 new createOrderRequest(
                         order.getId(),
                         order.getUserId(),
