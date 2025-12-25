@@ -32,7 +32,7 @@ public class MatchEventServiceImpl implements MatchEventService {
 
         Order order = Order.builder()
                 .id(orderId)
-                .timestamp(System.currentTimeMillis())
+                .timestamp(System.nanoTime())
                 .userId(userId)
                 .orderSide(isBuyOrder ? TradeSide.BUY : TradeSide.SELL)
                 .orderType(orderType)
@@ -42,7 +42,7 @@ public class MatchEventServiceImpl implements MatchEventService {
                 .filled(0)
                 .build();
 
-        book.matchOrder(System.currentTimeMillis(), order);
+        book.matchOrder(System.nanoTime(), order);
 
         saveMatchEvent(MatchEvent.builder()
                 .id(order.getId())
