@@ -20,7 +20,7 @@ public class NewOrderController {
     private final OrderBookService orderBookService;
 
 
-    @PostMapping(value = "/api/${api.prefix.internal}/{timestamp}/match-info")
+    @PostMapping(value = "/api/${api.prefix.internal}/order")
     public void createOrder( @RequestBody NewOrderRequest request) {
         orderBookService.createNewOrder(request.orderId(),
                 request.userId(), request.tradeSide(),

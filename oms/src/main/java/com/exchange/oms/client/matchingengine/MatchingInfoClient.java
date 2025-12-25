@@ -26,7 +26,7 @@ public interface MatchingInfoClient {
     }
 
     @CircuitBreaker(name="oms-instance", fallbackMethod = "createOrderMatchingEngineFallBack")
-    @PostMapping(value = "/api/${api.prefix.internal}/match-info")
+    @PostMapping(value = "/api/${api.prefix.internal}/order")
     void createOrderMatchingEngine(@RequestBody createOrderRequest updateOrderRequest);
 
     default void createOrderMatchingEngineFallBack(@RequestBody createOrderRequest request, Throwable t) throws Throwable{
