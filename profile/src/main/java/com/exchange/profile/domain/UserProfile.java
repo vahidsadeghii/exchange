@@ -25,7 +25,6 @@ public class UserProfile {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    private Long userId;
     private String firstName;
     @NotNull
     private String lastName;

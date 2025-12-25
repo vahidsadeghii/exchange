@@ -1,6 +1,5 @@
 package com.exchange.me.service.impl;
 
-import com.exchange.me.domain.Order;
 import com.exchange.me.domain.TradePair;
 import com.exchange.me.exception.InvalidTradPairException;
 import com.exchange.me.exception.NotFoundOrderBookHandlerException;
