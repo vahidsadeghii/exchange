@@ -10,7 +10,6 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.exchange.oms.service.OrderService;
-import org.springframework.web.server.ServerWebExchange;
 
 @RestController
 @RequiredArgsConstructor
@@ -30,13 +29,14 @@ public class OrderController {
         Order order = orderService.createOrder(
                 onlineUser.getUserId(),
                 request.tradePair(),
+                request.tradeSide(),
                 request.orderType(),
-                request.quantity(),
-                request.price());
+                request.quantity(), request.price());
 
         return new CreateOrderResponse(
                 order.getId(),
                 order.getTradePair().name(),
+                order.getTradeSide().name(),
                 order.getOrderType().name(),
                 order.getStatus().name(),
                 order.getQuantity(),

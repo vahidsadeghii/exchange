@@ -1,13 +1,8 @@
 package com.exchange.me.controller.neworder;
 
 
-import com.exchange.me.domain.Order;
-import com.exchange.me.domain.OrderType;
-import com.exchange.me.domain.TradePair;
-import com.exchange.me.domain.TradeSide;
-import com.exchange.me.handler.OrderBookHandler;
-import com.exchange.me.service.EngineService;
-import com.netflix.spectator.impl.PatternExpr;
+import com.exchange.me.domain.*;
+import com.exchange.me.service.OrderBookService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -22,22 +17,14 @@ import java.time.ZoneId;
 @RequiredArgsConstructor
 @Slf4j
 public class NewOrderController {
-    private final OrderBookHandler orderBookHandler;
+    private final OrderBookService orderBookService;
 
 
-    @PostMapping(value = "/api/${api.prefix.internal}/{timestamp}/match-info")
-    public void createOrder(@RequestParam LocalDateTime timestamp, @RequestBody NewOrderRequest request) {
-        orderBookHandler.matchOrder(timestamp
-                .atZone(ZoneId.systemDefault())
-                .toInstant()
-                .toEpochMilli(), Order.builder()
-                .id(request.orderId())
-                .userId(request.userId())
-                .orderSide(request.tradeSide())
-                .orderType(request.orderType())
-                .tradePair(request.tradePair())
-                .quantity(request.quantity())
-                .price(request.price())
-                .build());
+    @PostMapping(value = "/api/${api.prefix.internal}/order")
+    public void createOrder( @RequestBody NewOrderRequest request) {
+        orderBookService.createNewOrder(request.orderId(),
+                request.userId(), request.tradeSide(),
+                request.tradePair(), request.orderType(),
+                request.quantity(), request.price());
     }
 }

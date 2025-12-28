@@ -17,8 +17,7 @@ public class MatchEventServiceImpl implements MatchEventService {
     private final KafkaTemplate<String, String> kafkaTemplateSendMessage;
 
     @Override
-    public MatchEvent saveMatchEvent(MatchEvent matchEvent) {
+    public void saveMatchEvent(MatchEvent matchEvent) {
         kafkaTemplateSendMessage.send(matchEvent.getTopic(), matchEvent.getStatus().name());
-        return null;
     }
 }
