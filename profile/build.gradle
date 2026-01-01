@@ -7,6 +7,9 @@ plugins {
 
 repositories {
     mavenCentral()
+    maven {
+        url "https://maven.keycloak.org"
+    }
 }
 
 ext {
@@ -20,67 +23,55 @@ dependencyManagement {
 }
 
 dependencies {
-    // Web starter: provides Spring MVC, REST controllers, and embedded Tomcat
     implementation 'org.springframework.boot:spring-boot-starter-web'
-
-    // JPA starter: integrates Spring Data JPA with Hibernate for ORM and database access
     implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
+    implementation 'org.springframework.boot:spring-boot-starter-security'
+    implementation 'org.springframework.boot:spring-boot-starter-aop'
+    implementation 'org.springframework.boot:spring-boot-starter-actuator'
 
-    // Lombok: reduces boilerplate code (getters, setters, builders, etc.)
+    // Micrometer
+    implementation 'io.micrometer:micrometer-registry-prometheus'
+
+    // Database
+    implementation 'org.postgresql:postgresql:42.7.3'
+    runtimeOnly 'com.h2database:h2'
+
+    // Flyway
+    implementation "org.flywaydb:flyway-core:10.20.0"
+    implementation "org.flywaydb:flyway-database-postgresql:10.20.0"
+
+    // Spring Cloud
+    implementation 'org.springframework.cloud:spring-cloud-starter-netflix-eureka-client'
+    implementation 'org.springframework.cloud:spring-cloud-starter-openfeign'
+    implementation 'org.springframework.cloud:spring-cloud-config-client'
+
+    // Resilience4j
+    implementation "io.github.resilience4j:resilience4j-spring-boot3:${resilience4jVersion}"
+
+    // Jackson
+    implementation 'com.fasterxml.jackson.datatype:jackson-datatype-jsr310'
+
+    // Kafka
+    implementation 'org.springframework.kafka:spring-kafka'
+
+    // OAuth2
+    implementation 'org.springframework.boot:spring-boot-starter-oauth2-resource-server'
+
+    // Keycloak
+    implementation 'org.keycloak:keycloak-spring-boot-starter:21.1.1'
+    implementation 'org.keycloak:keycloak-admin-client:26.0.6'
+
+    // Others
+    implementation 'com.opencsv:opencsv:5.9'
+    implementation libs.guava
+
+    // Lombok
     compileOnly 'org.projectlombok:lombok'
     annotationProcessor 'org.projectlombok:lombok'
 
-    // Micrometer Prometheus registry: exposes metrics for Prometheus monitoring
-    implementation 'io.micrometer:micrometer-registry-prometheus'
-
-    // PostgreSQL driver: enables connectivity to PostgreSQL database
-    implementation 'org.postgresql:postgresql:42.7.3'
-
-    // Core Security: provides authentication, authorization, and security filters
-    implementation 'org.springframework.boot:spring-boot-starter-security'
-
-    // AOP support: enables aspect-oriented programming (logging, auditing, custom security checks)
-    implementation 'org.springframework.boot:spring-boot-starter-aop'
-
-    // Actuator: exposes monitoring and management endpoints (can be secured with Spring Security)
-    implementation 'org.springframework.boot:spring-boot-starter-actuator'
-
-    // Flyway core: database migration tool for versioned schema changes
-    implementation "org.flywaydb:flyway-core:10.20.0"
-    // Flyway PostgreSQL support: adds PostgreSQL-specific migration capabilities
-    implementation "org.flywaydb:flyway-database-postgresql:10.20.0"
-
-    // Eureka client: service discovery for microservices (Netflix OSS)
-    implementation 'org.springframework.cloud:spring-cloud-starter-netflix-eureka-client'
-
-    // OpenFeign: declarative REST client for inter-service communication
-    implementation 'org.springframework.cloud:spring-cloud-starter-openfeign'
-
-    // Config client: fetches configuration from Spring Cloud Config Server
-    implementation 'org.springframework.cloud:spring-cloud-config-client'
-
-    // H2 database: lightweight in-memory database for testing and development
-    runtimeOnly 'com.h2database:h2'
-
-    // Resilience4j: fault tolerance (circuit breakers, retries, rate limiters) for Spring Boot 3
-    implementation "io.github.resilience4j:resilience4j-spring-boot3:${resilience4jVersion}"
-
-    // Jackson JSR310: support for Java 8+ date/time types in JSON serialization
-    implementation 'com.fasterxml.jackson.datatype:jackson-datatype-jsr310'
-
-    // Kafka: Spring integration for Apache Kafka messaging
-    implementation 'org.springframework.kafka:spring-kafka'
-
-    implementation("com.opencsv:opencsv:5.9")
-
-    // JUnit Jupiter: unit testing framework (JUnit 5)
+    // Tests
     testImplementation libs.junit.jupiter
-
-    // JUnit platform launcher: runtime support for JUnit tests
     testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
-
-    // Guava
-    implementation libs.guava
 }
 
 java {

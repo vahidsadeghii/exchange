@@ -1,12 +1,7 @@
 package com.exchange.profile.domain;
 
-
-
 import com.opencsv.bean.CsvDate;
-import jakarta.persistence.Entity;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
+import jakarta.persistence.*;
 import lombok.*;
 import org.antlr.v4.runtime.misc.NotNull;
 
@@ -21,31 +16,39 @@ import java.time.LocalDateTime;
 @NoArgsConstructor
 @AllArgsConstructor
 public class UserProfile {
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
     private String firstName;
-    @NotNull
+
     private String lastName;
+
     private String phoneNumber;
+
     private String email;
+
+    @Enumerated(EnumType.STRING)
     private GenderType genderType;
 
-    @NotNull
     private String address;
+
     private String avatarId;
+
     private String avatarLink;
+
     private String fileName;
 
-    @NotNull
-    @CsvDate
     private LocalDate birthday;
 
-    //@CreatedDate
-    @CsvDate
+    private String password;
+
+    private String username;
+
+    private String keycloakUserId;
+
     private LocalDateTime createDate;
-    //@LastModifiedDate
-    @CsvDate
+
     private LocalDateTime updateDate;
 }

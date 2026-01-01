@@ -1,8 +1,7 @@
 package com.exchange.profile.domain;
 
 public enum UserType {
-    CUSTOMER("CUSTOMER"),
-    SERVICE_PROVIDER("SERVICE_PROVIDER"),
+    USER("USER"),
     ADMIN("ADMIN");
 
     private String enumValue;

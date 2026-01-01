@@ -1,5 +1,5 @@
 server:
-  port: 8091
+  port: 8088
   shutdown: graceful
   servlet:
     context-path: /profile
@@ -47,12 +47,10 @@ management:
       enabled: true
 
 
-base-url:
-  authentication: http://localhost:8090/authentication
-  uploadFile: http://localhost:8095/filemanager
+keycloak:
+  realm: exchange
+  auth-server-url: http://localhost:8080
+  client-id: exchange-client
+  client-secret: jetbg4s0J3OgAlZss0BtAZlwTv6QYxxT
 
-client:
-  url:
-    authentication: http://authentication/authentication/_api/v1/user-info
-    uploadFile: http://filemanager/filemanager/_api/v1/download/file
 
