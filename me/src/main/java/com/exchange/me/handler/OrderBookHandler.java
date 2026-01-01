@@ -1,5 +1,8 @@
 package com.exchange.me.handler;
 
+import com.exchange.me.domain.MatchInfo;
+import com.exchange.me.domain.Order;
+import com.exchange.me.domain.TradeSide;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -7,15 +10,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
-
-import com.exchange.me.domain.TradePair;
-import com.exchange.me.domain.TradeSide;
 import lombok.RequiredArgsConstructor;
-
-
-import com.exchange.me.domain.MatchInfo;
-import com.exchange.me.domain.Order;
-
 
 @RequiredArgsConstructor
 public class OrderBookHandler {
