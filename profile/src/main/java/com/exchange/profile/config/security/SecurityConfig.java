@@ -19,7 +19,7 @@ public class SecurityConfig {
         http.csrf(AbstractHttpConfigurer::disable)
                 .authorizeHttpRequests(
                         auth ->
-                                auth.requestMatchers("/publix/**")
+                                auth.requestMatchers("/public/**")
                                         .permitAll()
                                         .requestMatchers("/open/**")
                                         .permitAll()

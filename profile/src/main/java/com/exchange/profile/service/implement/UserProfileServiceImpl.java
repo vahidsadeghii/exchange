@@ -7,6 +7,7 @@ import com.exchange.profile.exception.UserCanNotFoundException;
 import com.exchange.profile.repository.UserProfileRepository;
 import com.exchange.profile.service.UserProfileService;
 import com.exchange.profile.util.PasswordEncoderUtil;
+import jakarta.ws.rs.NotFoundException;
 import jakarta.ws.rs.core.Response;
 import lombok.RequiredArgsConstructor;
 import org.keycloak.admin.client.CreatedResponseUtil;
@@ -69,17 +70,19 @@ public class UserProfileServiceImpl implements UserProfileService {
         attributes.put("source", List.of("app-registration"));
         kcUser.setAttributes(attributes);
 
-        Response response = keycloakAdmin.realm(targetRealm)
-                .users()
-                .create(kcUser);
-
-        if (response.getStatus() != 201) {
-            throw new RuntimeException("Failed to create user in Keycloak: " + response.getStatusInfo());
-        }
-
-        String keycloakUserId = CreatedResponseUtil.getCreatedId(response);
+        String keycloakUserId = null;
 
         try {
+            Response response = keycloakAdmin.realm(targetRealm)
+                    .users()
+                    .create(kcUser);
+
+            if (response.getStatus() != 201) {
+                throw new RuntimeException("Failed to create user in Keycloak: " + response.getStatusInfo());
+            }
+
+            keycloakUserId = CreatedResponseUtil.getCreatedId(response);
+
             CredentialRepresentation passwordCred = new CredentialRepresentation();
             passwordCred.setType(CredentialRepresentation.PASSWORD);
             passwordCred.setValue(password);
@@ -91,22 +94,43 @@ public class UserProfileServiceImpl implements UserProfileService {
                     .resetPassword(passwordCred);
 
             UserResource userResource = keycloakAdmin.realm(targetRealm).users().get(keycloakUserId);
+
+            ensureRealmRolesExist(targetRealm, Arrays.stream(UserAuthority.values())
+                    .map(UserAuthority::name)
+                    .toList());
+
             List<RoleRepresentation> rolesToAssign = new ArrayList<>();
             for (UserAuthority authority : UserAuthority.values()) {
-                RoleRepresentation role = keycloakAdmin.realm(targetRealm)
-                        .roles()
-                        .get(authority.toString())
-                        .toRepresentation();
-                rolesToAssign.add(role);
+                try {
+                    RoleRepresentation role = keycloakAdmin.realm(targetRealm)
+                            .roles()
+                            .get(authority.name())
+                            .toRepresentation();
+                    rolesToAssign.add(role);
+                } catch (NotFoundException ex) {
+                    log.warn("Role {} not found in Keycloak, skipping", authority);
+                }
             }
-            userResource.roles().realmLevel().add(rolesToAssign);
+            if (!rolesToAssign.isEmpty()) {
+                userResource.roles().realmLevel().add(rolesToAssign);
+                log.info("Assigned {} roles to Keycloak user {}", rolesToAssign.size(), keycloakUserId);
+            }
             userProfile.setKeycloakUserId(keycloakUserId);
+            userProfileRepository.save(userProfile);
 
             return keycloakTokenClient.getToken(username, password);
 
         } catch (Exception e) {
-            keycloakAdmin.realm(targetRealm).users().get(keycloakUserId).remove();
-            throw new RuntimeException("Failed to save user locally or assign roles; Keycloak user removed", e);
+            log.error("Error creating user in Keycloak", e);
+            if (keycloakUserId != null) {
+                try {
+                    keycloakAdmin.realm(targetRealm).users().get(keycloakUserId).remove();
+                    log.info("Keycloak user {} removed due to failure", keycloakUserId);
+                } catch (Exception ex) {
+                    log.error("Failed to remove Keycloak user {}", keycloakUserId, ex);
+                }
+            }
+            throw new RuntimeException("Failed to register user", e);
         }
     }
 
@@ -146,5 +170,18 @@ public class UserProfileServiceImpl implements UserProfileService {
     @Override
     public List<UserProfile> findAllUsers() {
         return List.of();
+    }
+
+    private void ensureRealmRolesExist(String realm, List<String> roles) {
+        for (String roleName : roles) {
+            try {
+                keycloakAdmin.realm(realm).roles().get(roleName).toRepresentation();
+            } catch (NotFoundException e) {
+                RoleRepresentation newRole = new RoleRepresentation();
+                newRole.setName(roleName);
+                keycloakAdmin.realm(realm).roles().create(newRole);
+                log.info("Created missing Keycloak realm role: {}", roleName);
+            }
+        }
     }
 }
