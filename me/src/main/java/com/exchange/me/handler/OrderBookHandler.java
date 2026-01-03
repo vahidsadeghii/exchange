@@ -4,34 +4,41 @@ import com.exchange.me.domain.MatchInfo;
 import com.exchange.me.domain.Order;
 import com.exchange.me.domain.TradePair;
 import com.exchange.me.domain.TradeSide;
+
+import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Deque;
 import java.util.HashMap;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.TreeMap;
+
+import lombok.Getter;
 import lombok.RequiredArgsConstructor;
+import lombok.Setter;
 
 @RequiredArgsConstructor
+@Getter
+@Setter
 public class OrderBookHandler {
     private TradePair tradePair;
-    private final TreeMap<Long, LinkedList<Order>> bids; // Descending for BUY side
-    private final TreeMap<Long, LinkedList<Order>> asks; // Ascending for SELL side
+    private final TreeMap<Long, Deque<Order>> bids; // Descending for BUY side
+    private final TreeMap<Long, Deque<Order>> asks; // Ascending for SELL side
     private final Map<Long, OrderLocation> orderIndex; // Fast lookup by order ID
     private long updateTime;
 
     // Helper class to track order location for fast cancellation
-    private static class OrderLocation {
-        final double price;
-        final TradeSide side;
-        final Order order;
+    private record OrderLocation(double price, TradeSide side, Order order) {
+    }
 
-        OrderLocation(double price, TradeSide side, Order order) {
-            this.price = price;
-            this.side = side;
-            this.order = order;
-        }
+    // Helper classes for market depth
+    public record MarketDepth(List<PriceLevel> bids, List<PriceLevel> asks) {
+    }
+
+    // Helper classes for price level
+    public record PriceLevel(long price, double volume, int orderCount) {
     }
 
     public OrderBookHandler(TradePair tradePair) {
@@ -63,7 +70,7 @@ public class OrderBookHandler {
         // Only process the best ask levels until order is filled
         while (!asks.isEmpty() && buyOrder.getRemainingQuantity() > 0) {
             // Get the best (lowest) ask price level
-            Map.Entry<Long, LinkedList<Order>> bestAsk = asks.firstEntry();
+            Map.Entry<Long, Deque<Order>> bestAsk = asks.firstEntry();
 
             long askPrice = bestAsk.getKey();
 
@@ -71,7 +78,7 @@ public class OrderBookHandler {
                 break; // No more matching possible
             }
 
-            LinkedList<Order> askList = bestAsk.getValue();
+            Deque<Order> askList = bestAsk.getValue();
 
             while (!askList.isEmpty() && buyOrder.getRemainingQuantity() > 0) {
                 Order askOrder = askList.peek();
@@ -126,9 +133,9 @@ public class OrderBookHandler {
         // Only process the best bid levels until order is filled
         while (!bids.isEmpty() && sellOrder.getRemainingQuantity() > 0) {
             // Get the best (highest) bid price level
-            Map.Entry<Long, LinkedList<Order>> bestBid = bids.firstEntry();
+            Map.Entry<Long, Deque<Order>> bestBid = bids.firstEntry();
             long bidPrice = bestBid.getKey();
-            LinkedList<Order> bidList = bestBid.getValue();
+            Deque<Order> bidList = bestBid.getValue();
 
             while (!bidList.isEmpty() && sellOrder.getRemainingQuantity() > 0) {
                 Order bidOrder = bidList.peek();
@@ -178,9 +185,9 @@ public class OrderBookHandler {
      * Add order to the book (for unfilled orders after matching)
      */
     private void addOrderToBook(Order order) {
-        TreeMap<Long, LinkedList<Order>> book = order.getTradeSide() == TradeSide.BUY ? bids : asks;
+        TreeMap<Long, Deque<Order>> book = order.getTradeSide() == TradeSide.BUY ? bids : asks;
         long priceKey = (long) order.getPrice();
-        LinkedList<Order> queue = book.computeIfAbsent(priceKey, k -> new LinkedList<>());
+        Deque<Order> queue = book.computeIfAbsent(priceKey, k -> new ArrayDeque<>());
         queue.addLast(order);
         orderIndex.put(order.getId(), new OrderLocation(order.getPrice(), order.getTradeSide(), order));
     }
@@ -193,9 +200,9 @@ public class OrderBookHandler {
         OrderLocation location = orderIndex.remove(order.getId());
 
         if (location != null) {
-            TreeMap<Long, LinkedList<Order>> book = location.side == TradeSide.BUY ? bids : asks;
+            TreeMap<Long, Deque<Order>> book = location.side == TradeSide.BUY ? bids : asks;
             long priceKey = (long) location.price;
-            LinkedList<Order> queue = book.get(priceKey);
+            Deque<Order> queue = book.get(priceKey);
 
             if (queue != null) {
                 queue.remove(location.order); // O(n) but on LinkedList it's faster than Queue
@@ -209,9 +216,9 @@ public class OrderBookHandler {
     /**
      * Get order by ID with O(1) lookup
      */
-    public Order getOrder(long orderId) {
+    public Optional<Order> getOrder(long orderId) {
         OrderLocation location = orderIndex.get(orderId);
-        return location != null ? location.order : null;
+        return Optional.ofNullable(location != null ? location.order : null);
     }
 
     /**
@@ -250,81 +257,31 @@ public class OrderBookHandler {
         orderIndex.clear();
     }
 
-    public long getUpdateTime() {
-        return updateTime;
-    }
-
     /**
      * Get market depth snapshot
      */
     public MarketDepth getMarketDepth(int levels) {
-        List<PriceLevel> bidLevels = new ArrayList<>();
-        List<PriceLevel> askLevels = new ArrayList<>();
-
-        int count = 0;
-        for (Map.Entry<Long, LinkedList<Order>> entry : bids.entrySet()) {
-            if (count >= levels) break;
-            double volume = entry.getValue().stream()
-                    .mapToDouble(Order::getRemainingQuantity)
-                    .sum();
-            bidLevels.add(new PriceLevel(entry.getKey(), volume, entry.getValue().size()));
-            count++;
-        }
-
-        count = 0;
-        for (Map.Entry<Long, LinkedList<Order>> entry : asks.entrySet()) {
-            if (count >= levels) break;
-            double volume = entry.getValue().stream()
-                    .mapToDouble(Order::getRemainingQuantity)
-                    .sum();
-            askLevels.add(new PriceLevel(entry.getKey(), volume, entry.getValue().size()));
-            count++;
-        }
+        List<PriceLevel> bidLevels;
+        List<PriceLevel> askLevels;
+        bidLevels = queueDepth(levels, bids);
+        askLevels = queueDepth(levels, asks);
 
         return new MarketDepth(bidLevels, askLevels);
     }
 
-    // Helper classes for market depth
-    public static class MarketDepth {
-        private final List<PriceLevel> bids;
-        private final List<PriceLevel> asks;
+    private List<PriceLevel> queueDepth(int levels, TreeMap<Long, Deque<Order>> orders) {
+        List<PriceLevel> levelList = new ArrayList<>();
+        int count = 0;
 
-        public MarketDepth(List<PriceLevel> bids, List<PriceLevel> asks) {
-            this.bids = bids;
-            this.asks = asks;
+        for (Map.Entry<Long, Deque<Order>> entry : orders.entrySet()) {
+            if (count >= levels) break;
+            double volume = entry.getValue().stream()
+                    .mapToDouble(Order::getRemainingQuantity)
+                    .sum();
+            levelList.add(new PriceLevel(entry.getKey(), volume, entry.getValue().size()));
+            count++;
         }
 
-        public List<PriceLevel> getBids() {
-            return bids;
-        }
-
-        public List<PriceLevel> getAsks() {
-            return asks;
-        }
-    }
-
-    public static class PriceLevel {
-        private final long price;
-        private final double volume;
-        private final int orderCount;
-
-        public PriceLevel(long price, double volume, int orderCount) {
-            this.price = price;
-            this.volume = volume;
-            this.orderCount = orderCount;
-        }
-
-
-        public long getPrice() {
-            return price;
-        }
-
-        public double getVolume() {
-            return volume;
-        }
-
-        public int getOrderCount() {
-            return orderCount;
-        }
+        return levelList;
     }
 }

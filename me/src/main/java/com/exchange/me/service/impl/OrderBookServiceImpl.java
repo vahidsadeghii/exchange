@@ -71,7 +71,7 @@ public class OrderBookServiceImpl implements OrderBookService {
             throw new NotFoundOrderBookHandlerException();
         }
 
-        return handler.getOrder(orderId);
+        return handler.getOrder(orderId).orElseThrow();
     }
 
     @Override
