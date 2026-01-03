@@ -187,7 +187,7 @@ public class OrderBookHandler {
     private void addOrderToBook(Order order) {
         TreeMap<Long, Deque<Order>> book = order.getTradeSide() == TradeSide.BUY ? bids : asks;
         long priceKey = (long) order.getPrice();
-        Deque<Order> queue = book.computeIfAbsent(priceKey, k -> new ArrayDeque<>());
+        Deque<Order> queue = book.computeIfAbsent(priceKey, k -> new ArrayDeque<>(100));
         queue.addLast(order);
         orderIndex.put(order.getId(), new OrderLocation(order.getPrice(), order.getTradeSide(), order));
     }
