@@ -34,10 +34,11 @@ The Matching Engine is the core trading component of the exchange platform. It m
 The matching engine is designed for low-latency, high-throughput order processing to support active trading markets.
 
 ### Last JMH Benchmark Result
+```
 Benchmark                                           Mode  Cnt  Score   Error   Units
 OrderBookHandlerBenchmark.benchmarkMatchBuyOrder   thrpt    2  5.057          ops/us
 OrderBookHandlerBenchmark.benchmarkMatchSellOrder  thrpt    2  5.289          ops/us
-
+```
 
 ## Configuration
 
