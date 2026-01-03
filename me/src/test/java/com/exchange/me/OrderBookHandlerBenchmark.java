@@ -5,7 +5,6 @@ import com.exchange.me.domain.OrderType;
 import com.exchange.me.domain.TradePair;
 import com.exchange.me.domain.TradeSide;
 import com.exchange.me.handler.OrderBookHandler;
-import org.junit.jupiter.api.Assertions;
 import org.openjdk.jmh.annotations.Benchmark;
 import org.openjdk.jmh.annotations.BenchmarkMode;
 import org.openjdk.jmh.annotations.Fork;
