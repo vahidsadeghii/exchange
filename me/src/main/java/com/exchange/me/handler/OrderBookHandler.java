@@ -30,7 +30,7 @@ public class OrderBookHandler {
     private long updateTime;
 
     // Helper class to track order location for fast cancellation
-    private record OrderLocation(double price, TradeSide side, Order order) {
+    public record OrderLocation(double price, TradeSide side, Order order) {
     }
 
     // Helper classes for market depth

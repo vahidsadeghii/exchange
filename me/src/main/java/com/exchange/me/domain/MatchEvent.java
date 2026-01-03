@@ -15,7 +15,7 @@ public class MatchEvent {
     private String topic;
     private String eventData;
     private MatchEventStatus status;
-    private Boolean processed = false;
+    private Boolean processed;
     private LocalDateTime processedAt;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
