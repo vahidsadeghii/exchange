@@ -71,10 +71,10 @@ public class OrderBookHandler {
                 break; // No more matching possible
             }
 
-            LinkedList<Order> askQueue = bestAsk.getValue();
+            LinkedList<Order> askList = bestAsk.getValue();
 
-            while (!askQueue.isEmpty() && buyOrder.getRemainingQuantity() > 0) {
-                Order askOrder = askQueue.peek();
+            while (!askList.isEmpty() && buyOrder.getRemainingQuantity() > 0) {
+                Order askOrder = askList.peek();
                 if (askOrder == null)
                     break;
 
@@ -99,13 +99,13 @@ public class OrderBookHandler {
                                 askOrder.getRemainingQuantity()));
 
                 if (askOrder.getRemainingQuantity() == 0) {
-                    askQueue.poll();
+                    askList.poll();
                     orderIndex.remove(askOrder.getId()); // Remove from index
                 }
             }
 
             // Remove empty price levels
-            if (askQueue.isEmpty()) {
+            if (askList.isEmpty()) {
                 asks.pollFirstEntry();
             }
         }
@@ -128,10 +128,10 @@ public class OrderBookHandler {
             // Get the best (highest) bid price level
             Map.Entry<Long, LinkedList<Order>> bestBid = bids.firstEntry();
             long bidPrice = bestBid.getKey();
-            LinkedList<Order> bidQueue = bestBid.getValue();
+            LinkedList<Order> bidList = bestBid.getValue();
 
-            while (!bidQueue.isEmpty() && sellOrder.getRemainingQuantity() > 0) {
-                Order bidOrder = bidQueue.peek();
+            while (!bidList.isEmpty() && sellOrder.getRemainingQuantity() > 0) {
+                Order bidOrder = bidList.peek();
                 if (bidOrder == null)
                     break;
 
@@ -155,13 +155,13 @@ public class OrderBookHandler {
                                 bidOrder.getRemainingQuantity()));
 
                 if (bidOrder.getRemainingQuantity() == 0) {
-                    bidQueue.poll();
+                    bidList.poll();
                     orderIndex.remove(bidOrder.getId()); // Remove from index
                 }
             }
 
             // Remove empty price levels
-            if (bidQueue.isEmpty()) {
+            if (bidList.isEmpty()) {
                 bids.pollFirstEntry();
             }
         }

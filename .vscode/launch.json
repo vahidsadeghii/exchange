@@ -17,6 +17,17 @@
             "args": "",
             "envFile": "${workspaceFolder}/.env",
             "vmArgs": "-Dspring.profiles.active=dev"
+        },
+        {
+            "type": "java",
+            "name": "Spring Boot-Profile",
+            "request": "launch",
+            "cwd": "${workspaceFolder}",
+            "mainClass": "com.exchange.profile.ProfileApp",
+            "projectName": "profile",
+            "args": "",
+            "envFile": "${workspaceFolder}/.env",
+            "vmArgs": "-Dspring.profiles.active=dev"
         }
     ]
 }
