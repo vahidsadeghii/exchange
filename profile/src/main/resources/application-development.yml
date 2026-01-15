@@ -21,7 +21,6 @@ spring:
           jwk-set-uri: http://localhost:8080/realms/admin-exchange/protocol/openid-connect/certs
 
 
-
 minio:
   endpoint: http://localhost:9000
   secret-Key: gOUzGcRszSocFWcgpOCWbauBtnT3IYfPvjoa26FM
