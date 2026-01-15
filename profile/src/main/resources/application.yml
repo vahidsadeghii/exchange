@@ -54,3 +54,10 @@ keycloak:
   client-secret: 3j8ultDup3u5v4nxczkm5lco65NL0aXX
 
 
+
+logging:
+  level:
+    org.springframework.security: DEBUG
+    org.springframework.security.oauth2: DEBUG
+
+
