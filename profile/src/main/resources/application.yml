@@ -46,6 +46,12 @@ management:
     prometheus:
       enabled: true
 
+custom-config:
+  kafka:
+    sendmessage-output-message:
+      topic: send-message
+    emailverification-output-message:
+      topic: email-verification-topic
 
 keycloak:
   realm: admin-exchange
@@ -61,3 +67,28 @@ logging:
     org.springframework.security.oauth2: DEBUG
 
 
+resilience4j:
+  circuitbreaker:
+    configs:
+      default:
+        sliding-window-type: COUNT_BASED
+        failure-rate-threshold: 20
+        minimum-number-of-calls: 2
+        sliding-window-size: 5
+        wait-duration-in-open-state: 1000
+        maxRetryAttempts: 4
+        waitDuration: 1000
+        ignoreExceptions: com.exchange.profile.config.feign.FeignException
+    instances:
+      profile-instance:
+        baseConfig: default
+
+  retry:
+    configs:
+      default:
+        maxRetryAttempts: 4
+        waitDuration: 1000
+        ignoreExceptions: com.exchange.profile.config.feign.FeignException
+    instances:
+      profile-instance:
+        base-config: default

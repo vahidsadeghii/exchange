@@ -11,7 +11,7 @@ import java.util.Optional;
 
 public interface UserProfileService {
 
-    JwtToken registerUserProfile(String username, String email, String password);
+    JwtToken createUser(String username, String email, String password);
 
     UserProfile saveUserProfile(long onlineUserId,
                                       String firstName, String lastName, String phoneNumber,
@@ -23,4 +23,16 @@ public interface UserProfileService {
     Optional<UserProfile> findUserById(long userId);
 
     List<UserProfile> findAllUsers();
+
+    /**
+     * Fins user by email
+     *
+     * @param email the user email
+     * @return user or null
+     */
+    Optional<UserProfile> findUserByEmail(String email);
+
+
+
+
 }

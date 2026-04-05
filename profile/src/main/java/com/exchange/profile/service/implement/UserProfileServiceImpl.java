@@ -24,7 +24,6 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.LocalDate;
 import java.util.*;
 
-import static org.springframework.data.repository.util.ClassUtils.ifPresent;
 
 
 @Service
@@ -39,14 +38,17 @@ public class UserProfileServiceImpl implements UserProfileService {
     @Value("${keycloak.realm}")
     private String targetRealm;
 
+    @Value("${custom-config.kafka.emailverification-output-message.topic}")
+    private String emailVerificationTopic;
+
 
     @Override
-    public JwtToken registerUserProfile(String username, String email, String password) {
-        Optional<UserProfile> profile = userProfileRepository.findByEmail(email);
+    public JwtToken createUser(String username, String email, String password) {
+        Optional<UserProfile> profile =  findUserByEmail(email);
         if(profile.isPresent()){
             throw new UserAlreadyExistException();
         }
-
+        //TODO: delete password
         UserProfile userProfile = userProfileRepository.save(UserProfile.builder()
                 .email(email)
                 .password(PasswordEncoderUtil.encodePassword(password))
@@ -58,13 +60,8 @@ public class UserProfileServiceImpl implements UserProfileService {
         kcUser.setEmail(email);
         kcUser.setEnabled(true);
 
+        //TODO: delete attributes
         Map<String, List<String>> attributes = new HashMap<>();
-        attributes.put("authorities", List.of(
-                UserAuthority.DELETE_PROFILE.name(),
-                UserAuthority.GET_PROFILE.name(),
-                UserAuthority.UPDATE_PROFILE.name(),
-                UserAuthority.SET_PROFILE.name()
-                ));
         attributes.put("userId", List.of(userProfile.getId().toString()));
         attributes.put("userType", List.of(UserType.USER.name()));
         attributes.put("source", List.of("app-registration"));
@@ -170,6 +167,11 @@ public class UserProfileServiceImpl implements UserProfileService {
     @Override
     public List<UserProfile> findAllUsers() {
         return List.of();
+    }
+
+    @Override
+    public Optional<UserProfile> findUserByEmail(String email) {
+        return userProfileRepository.findByEmail(email);
     }
 
     private void ensureRealmRolesExist(String realm, List<String> roles) {

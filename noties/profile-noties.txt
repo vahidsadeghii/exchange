@@ -1,0 +1,25 @@
+
+######User register steps
+1. user submits email
+  - Save the email in the application database
+  - Generate and send a verification email with a secure Tan number
+
+2. email verification
+  - User submits the TAN to the Backend
+  - Backend checks:
+      Email exists
+      Tan is not expired
+      user is not already verified
+3. User sets password
+  - After verification, user is prompted to create a password.
+  - Create the user in Keycloak using the verified email as the username.
+  - Set the password in Keycloak:
+        CredentialRepresentation passwordCred = new CredentialRepresentation();
+        passwordCred.setTemporary(false);
+        passwordCred.setType(CredentialRepresentation.PASSWORD);
+        passwordCred.setValue(password);
+4. Login
+  Create a backend API endpoint /login that:
+  Accepts username (email) + password.
+  Calls Keycloak’s token endpoint to authenticate.
+  Returns the Keycloak access token / refresh token to the client.

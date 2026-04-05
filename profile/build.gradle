@@ -1,6 +1,6 @@
 plugins {
     id 'application'
-    id 'org.springframework.boot' version '3.2.0'
+    id 'org.springframework.boot' version '3.3.4'
     id 'io.spring.dependency-management' version '1.1.4'
     id 'org.flywaydb.flyway' version '10.20.0'
 }
@@ -47,6 +47,13 @@ dependencies {
 
     // Resilience4j
     implementation "io.github.resilience4j:resilience4j-spring-boot3:${resilience4jVersion}"
+
+    // Eureka client: service discovery for microservices (Netflix OSS)
+    implementation 'org.springframework.cloud:spring-cloud-starter-netflix-eureka-client'
+
+    // OpenFeign: declarative REST client for inter-service communication
+    implementation 'org.springframework.cloud:spring-cloud-starter-openfeign'
+
 
     // Jackson
     implementation 'com.fasterxml.jackson.datatype:jackson-datatype-jsr310'

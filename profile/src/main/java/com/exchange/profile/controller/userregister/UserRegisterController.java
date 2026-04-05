@@ -16,7 +16,7 @@ public class UserRegisterController {
 
     @PostMapping("/open/register")
     public TokenResponse register(@RequestBody RegisterRequest request) {
-        JwtToken token = userProfileService.registerUserProfile(
+        JwtToken token = userProfileService.createUser(
                 request.username(),
                 request.email(),
                 request.password()
