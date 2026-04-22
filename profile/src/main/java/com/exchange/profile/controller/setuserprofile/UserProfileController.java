@@ -18,7 +18,6 @@ public class UserProfileController {
     private final UserProfileService userProfileService;
     //private final OnlineUser onlineUser;
 
-
     @PostMapping(value="/user")
     public void setUserProfile(@RequestBody UserProfileRequest request){
         //onlineUser.getUserId()

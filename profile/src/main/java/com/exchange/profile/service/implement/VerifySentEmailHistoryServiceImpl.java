@@ -54,28 +54,28 @@ public class VerifySentEmailHistoryServiceImpl implements VerifySentEmailHistory
 
         VerifySentEmailHistory emailHistory = saveEmailHistory(verificationCode, email, null);
         //TODO: create other service for all Message from this service to email service that called EventModule
-        try{
-            authenticationEventService.save(emailVerificationTopic, objectMapper.writeValueAsString(
-                    new VerifyEmailSender(
-                            email, verificationCode, LocalDateTime.now().plusHours(expiredDate).toString())));
-        } catch (JsonProcessingException e) {
-            throw new RuntimeException(e);
-        }
+//        try{
+//            authenticationEventService.save(emailVerificationTopic, objectMapper.writeValueAsString(
+//                    new VerifyEmailSender(
+//                            email, verificationCode, LocalDateTime.now().plusHours(expiredDate).toString())));
+//        } catch (JsonProcessingException e) {
+//            throw new RuntimeException(e);
+//        }
 
         return emailHistory;
-        return null;
+       // return null;
     }
 
     private VerifySentEmailHistory saveEmailHistory(String verificationCode, String email, String onlineUserId) {
         return  verifySentEmailHistoryRepository.save(VerifySentEmailHistory.builder()
-                .email(email)
+                //.email(email)
                 .expiredDate(LocalDateTime.now().plusHours(expiredDate))
                 .verificationCode(verificationCode)
-                .isUsed(false)
+               // .isUsed(false)
                 .userId(onlineUserId)
                 .status(VerifyEmailStatus.ENABLE)
                 .createDate(LocalDateTime.now())
-                .date(LocalDate.now())
+               // .date(LocalDate.now())
                 .build());
     }
 

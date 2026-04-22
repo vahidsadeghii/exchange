@@ -1,22 +1,22 @@
 plugins {
-    id 'application'
+    id 'java'
     id 'org.springframework.boot' version '3.2.0'
     id 'io.spring.dependency-management' version '1.1.4'
 }
+
+group = 'com.exchange'
+version = '1.0.0'
 
 repositories {
     mavenCentral()
 }
 
 dependencies {
-    // Use JUnit Jupiter for testing.
+    implementation 'org.springframework.boot:spring-boot-starter-web'
+
     testImplementation libs.junit.jupiter
     testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
 
-    // Spring Boot dependencies
-    implementation 'org.springframework.boot:spring-boot-starter-web'
-    
-    // Guava
     implementation libs.guava
 }
 
@@ -24,10 +24,6 @@ java {
     toolchain {
         languageVersion = JavaLanguageVersion.of(21)
     }
-}
-
-application {
-    mainClass = 'com.exchange.ce.CryptoExchangeApp'
 }
 
 tasks.named('test') {
