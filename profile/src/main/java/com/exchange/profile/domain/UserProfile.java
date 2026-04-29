@@ -46,6 +46,9 @@ public class UserProfile {
 
     private String username;
 
+    @Enumerated(EnumType.STRING)
+    private UserStatus userStatus;
+
     private String keycloakUserId;
 
     private LocalDateTime createDate;

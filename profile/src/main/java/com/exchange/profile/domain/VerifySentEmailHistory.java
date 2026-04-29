@@ -24,6 +24,7 @@ public class VerifySentEmailHistory {
     @GeneratedValue
     private String id;
     private String userId;
+    private String email;
     private String verificationCode;
     private LocalDateTime expiredDate;
     private int tryCount;

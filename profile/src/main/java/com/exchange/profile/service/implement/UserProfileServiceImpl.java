@@ -174,6 +174,22 @@ public class UserProfileServiceImpl implements UserProfileService {
         return userProfileRepository.findByEmail(email);
     }
 
+    @Override
+    public JwtToken userEmailVerificationToken(String email) {
+      findUserByEmail(email).ifPresent(userProfile -> {
+          log.error("A user with the provided details already exists with this email:  {}", email);
+          throw new UserAlreadyExistException();
+      });
+
+
+        return null;
+    }
+
+    @Override
+    public JwtToken userPasswordResetToken(String email) {
+        return null;
+    }
+
     private void ensureRealmRolesExist(String realm, List<String> roles) {
         for (String roleName : roles) {
             try {

@@ -4,6 +4,11 @@ spring:
     password: secretpassuserprofile
     url: jdbc:postgresql://localhost:5432/exchange_user_profile
     driver-class-name: org.postgresql.Driver
+  jpa:
+    show-sql: true
+  h2:
+    console:
+      enabled: true
   cloud:
     config:
       enabled: false
@@ -29,3 +34,8 @@ minio:
   file:
     url:
       prefix: http://127.0.0.1:9000
+
+
+verify:
+  send-email:
+    expired-date: 2

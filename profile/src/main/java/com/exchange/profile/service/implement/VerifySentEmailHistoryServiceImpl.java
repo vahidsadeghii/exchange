@@ -1,6 +1,5 @@
 package com.exchange.profile.service.implement;
 
-import com.exchange.profile.domain.VerifyEmailSender;
 import com.exchange.profile.domain.VerifyEmailStatus;
 import com.exchange.profile.domain.VerifySentEmailHistory;
 import com.exchange.profile.exception.CanNotSendMoreEmailException;
@@ -10,7 +9,6 @@ import com.exchange.profile.service.MessagingService;
 import com.exchange.profile.service.UserProfileService;
 import com.exchange.profile.service.VerifySentEmailHistoryService;
 import com.exchange.profile.util.RandomUtil;
-import com.fasterxml.jackson.core.JsonProcessingException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -20,6 +18,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.sql.Date;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.util.List;
 
 
@@ -44,8 +43,15 @@ public class VerifySentEmailHistoryServiceImpl implements VerifySentEmailHistory
         userProfileService.findUserByEmail(email).ifPresent(p -> {
             throw new UserAlreadyExistException();
         });
-        List<VerifySentEmailHistory> verifySentEmailList = verifySentEmailHistoryRepository.findAllByEmailAndDate(
-                email, Date.valueOf(LocalDate.now()));
+
+        LocalDate today = LocalDate.now();
+
+        LocalDateTime start = today.atStartOfDay();
+        LocalDateTime end = today.atTime(LocalTime.MAX);
+
+        List<VerifySentEmailHistory> verifySentEmailList = verifySentEmailHistoryRepository.findAllByEmailAndCreateDateBetween(email, start, end);
+
+
         if (verifySentEmailList.size() == 3) {
             log.info("You can not login more than 3 times everyday");
             throw new CanNotSendMoreEmailException();
@@ -63,19 +69,17 @@ public class VerifySentEmailHistoryServiceImpl implements VerifySentEmailHistory
 //        }
 
         return emailHistory;
-       // return null;
+        // return null;
     }
 
     private VerifySentEmailHistory saveEmailHistory(String verificationCode, String email, String onlineUserId) {
-        return  verifySentEmailHistoryRepository.save(VerifySentEmailHistory.builder()
-                //.email(email)
+        return verifySentEmailHistoryRepository.save(VerifySentEmailHistory.builder()
+                .email(email)
                 .expiredDate(LocalDateTime.now().plusHours(expiredDate))
                 .verificationCode(verificationCode)
-               // .isUsed(false)
                 .userId(onlineUserId)
                 .status(VerifyEmailStatus.ENABLE)
                 .createDate(LocalDateTime.now())
-               // .date(LocalDate.now())
                 .build());
     }
 

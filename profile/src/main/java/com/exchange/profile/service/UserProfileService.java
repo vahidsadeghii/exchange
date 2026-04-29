@@ -24,13 +24,13 @@ public interface UserProfileService {
 
     List<UserProfile> findAllUsers();
 
-    /**
-     * Fins user by email
-     *
-     * @param email the user email
-     * @return user or null
-     */
     Optional<UserProfile> findUserByEmail(String email);
+
+
+    JwtToken userEmailVerificationToken(String email);
+
+
+    JwtToken userPasswordResetToken(String email);
 
 
 
