@@ -1,0 +1,107 @@
+plugins {
+    id 'java'
+    id 'org.springframework.boot' version '4.0.6'
+    id 'io.spring.dependency-management' version '1.1.7'
+}
+
+group = 'com.exchange'
+version = '0.0.1-SNAPSHOT'
+description = 'event'
+
+java {
+    toolchain {
+        languageVersion = JavaLanguageVersion.of(21)
+    }
+}
+
+repositories {
+    mavenCentral()
+    maven {
+        url "https://maven.keycloak.org"
+    }
+}
+
+ext {
+    springCloudVersion = "2023.0.3"   // Latest compatible with Spring Boot 3.5.x
+    resilience4jVersion = "2.2.0"
+}
+dependencyManagement {
+    imports {
+        mavenBom "org.springframework.cloud:spring-cloud-dependencies:${springCloudVersion}"
+    }
+}
+
+
+dependencies {
+
+    // SPRING
+    implementation 'org.springframework.boot:spring-boot-starter-web'
+    implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
+    implementation 'org.springframework.boot:spring-boot-starter-security'
+
+    implementation 'org.springframework.boot:spring-boot-starter-actuator'
+
+    // APACHE CAMEL (ONLY ONE VERSION!)
+    implementation platform("org.apache.camel.springboot:camel-spring-boot-bom:4.20.0")
+
+    implementation 'org.apache.camel.springboot:camel-spring-boot-starter'
+    implementation 'org.apache.camel.springboot:camel-kafka-starter'
+    implementation 'org.apache.camel.springboot:camel-jackson-starter'
+
+    // JACKSON (remove manual versioning unless needed)
+    implementation 'com.fasterxml.jackson.datatype:jackson-datatype-jsr310'
+
+    // OBSERVABILITY
+    implementation 'io.micrometer:micrometer-registry-prometheus'
+
+    // Micrometer
+    implementation 'io.micrometer:micrometer-registry-prometheus'
+
+    // Database
+    implementation 'org.postgresql:postgresql:42.7.3'
+
+    // Flyway
+    implementation "org.flywaydb:flyway-core:10.20.0"
+    implementation "org.flywaydb:flyway-database-postgresql:10.20.0"
+
+    // Spring Cloud
+    implementation 'org.springframework.cloud:spring-cloud-starter-netflix-eureka-client'
+    implementation 'org.springframework.cloud:spring-cloud-starter-openfeign'
+    implementation 'org.springframework.cloud:spring-cloud-config-client'
+
+    // Resilience4j
+    implementation "io.github.resilience4j:resilience4j-spring-boot3:${resilience4jVersion}"
+
+    // Eureka client: service discovery for microservices (Netflix OSS)
+    implementation 'org.springframework.cloud:spring-cloud-starter-netflix-eureka-client'
+
+    // OpenFeign: declarative REST client for inter-service communication
+    implementation 'org.springframework.cloud:spring-cloud-starter-openfeign'
+
+    // LOMBOK
+    compileOnly 'org.projectlombok:lombok'
+    annotationProcessor 'org.projectlombok:lombok'
+
+    // Jackson
+    implementation 'com.fasterxml.jackson.datatype:jackson-datatype-jsr310'
+
+    // Kafka
+    implementation 'org.springframework.kafka:spring-kafka'
+
+    // OAuth2
+    implementation 'org.springframework.boot:spring-boot-starter-oauth2-resource-server'
+
+    // ================= TESTING =================
+    testImplementation 'org.springframework.boot:spring-boot-starter-test'
+    testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+}
+
+java {
+    toolchain {
+        languageVersion = JavaLanguageVersion.of(21)
+    }
+}
+
+tasks.named('test') {
+    useJUnitPlatform()
+}

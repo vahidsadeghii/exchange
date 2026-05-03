@@ -1,0 +1,25 @@
+server:
+  port: 8085
+  servlet:
+    context-path: /event
+  shutdown: graceful
+spring:
+  flyway:
+    enabled: true
+camel:
+  springboot:
+    jmx-enabled: true
+
+
+
+eureka:
+  instance:
+    metadata-map:
+      prometheus.path: /event/actuator/prometheus
+      context.path: /event
+api:
+  version: v1
+  prefix:
+    secure: /api/${api.version}
+    open: /open/${api.version}
+    internal: /_api/${api.version}

@@ -15,3 +15,5 @@ include('profile')
 include('mm')
 include('ce')
 include('emailmanager')
+include('event')
+

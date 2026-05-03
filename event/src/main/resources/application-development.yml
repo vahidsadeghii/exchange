@@ -1,0 +1,26 @@
+spring:
+  datasource:
+    username: event_message
+    password: secretpassevent
+    url: jdbc:postgresql://localhost:5432/exchange_event
+    driver-class-name: org.postgresql.Driver
+  jpa:
+    show-sql: true
+  h2:
+    console:
+      enabled: true
+  cloud:
+    config:
+      enabled: false
+
+  flyway:
+    enabled: true
+
+  kafka:
+    bootstrap-servers: localhost:9092
+
+
+
+camel:
+  shutdown:
+    timeout: 1200
