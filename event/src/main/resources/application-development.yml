@@ -1,6 +1,6 @@
 spring:
   datasource:
-    username: event_message
+    username: user_event
     password: secretpassevent
     url: jdbc:postgresql://localhost:5432/exchange_event
     driver-class-name: org.postgresql.Driver
@@ -14,13 +14,25 @@ spring:
       enabled: false
 
   flyway:
-    enabled: true
+    enabled: false
 
   kafka:
     bootstrap-servers: localhost:9092
 
+  autoconfigure:
+    exclude:
+      - org.springframework.cloud.client.discovery.simple.SimpleDiscoveryClientAutoConfiguration
+
 
 
 camel:
+  threadpool:
+    MyDefault:
+      pool-size: 10
+      max-pool-size: 15
+      max-queue-size: 250
+      keep-alive-time: 25
+
   shutdown:
     timeout: 1200
+

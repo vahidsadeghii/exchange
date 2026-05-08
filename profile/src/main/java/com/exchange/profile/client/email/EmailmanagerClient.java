@@ -12,9 +12,9 @@ import org.springframework.web.bind.annotation.PathVariable;
 
 
 @FeignClient(name = "emailmanager")
-public interface ProfileClient {
+public interface EmailmanagerClient {
 
-    Logger logger = LoggerFactory.getLogger(ProfileClient.class);
+    Logger logger = LoggerFactory.getLogger(EmailmanagerClient.class);
 
     private Throwable parseThrowable(Throwable t) {
         logger.error("Error Happend: " + t.getMessage());

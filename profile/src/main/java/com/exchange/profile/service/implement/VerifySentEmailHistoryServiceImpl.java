@@ -29,7 +29,7 @@ import java.util.List;
 public class VerifySentEmailHistoryServiceImpl implements VerifySentEmailHistoryService {
     private final VerifySentEmailHistoryRepository verifySentEmailHistoryRepository;
     private final UserProfileService userProfileService;
-    private final MessagingService messagingService;
+
 
     @Value("${custom-config.kafka.emailverification-output-message.topic}")
     private String emailVerificationTopic;

@@ -1,6 +1,6 @@
 spring:
   datasource:
-    username: event_message
+    username: user_event
     password: secretpassevent
     url: jdbc:postgresql://localhost:5432/exchange_event
     driver-class-name: org.postgresql.Driver
