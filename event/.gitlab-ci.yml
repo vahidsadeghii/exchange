@@ -1,0 +1,26 @@
+stages:
+  - build
+  - deploy
+build-dev:
+  before_script:
+    - 'chmod +x gradlew'
+  script:
+    - ./gradlew clean
+    - ./gradlew build -x test
+    - docker build --build-arg JAR_FILE=build/libs/*.jar -t registry.gitlab.com/group-wallet/event:dev-1.0.0 .
+    - docker push registry.gitlab.com/group-wallet/event:dev-1.0.0
+  only:
+    - develop
+  stage: build
+  tags:
+    - dev
+deploy-dev:
+  script:
+    - docker stop event || echo "Container already stopped"
+    - docker rm event || echo "Container already removed"
+    - docker run -d --net wallet-network -v /logs:/logs -p 9096:9096 -e "SPRING_PROFILES_ACTIVE=test" -m 600m  --name event --add-host=config-server:172.31.16.157 --add-host=dbhost:172.31.16.157 --link  --add-host=kafkahost:172.31.16.157 --link discovery:discovery  registry.gitlab.com/group-wallet/event:dev-1.0.0
+  only:
+    - develop
+  stage: deploy
+  tags:
+    - dev

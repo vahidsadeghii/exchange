@@ -1,10 +1,11 @@
 plugins {
     id 'java'
-    id 'org.springframework.boot' version '4.0.5'
+ id 'org.springframework.boot' version '3.3.5'
     id 'io.spring.dependency-management' version '1.1.7'
 }
 
-group = 'com.example'
+
+group = 'com.exchange'
 version = '0.0.1-SNAPSHOT'
 description = 'emailmanager'
 
@@ -14,20 +15,68 @@ java {
     }
 }
 
+configurations {
+    compileOnly {
+        extendsFrom annotationProcessor
+    }
+}
+
 repositories {
     mavenCentral()
 }
 
+ext {
+    springCloudVersion = "2023.0.3"
+    resilience4jVersion = "2.2.0"
+}
+
+dependencyManagement {
+    imports {
+        mavenBom "org.springframework.cloud:spring-cloud-dependencies:${springCloudVersion}"
+    }
+}
+
+
 dependencies {
-    implementation 'org.springframework.boot:spring-boot-starter-webmvc'
+    implementation 'org.springframework.boot:spring-boot-starter-web'
+    implementation 'org.springframework.boot:spring-boot-starter-mail'
+    implementation 'org.springframework.boot:spring-boot-starter-security'
+
+    implementation 'jakarta.mail:jakarta.mail-api:2.1.1'
+
+    implementation 'org.springframework.boot:spring-boot-starter-actuator'
+    implementation 'io.micrometer:micrometer-registry-prometheus'
+
+    //implementation 'org.springframework.cloud:spring-cloud-starter-netflix-eureka-client'
+    implementation 'org.springframework.kafka:spring-kafka'
+
+    // Protobuf runtime
+    //implementation 'com.google.protobuf:protobuf-java:3.23.4'
+
+    implementation 'org.springframework.boot:spring-boot-starter-thymeleaf'
+    implementation 'org.apache.commons:commons-lang3'
+
+    // REMOVE javax.validation (Spring Boot 3 uses Jakarta Validation automatically)
+    // implementation 'javax.validation:validation-api:2.0.1.Final'
+
     compileOnly 'org.projectlombok:lombok'
     annotationProcessor 'org.projectlombok:lombok'
-    testImplementation 'org.springframework.boot:spring-boot-starter-webmvc-test'
-    testCompileOnly 'org.projectlombok:lombok'
-    testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
-    testAnnotationProcessor 'org.projectlombok:lombok'
+
+    // Use Spring Boot-managed Jackson versions
+    implementation 'com.fasterxml.jackson.core:jackson-core'
+    implementation 'com.fasterxml.jackson.datatype:jackson-datatype-jsr310'
+
+    implementation 'de.siegmar:logback-gelf:4.0.1'
+
+    implementation 'org.springframework.cloud:spring-cloud-starter-openfeign'
+
+    testImplementation 'org.springframework.boot:spring-boot-starter-test'
+    testImplementation 'org.springframework.cloud:spring-cloud-stream-test-binder'
+    testImplementation 'org.springframework.security:spring-security-test'
 }
+
 
 tasks.named('test') {
     useJUnitPlatform()
 }
+

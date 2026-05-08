@@ -59,14 +59,17 @@ Each module can be run independently:
 
 ```
 exchange/
-├── oms/           # Order Management System
-├── me/            # Matching Engine
-├── wallet/        # Wallet Service
-├── dp/            # Data Provider
-├── profile/       # Profile Service
-├── mm/            # Market Maker
-├── ce/            # Crypto Exchange
-└── gradle/        # Gradle configuration
+├── oms/             # Order Management System
+├── me/              # Matching Engine
+├── wallet/          # Wallet Service
+├── dp/              # Data Provider
+├── profile/         # Profile Service
+├── mm/              # Market Maker
+├── ce/              # Crypto Exchange
+├── event/           # Event Service (pub/sub, domain events, streaming)
+├── emailmanager/    # Email Manager (notifications, alerts, templates)
+└── gradle/          # Gradle configuration
+
 ```
 
 ## License

@@ -1,0 +1,31 @@
+spring:
+  datasource:
+    username: user_event
+    password: secretpassevent
+    url: jdbc:postgresql://localhost:5432/exchange_event
+    driver-class-name: org.postgresql.Driver
+  jpa:
+    show-sql: true
+  h2:
+    console:
+      enabled: true
+  cloud:
+    config:
+      enabled: false
+
+  kafka:
+    bootstrap-servers: localhost:9092
+#eureka:
+#  client:
+#    service-url:
+#      defaultZone: http://discovery:8761/eureka
+#    enabled: true
+#  instance:
+#    prefer-ip-address: true
+#    ip-address: 192.168.0.150
+#    metadata-map:
+#      versions: ${version}
+#      metrics.path: /eventmanager/actuator/prometheus
+#      health.path: /eventmanager/actuator/health
+#      context-path: /eventmanager
+#      management.context-path: /eventmanager
