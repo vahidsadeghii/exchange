@@ -26,14 +26,14 @@ spring:
           jwk-set-uri: http://localhost:8080/realms/admin-exchange/protocol/openid-connect/certs
 
 
-minio:
-  endpoint: http://localhost:9000
-  secret-Key: gOUzGcRszSocFWcgpOCWbauBtnT3IYfPvjoa26FM
-  access-key: X7ttdLWc5g1E1pwdp8aN
-  bucket: profile
-  file:
-    url:
-      prefix: http://127.0.0.1:9000
+#minio:
+#  endpoint: http://localhost:9000
+#  secret-Key: gOUzGcRszSocFWcgpOCWbauBtnT3IYfPvjoa26FM
+#  access-key: X7ttdLWc5g1E1pwdp8aN
+#  bucket: profile
+#  file:
+#    url:
+#      prefix: http://127.0.0.1:9000
 
 
 verify:

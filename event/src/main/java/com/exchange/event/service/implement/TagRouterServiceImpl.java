@@ -78,4 +78,9 @@ public void refreshRout() {
     public TagRouter findByTagAndTitleTopic(String tag, String titleTopic) {
         return tagRouterRepository.findByTagAndTitleTopic(tag, titleTopic).orElse(null);
     }
+
+    @Override
+    public List<TagRouter> findAllByTag(String tag) {
+        return tagRouterRepository.findAllByTag(tag.trim().toLowerCase());
+    }
 }

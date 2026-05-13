@@ -33,45 +33,75 @@ public class EventManagerRouter extends RouteBuilder {
         this.eventInfoService= eventInfoService;
         this.tagRouterService= tagRouterService;
     }
+
+
     @Override
-    public void configure()  {
-     createSourceRoute();
-    }
-    public void createSourceRoute(){
-        List<TagRouter> tags = tagRouterService.findAll();
-        ChoiceDefinition choice = from("kafka:event-topic?brokers=kafka-service:9092&groupId=event")
-                .id("sourceKafka")
-                .process(p -> {
+    public void configure() {
 
-                    ObjectMapper objectMapper = new ObjectMapper();
-                    objectMapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
-                    try {
-                        EventInfoMessage
-                                eventInfoMessage = objectMapper.readValue(p.getIn().getBody(String.class), EventInfoMessage.class);
-                        if ( eventInfoMessage.isPersistent()) {
-                            eventInfoService.save(eventInfoMessage.getTag(),
-                                    eventInfoMessage.getTitle(),
-                                    eventInfoMessage.getServiceName(),
-                                    eventInfoMessage.getEvent().toString(), LocalDateTime.now());
+        from("kafka:event-topic?brokers=kafka-service:9092&groupId=event")
+                .routeId("sourceKafka")
 
-                        }
-                    } catch (Exception e) {
-                        throw new RuntimeException(e.getMessage());
+                .unmarshal().json(JsonLibrary.Jackson, EventInfoMessage.class)
+
+                // Save every event in DB
+                .process(exchange -> {
+                    EventInfoMessage event = exchange.getIn().getBody(EventInfoMessage.class);
+
+                    if (event.isPersistent()) {
+                        eventInfoService.save(
+                                event.getTag(),
+                                event.getTitle(),
+                                event.getServiceName(),
+                                String.valueOf(event.getEvent()),
+                                LocalDateTime.now()
+                        );
                     }
-                }).choice();
-        if(tags.size()>0) {
-            Map<String, List<TagRouter>> topics = tags.stream().collect(Collectors.groupingBy(TagRouter::getTag));
-            topics.forEach( (k,v)->
-                choice.when()
-                        .jsonpath("$.[?(@.tag == '" + k + "' )]")
-                        .transform(ExpressionBuilder.languageExpression("jsonpath", "$.event")).marshal().json(JsonLibrary.Jackson)
-                        .multicast()
-                        .to(v.stream().map(tagRout->"kafka:" + tagRout.getTitleTopic() + "?brokers=kafka-service:9092")
-                                .collect(Collectors.toList()).toArray(String[]::new))
-                        .log("Send message to topic:  " + v.get(0).getTitleTopic()));
-            choice.endChoice();
-        }
+                })
+
+                // 🔥 SEND TO TOPIC = tag
+                .toD("kafka:${body.tag}?brokers=kafka-service:9092")
+
+                .log("Sent message to topic: ${body.tag}");
     }
+//    @Override
+//    public void configure()  {
+//     createSourceRoute();
+//    }
+//    public void createSourceRoute(){
+//        List<TagRouter> tags = tagRouterService.findAll();
+//        ChoiceDefinition choice = from("kafka:event-topic?brokers=kafka-service:9092&groupId=event")
+//                .id("sourceKafka")
+//                .process(p -> {
+//
+//                    ObjectMapper objectMapper = new ObjectMapper();
+//                    objectMapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
+//                    try {
+//                        EventInfoMessage
+//                                eventInfoMessage = objectMapper.readValue(p.getIn().getBody(String.class), EventInfoMessage.class);
+//                        if ( eventInfoMessage.isPersistent()) {
+//                            eventInfoService.save(eventInfoMessage.getTag(),
+//                                    eventInfoMessage.getTitle(),
+//                                    eventInfoMessage.getServiceName(),
+//                                    eventInfoMessage.getEvent().toString(), LocalDateTime.now());
+//
+//                        }
+//                    } catch (Exception e) {
+//                        throw new RuntimeException(e.getMessage());
+//                    }
+//                }).choice();
+//        if(tags.size()>0) {
+//            Map<String, List<TagRouter>> topics = tags.stream().collect(Collectors.groupingBy(TagRouter::getTag));
+//            topics.forEach( (k,v)->
+//                choice.when()
+//                        .jsonpath("$.[?(@.tag == '" + k + "' )]")
+//                        .transform(ExpressionBuilder.languageExpression("jsonpath", "$.event")).marshal().json(JsonLibrary.Jackson)
+//                        .multicast()
+//                        .to(v.stream().map(tagRout->"kafka:" + tagRout.getTitleTopic() + "?brokers=kafka-service:9092")
+//                                .collect(Collectors.toList()).toArray(String[]::new))
+//                        .log("Send message to topic:  " + v.get(0).getTitleTopic()));
+//            choice.endChoice();
+//        }
+//    }
 
 }
 

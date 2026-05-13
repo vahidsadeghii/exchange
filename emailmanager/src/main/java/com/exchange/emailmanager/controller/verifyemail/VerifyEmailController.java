@@ -13,7 +13,7 @@ public class VerifyEmailController {
 
     @PostMapping("/internal/verify-email")
     public void handle(@RequestBody VerifyEmailRequest request) {
-        emailSenderService.mailSender(request.getEmailTo(),
+        emailSenderService.mailSender(request.getEmailTo(), request.getVerifySentEmailHistoryId(),
                 request.getVerifyCode(), request.getExpirationDate().toString());
     }
 

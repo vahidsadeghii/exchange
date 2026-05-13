@@ -1,4 +1,4 @@
-package com.exchange.event.config;
+package com.exchange.event.config.camel;
 
 import org.apache.camel.builder.RouteBuilder;
 import org.springframework.stereotype.Component;

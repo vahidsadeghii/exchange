@@ -22,16 +22,16 @@ spring:
 
   kafka:
     consumer:
-      group-id: authentication
+      group-id: profile
     producer:
       key-serializer: org.apache.kafka.common.serialization.StringSerializer
       value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
-
-eureka:
-  instance:
-    metadata-map:
-      prometheus.path: /profile/actuator/prometheus
-      context.path: /profile
+#
+#eureka:
+#  instance:
+#    metadata-map:
+#      prometheus.path: /profile/actuator/prometheus
+#      context.path: /profile
 
 
 
@@ -55,7 +55,9 @@ custom-config:
   kafka:
     sendmessage-output-message:
       topic: send-message
-    emailverification-output-message:
+    event-output-message:
+      topic: event-topic
+    verification-output-message:
       topic: email-verification-topic
 
 keycloak:

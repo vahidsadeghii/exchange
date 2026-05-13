@@ -1,0 +1,27 @@
+@startuml
+
+participant Kafka
+participant Camel
+participant Processor
+participant EventService
+participant DB
+participant TagService
+participant KafkaOut
+
+Kafka -> Camel : Send EventInfoMessage
+Camel -> Processor : Consume message
+Processor -> Processor : Deserialize JSON
+
+alt persistent == true
+    Processor -> EventService : save()
+    EventService -> DB : INSERT EventInfo
+end
+
+Camel -> TagService : load TagRouter rules
+TagService -> DB : findAll()
+
+Camel -> Camel : JSONPath filter + transform $.event
+
+Camel -> KafkaOut : send to topics
+
+@enduml

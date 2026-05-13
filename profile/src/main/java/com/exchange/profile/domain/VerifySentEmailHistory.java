@@ -1,9 +1,7 @@
 package com.exchange.profile.domain;
 
 
-import jakarta.persistence.Entity;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.Id;
+import jakarta.persistence.*;
 import lombok.*;
 import org.springframework.data.annotation.CreatedBy;
 import org.springframework.data.annotation.CreatedDate;
@@ -21,18 +19,18 @@ import java.time.LocalDateTime;
 public class VerifySentEmailHistory {
 
     @Id
-    @GeneratedValue
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private String id;
     private String userId;
     private String email;
     private String verificationCode;
     private LocalDateTime expiredDate;
     private int tryCount;
+
+    @Enumerated(EnumType.STRING)
     private VerifyEmailStatus status;
-    @CreatedDate
-    @CreatedBy
+
     private LocalDateTime createDate;
-    @LastModifiedDate
-    @LastModifiedBy
+
     private LocalDateTime lastModifiedDate;
 }

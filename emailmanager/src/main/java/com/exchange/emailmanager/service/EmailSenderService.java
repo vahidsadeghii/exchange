@@ -4,8 +4,8 @@ package com.exchange.emailmanager.service;
 import com.exchange.emailmanager.domain.UserStatus;
 
 public interface EmailSenderService {
-    void mailSender(String emailTo, String verificationCode, String expiredDate);
-    void changeEmailSender(String emailTo, String verificationCode, String expiredDate);
+    void mailSender(String emailTo, String verifySentEmailHistoryId, String verificationCode, String expiredDate);
+    void changeEmailSender(String emailTo, String verifySentEmailHistoryId, String verificationCode, String expiredDate);
 
    void forgotPassword(String emailTo, String verificationCode, String expiredDate);
    void sendMessage(String emailTo, String  message, String subject);

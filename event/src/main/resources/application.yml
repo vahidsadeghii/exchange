@@ -3,9 +3,19 @@ server:
   servlet:
     context-path: /event
   shutdown: graceful
+
+
 spring:
   flyway:
     enabled: true
+  kafka:
+    producer:
+      value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
+    consumer:
+      value-deserializer: org.springframework.kafka.support.serializer.JsonDeserializer
+      properties:
+        spring.json.trusted.packages: "*"
+
 camel:
   springboot:
     jmx-enabled: true
@@ -23,3 +33,5 @@ api:
     secure: /api/${api.version}
     open: /open/${api.version}
     internal: /_api/${api.version}
+
+

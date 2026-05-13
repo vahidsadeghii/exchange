@@ -19,17 +19,17 @@ spring:
     password: 3d394e1093b6f2
     protocol: smtp
 
+
   kafka:
+    ootstrap-servers: kafka:9092
+
     consumer:
       group-id: emailmanager
-    producer:
-      key-serializer: org.apache.kafka.common.serialization.StringSerializer
-      value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
-    bootstrap-servers: kafka:9092
+      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      value-deserializer: org.apache.kafka.common.serialization.StringDeserializer
 
-eureka:
-  client:
-    enabled: true
+
+
   instance:
     metadata-map:
       prometheus.path: /emailmanager/actuator/prometheus

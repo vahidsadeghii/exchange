@@ -9,4 +9,6 @@ public interface TagRouterService {
     TagRouter save(String tag, String titleTopics);
     List<TagRouter> findAll();
     TagRouter findByTagAndTitleTopic(String tag, String titleTopic);
+
+    List<TagRouter> findAllByTag(String tag);
 }

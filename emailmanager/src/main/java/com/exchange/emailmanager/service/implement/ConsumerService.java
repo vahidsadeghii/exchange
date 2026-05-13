@@ -20,23 +20,33 @@ public class ConsumerService {
 
 
     @KafkaListener(topics = "${custom-config.kafka.emailverification-input-message.topic}")
-    public void verifyRegisterHandle( String message)throws IOException {
-        ObjectMapper objectMapper = new ObjectMapper();
+    public void verifyRegisterHandle(String message) {
         try {
-            VerifyEmailSender emailMessage = objectMapper.readValue(message, VerifyEmailSender.class);
-            emailSenderService.mailSender(emailMessage.emailTo(), emailMessage.verificationCode(), emailMessage.expiredDate());
-        } catch (MessagingException e) {
-            e.printStackTrace();
+            log.info("EMAIL CONSUMER RECEIVED: {}", message);
+
+            ObjectMapper objectMapper = new ObjectMapper();
+            VerifyEmailSender emailMessage =
+                    objectMapper.readValue(message, VerifyEmailSender.class);
+
+            emailSenderService.mailSender(
+                    emailMessage.emailTo(),
+                    emailMessage.verifySentEmailHistoryId(),
+                    emailMessage.verificationCode(),
+                    emailMessage.expiredDate()
+            );
+
+        } catch (Exception e) {
+            log.error("Failed to process email message: {}", message, e);
         }
     }
 
     //@RetryableTopic
     @KafkaListener(topics = "${custom-config.kafka.changeemailverification-input-message.topic}")
-    public void changeEmailVerificationHandle( String message)throws IOException {
+    public void changeEmailVerificationHandle(String message) throws IOException {
         ObjectMapper objectMapper = new ObjectMapper();
         try {
             VerifyEmailSender emailMessage = objectMapper.readValue(message, VerifyEmailSender.class);
-            emailSenderService.changeEmailSender(emailMessage.emailTo(), emailMessage.verificationCode(), emailMessage.expiredDate());
+            emailSenderService.changeEmailSender(emailMessage.emailTo(), emailMessage.verifySentEmailHistoryId() , emailMessage.verificationCode(), emailMessage.expiredDate());
         } catch (MessagingException e) {
             e.printStackTrace();
         }
@@ -44,7 +54,7 @@ public class ConsumerService {
 
     //@RetryableTopic
     @KafkaListener(topics = "${custom-config.kafka.forgotpassword-input-message.topic}")
-    public void forgotPasswordHandle( String message)throws IOException {
+    public void forgotPasswordHandle(String message) throws IOException {
         ObjectMapper objectMapper = new ObjectMapper();
         try {
             VerifyEmailSender emailMessage = objectMapper.readValue(message, VerifyEmailSender.class);
@@ -56,7 +66,7 @@ public class ConsumerService {
 
     //@RetryableTopic
     @KafkaListener(topics = "${custom-config.kafka.sendmessage-input-message.topic}")
-    public void sendMessageHandle(String message)throws IOException {
+    public void sendMessageHandle(String message) throws IOException {
         ObjectMapper objectMapper = new ObjectMapper();
         try {
             SendMessage emailMessage = objectMapper.readValue(message, SendMessage.class);
@@ -68,7 +78,7 @@ public class ConsumerService {
 
     //@RetryableTopic
     @KafkaListener(topics = "${custom-config.kafka.setuserstatus-input-message.topic}")
-    public void setUserStatusHandle(String message)throws IOException {
+    public void setUserStatusHandle(String message) throws IOException {
         ObjectMapper objectMapper = new ObjectMapper();
         try {
             SetUserStatus userStatus = objectMapper.readValue(message, SetUserStatus.class);
@@ -80,7 +90,7 @@ public class ConsumerService {
 
     //@RetryableTopic
     @KafkaListener(topics = "${custom-config.kafka.changeEmailVerifyCode-input-message.topic}")
-    public void changeEmailVerifyCodeHandle(String message)throws IOException {
+    public void changeEmailVerifyCodeHandle(String message) throws IOException {
         ObjectMapper objectMapper = new ObjectMapper();
         try {
             ChangeEmail changeEmail = objectMapper.readValue(message, ChangeEmail.class);
@@ -89,6 +99,4 @@ public class ConsumerService {
             e.printStackTrace();
         }
     }
-
-
 }

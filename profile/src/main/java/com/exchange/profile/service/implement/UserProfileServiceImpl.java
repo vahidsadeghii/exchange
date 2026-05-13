@@ -38,8 +38,7 @@ public class UserProfileServiceImpl implements UserProfileService {
     @Value("${keycloak.realm}")
     private String targetRealm;
 
-    @Value("${custom-config.kafka.emailverification-output-message.topic}")
-    private String emailVerificationTopic;
+
 
 
     @Override

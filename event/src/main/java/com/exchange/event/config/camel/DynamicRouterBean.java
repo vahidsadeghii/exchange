@@ -1,4 +1,4 @@
-package com.exchange.event.config;
+package com.exchange.event.config.camel;
 
 
 

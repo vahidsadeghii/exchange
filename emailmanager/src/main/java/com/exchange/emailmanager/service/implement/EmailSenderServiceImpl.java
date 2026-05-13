@@ -19,8 +19,10 @@ import java.time.LocalDateTime;
 @RequiredArgsConstructor
 public class EmailSenderServiceImpl implements EmailSenderService {
     private final JavaMailSender javaMailSender;
+
+
     @Override
-    public void mailSender(String emailTo, String verifyCode, String expirationDate) {
+    public void mailSender(String emailTo, String verifySentEmailHistoryId, String verifyCode, String expirationDate) {
         MimeMessage mimeMessage = javaMailSender.createMimeMessage();
         MimeMessageHelper helper = new MimeMessageHelper(mimeMessage);
         String link = "localhost:8070/authentication/open/v1/verify-code";
@@ -41,7 +43,7 @@ public class EmailSenderServiceImpl implements EmailSenderService {
     }
 
     @Override
-    public void changeEmailSender(String emailTo, String verificationCode, String expiredDate) {
+    public void changeEmailSender(String emailTo, String verifySentEmailHistoryId, String verificationCode, String expiredDate) {
         MimeMessage mimeMessage = javaMailSender.createMimeMessage();
         MimeMessageHelper helper = new MimeMessageHelper(mimeMessage);
         String link = "localhost:8070/authentication/open/v1/email";
