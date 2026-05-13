@@ -1,0 +1,74 @@
+server:
+  address: 0.0.0.0
+  port: 6075
+  shutdown: graceful
+  servlet:
+    context-path: /emailmanager
+
+
+spring:
+  application:
+    name: emailmanager
+
+
+
+  mail:
+    host: smtp.mailtrap.io
+    port: 2525
+    username: ca78145fceb842
+    password: 3d394e1093b6f2
+    protocol: smtp
+
+
+  kafka:
+    ootstrap-servers: kafka:9092
+
+    consumer:
+      group-id: emailmanager
+      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      value-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+
+
+
+  instance:
+    metadata-map:
+      prometheus.path: /emailmanager/actuator/prometheus
+      context.path: /emailmanager
+
+custom-config:
+  kafka:
+    emailverification-input-message:
+      topic: email-verification-topic
+    changeemailverification-input-message:
+      topic: change-email-verification-topic
+    forgotpassword-input-message:
+      topic: forgot-password
+    sendmessage-input-message:
+      topic: send-message
+    setuserstatus-input-message:
+      topic: set-user-status
+    changeEmailVerifyCode-input-message:
+      topic: change-email-VerifyCode
+    appointment-input-message:
+      topic: appointment
+    booking-patient-appointment-input-message:
+      topic: patientappointment
+    profile-test-dlt-input-message:
+      topic: user-profile
+
+
+
+
+springdoc:
+  swagger-ui:
+    enabled: true
+    path: /swagger-ui/index.html
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: prometheus,health,info
+  endpoint:
+    prometheus:
+      enabled: true

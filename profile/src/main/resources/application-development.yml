@@ -1,0 +1,41 @@
+spring:
+  datasource:
+    username: user_profile
+    password: secretpassuserprofile
+    url: jdbc:postgresql://localhost:5432/exchange_user_profile
+    driver-class-name: org.postgresql.Driver
+  jpa:
+    show-sql: true
+  h2:
+    console:
+      enabled: true
+  cloud:
+    config:
+      enabled: false
+
+  flyway:
+    enabled: true
+
+  kafka:
+    bootstrap-servers: localhost:9092
+
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          jwk-set-uri: http://localhost:8080/realms/admin-exchange/protocol/openid-connect/certs
+
+
+#minio:
+#  endpoint: http://localhost:9000
+#  secret-Key: gOUzGcRszSocFWcgpOCWbauBtnT3IYfPvjoa26FM
+#  access-key: X7ttdLWc5g1E1pwdp8aN
+#  bucket: profile
+#  file:
+#    url:
+#      prefix: http://127.0.0.1:9000
+
+
+verify:
+  send-email:
+    expired-date: 2
