@@ -1,0 +1,41 @@
+global:
+  scrape_interval: 15s   # how often to scrape targets
+ 
+scrape_configs:
+  # Example: scrape a Eureka instance
+  #- job_name: "eureka"
+   # eureka_sd_configs:
+      #- server: http://discovery:8761/eureka
+    #relabel_configs:
+      #- source_labels: [__meta_eureka_app_metadata_prometheus_path]
+       # target_label: __metrics_path__
+  - job_name: 'authentication'
+    metrics_path: '/authentication/actuator/prometheus'
+    static_configs:
+      - targets: ['authentication:8090']
+      
+  - job_name: 'profile'
+    metrics_path: '/profile/actuator/prometheus'
+    static_configs:
+      - targets: ['profile:8091']
+  
+  - job_name: 'serviceprovider'
+    metrics_path: '/serviceprovider/actuator/prometheus'
+    static_configs:
+      - targets: ['serviceprovider:8092']
+  
+  - job_name: 'filemanager'
+    metrics_path: '/filemanager/actuator/prometheus'
+    static_configs:
+      - targets: ['filemanager:8094']
+  
+  - job_name: 'emailmanager'
+    metrics_path: '/emailmanager/actuator/prometheus'
+    static_configs:
+      - targets: ['emailmanager:6084']
+  
+  - job_name: 'gateway'
+    metrics_path: '/actuator/prometheus'
+    static_configs:
+      - targets: ['gateway:8070']
+
