@@ -64,7 +64,7 @@ keycloak:
   realm: admin-exchange
   auth-server-url: http://localhost:8080
   client-id: exchange-management
-  client-secret: 3j8ultDup3u5v4nxczkm5lco65NL0aXX
+  client-secret: y8nXsnczJs97MnPQXQQpqdMa6C6kgqWw
 
 
 

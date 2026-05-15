@@ -4,15 +4,17 @@ import com.exchange.profile.config.keycloak.KeycloakTokenClient;
 import com.exchange.profile.domain.*;
 import com.exchange.profile.exception.UserAlreadyExistException;
 import com.exchange.profile.exception.UserCanNotFoundException;
+import com.exchange.profile.exception.UserRegistrationException;
 import com.exchange.profile.repository.UserProfileRepository;
 import com.exchange.profile.service.UserProfileService;
+import com.exchange.profile.util.MapToToken;
 import com.exchange.profile.util.PasswordEncoderUtil;
 import jakarta.ws.rs.NotFoundException;
-import jakarta.ws.rs.core.Response;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.keycloak.admin.client.CreatedResponseUtil;
 import org.keycloak.admin.client.Keycloak;
+import org.keycloak.admin.client.resource.RealmResource;
 import org.keycloak.admin.client.resource.UserResource;
 import org.keycloak.representations.idm.CredentialRepresentation;
 import org.keycloak.representations.idm.RoleRepresentation;
@@ -22,6 +24,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.*;
 
 
@@ -33,101 +36,76 @@ public class UserProfileServiceImpl implements UserProfileService {
     private final Keycloak keycloakAdmin;
     private final UserProfileRepository userProfileRepository;
     private final KeycloakTokenClient keycloakTokenClient;
+    private final TokenService tokenService;
 
     @Value("${keycloak.realm}")
     private String targetRealm;
 
-
-
-
     @Override
-    public JwtToken createUser(String username, String email, String password) {
-        Optional<UserProfile> profile =  findUserByEmail(email);
-        if(profile.isPresent()){
+    public JwtToken jwToken(String username, String email, String password) {
+
+
+        if (userProfileRepository.findByEmail(email).isPresent()) {
             throw new UserAlreadyExistException();
         }
-        //TODO: delete password
-        UserProfile userProfile = userProfileRepository.save(UserProfile.builder()
-                .email(email)
-                .password(PasswordEncoderUtil.encodePassword(password))
-                .username(username)
-                .build());
 
-        UserRepresentation kcUser = new UserRepresentation();
-        kcUser.setUsername(username);
-        kcUser.setEmail(email);
-        kcUser.setEnabled(true);
-
-        //TODO: delete attributes
-        Map<String, List<String>> attributes = new HashMap<>();
-        attributes.put("userId", List.of(userProfile.getId().toString()));
-        attributes.put("userType", List.of(UserType.USER.name()));
-        attributes.put("source", List.of("app-registration"));
-        kcUser.setAttributes(attributes);
+        UserProfile userProfile = userProfileRepository.save(
+                UserProfile.builder()
+                        .email(email)
+                        .password(PasswordEncoderUtil.encodePassword(password))
+                        .username(username)
+                        .userStatus(UserStatus.ACTIVE)
+                        .createDate(LocalDateTime.now())
+                        .build()
+        );
 
         String keycloakUserId = null;
 
         try {
-            Response response = keycloakAdmin.realm(targetRealm)
-                    .users()
-                    .create(kcUser);
+            ensureAuthenticated();
 
-            if (response.getStatus() != 201) {
-                throw new RuntimeException("Failed to create user in Keycloak: " + response.getStatusInfo());
-            }
+            // 1. Create user in Keycloak
+            keycloakUserId = createKeycloakUser(username, email, password, userProfile.getId());
 
-            keycloakUserId = CreatedResponseUtil.getCreatedId(response);
+            // 2. Assign ROLE_USER
+            assignRealmRoles(keycloakUserId, List.of("ROLE_CUSTOMER"));
 
-            CredentialRepresentation passwordCred = new CredentialRepresentation();
-            passwordCred.setType(CredentialRepresentation.PASSWORD);
-            passwordCred.setValue(password);
-            passwordCred.setTemporary(false);
-
-            keycloakAdmin.realm(targetRealm)
-                    .users()
-                    .get(keycloakUserId)
-                    .resetPassword(passwordCred);
-
-            UserResource userResource = keycloakAdmin.realm(targetRealm).users().get(keycloakUserId);
-
-            ensureRealmRolesExist(targetRealm, Arrays.stream(UserAuthority.values())
-                    .map(UserAuthority::name)
-                    .toList());
-
-            List<RoleRepresentation> rolesToAssign = new ArrayList<>();
-            for (UserAuthority authority : UserAuthority.values()) {
-                try {
-                    RoleRepresentation role = keycloakAdmin.realm(targetRealm)
-                            .roles()
-                            .get(authority.name())
-                            .toRepresentation();
-                    rolesToAssign.add(role);
-                } catch (NotFoundException ex) {
-                    log.warn("Role {} not found in Keycloak, skipping", authority);
-                }
-            }
-            if (!rolesToAssign.isEmpty()) {
-                userResource.roles().realmLevel().add(rolesToAssign);
-                log.info("Assigned {} roles to Keycloak user {}", rolesToAssign.size(), keycloakUserId);
-            }
+            // 3. Save Keycloak ID
             userProfile.setKeycloakUserId(keycloakUserId);
             userProfileRepository.save(userProfile);
 
-            return keycloakTokenClient.getToken(username, password);
+            // 4. Login & return token
+            return generateToken(username, password);
 
         } catch (Exception e) {
-            log.error("Error creating user in Keycloak", e);
-            if (keycloakUserId != null) {
-                try {
-                    keycloakAdmin.realm(targetRealm).users().get(keycloakUserId).remove();
-                    log.info("Keycloak user {} removed due to failure", keycloakUserId);
-                } catch (Exception ex) {
-                    log.error("Failed to remove Keycloak user {}", keycloakUserId, ex);
-                }
-            }
-            throw new RuntimeException("Failed to register user", e);
+
+            log.error("Registration failed for email={}", email, e);
+
+            rollbackKeycloakUser(keycloakUserId);
+
+            throw new UserRegistrationException();
         }
     }
+
+
+    private void assignRealmRoles(String userId, List<String> roles) {
+
+        UserResource userResource = keycloakAdmin.realm(targetRealm)
+                .users()
+                .get(userId);
+
+        List<RoleRepresentation> roleRepresentations = roles.stream()
+                .map(role -> keycloakAdmin.realm(targetRealm)
+                        .roles()
+                        .get(role)
+                        .toRepresentation())
+                .toList();
+
+        userResource.roles().realmLevel().add(roleRepresentations);
+
+        log.info("Assigned roles {} to user {}", roles, userId);
+    }
+
 
     @Override
     public UserProfile saveUserProfile(long onlineUserId, String firstName,
@@ -174,18 +152,36 @@ public class UserProfileServiceImpl implements UserProfileService {
 
     @Override
     public JwtToken userEmailVerificationToken(String email) {
-      findUserByEmail(email).ifPresent(userProfile -> {
-          log.error("A user with the provided details already exists with this email:  {}", email);
-          throw new UserAlreadyExistException();
-      });
+        findUserByEmail(email).ifPresent(userProfile -> {
+            log.error("A user with the provided details already exists with this email:  {}", email);
+            throw new UserAlreadyExistException();
+        });
 
 
         return null;
     }
 
     @Override
-    public JwtToken userPasswordResetToken(String email) {
-        return null;
+    public UserProfile createUser(String email) {
+        return userProfileRepository.save(UserProfile.builder()
+                .email(email)
+                .userStatus(UserStatus.ACTIVE)
+                .createDate(LocalDateTime.now())
+                .build());
+    }
+
+    @Override
+    public TokenResponse upgradeUser(String username, String email, String password) {
+        Optional<UserProfile> userProfile = userProfileRepository.findByEmail(email);
+        if (!userProfile.isPresent() || userProfile.get().getUserStatus().equals(UserStatus.INACTIVE)) {
+            throw new UserCanNotFoundException();
+        }
+        String encodePassword = PasswordEncoderUtil.encodePassword(password);
+        userProfile.get().setPassword(encodePassword);
+        userProfile.get().setUsername(username);
+        JwtToken jwtToken = tokenService.upgradeUser(userProfile.get().getId().toString(), email, encodePassword);
+
+        return MapToToken.mapToTokenResponse(jwtToken);
     }
 
     private void ensureRealmRolesExist(String realm, List<String> roles) {
@@ -200,4 +196,68 @@ public class UserProfileServiceImpl implements UserProfileService {
             }
         }
     }
+
+    private void ensureAuthenticated() {
+        keycloakAdmin.tokenManager().getAccessToken();
+    }
+
+    private RealmResource realm() {
+        ensureAuthenticated();
+        return keycloakAdmin.realm(targetRealm);
+    }
+
+    private String createKeycloakUser(String username, String email, String password, long userId) {
+
+        var kcUser = new UserRepresentation();
+        kcUser.setUsername(username);
+        kcUser.setEmail(email);
+        kcUser.setEnabled(true);
+
+        kcUser.setAttributes(Map.of(
+                "userId", List.of(Long.toString(userId)),
+                "source", List.of("app-registration")
+        ));
+
+        var response = realm().users().create(kcUser);
+
+        if (response.getStatus() != 201) {
+            throw new IllegalStateException(
+                    "Failed to create Keycloak user: " + response.getStatusInfo()
+            );
+        }
+
+        var keycloakUserId = CreatedResponseUtil.getCreatedId(response);
+
+        setUserPassword(keycloakUserId, password);
+
+        return keycloakUserId;
+    }
+
+    private void setUserPassword(String userId, String password) {
+
+        var credential = new CredentialRepresentation();
+        credential.setType(CredentialRepresentation.PASSWORD);
+        credential.setValue(password);
+        credential.setTemporary(false);
+
+        realm().users()
+                .get(userId)
+                .resetPassword(credential);
+    }
+
+
+    private JwtToken generateToken(String username, String password) {
+        return keycloakTokenClient.getToken(username, password);
+    }
+
+    private void rollbackKeycloakUser(String userId) {
+        if (userId == null) return;
+
+        try {
+            realm().users().get(userId).remove();
+        } catch (Exception ex) {
+            log.error("Failed to rollback Keycloak user {}", userId, ex);
+        }
+    }
+
 }

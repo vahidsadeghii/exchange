@@ -1,13 +1,11 @@
 package com.exchange.profile.service.implement;
 
-import com.exchange.profile.domain.VerifyEmailSender;
-import com.exchange.profile.domain.VerifyEmailStatus;
-import com.exchange.profile.domain.VerifySentEmailHistory;
-import com.exchange.profile.exception.CanNotSendMoreEmailException;
-import com.exchange.profile.exception.UserAlreadyExistException;
+import com.exchange.profile.domain.*;
+import com.exchange.profile.exception.*;
 import com.exchange.profile.repository.VerifySentEmailHistoryRepository;
 import com.exchange.profile.service.UserProfileService;
 import com.exchange.profile.service.VerifySentEmailHistoryService;
+import com.exchange.profile.util.MapToToken;
 import com.exchange.profile.util.RandomUtil;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
@@ -21,6 +19,7 @@ import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.util.Comparator;
 import java.util.List;
+import java.util.UUID;
 
 
 @Transactional
@@ -31,6 +30,7 @@ public class VerifySentEmailHistoryServiceImpl implements VerifySentEmailHistory
     private final VerifySentEmailHistoryRepository verifySentEmailHistoryRepository;
     private final KafkaTemplate<String, VerifyEmailSender> kafkaTemplateSendMessage;
     private final UserProfileService userProfileService;
+    private final TokenService tokenService;
 
     @Value("${custom-config.kafka.event-output-message.topic}")
     private String eventMessage;
@@ -41,7 +41,7 @@ public class VerifySentEmailHistoryServiceImpl implements VerifySentEmailHistory
     @Value("${verify.send-email.expired-date}")
     private long expiredDate;
 
-        private static final int MAX_ATTEMPTS_PER_DAY = 3;
+    private static final int MAX_ATTEMPTS_PER_DAY = 3;
 
     private ObjectMapper objectMapper = new ObjectMapper();
 
@@ -52,13 +52,13 @@ public class VerifySentEmailHistoryServiceImpl implements VerifySentEmailHistory
             throw new UserAlreadyExistException();
         });
 
-       var now = LocalDateTime.now();
+        var now = LocalDateTime.now();
         var start = now.toLocalDate().atStartOfDay();
         var end = now.toLocalDate().atTime(LocalTime.MAX);
 
         List<VerifySentEmailHistory> histories = verifySentEmailHistoryRepository.findAllByEmailAndCreateDateBetween(email, start, end);
 
-       int tryCount = histories.stream()
+        int tryCount = histories.stream()
                 .max(Comparator.comparing(VerifySentEmailHistory::getCreateDate))
                 .map(VerifySentEmailHistory::getTryCount)
                 .orElse(0);
@@ -73,31 +73,55 @@ public class VerifySentEmailHistoryServiceImpl implements VerifySentEmailHistory
                 .userId(null)
                 .email(email)
                 .verificationCode(verificationCode)
-                .expiredDate(now.plusDays(expiredDate))
+                .expiredDate(now.plusHours(expiredDate))
                 .tryCount(tryCount + 1)
                 .status(VerifyEmailStatus.ENABLE)
                 .createDate(now)
                 .lastModifiedDate(now)
                 .build();
 
-         var verifySentEmailHistory = verifySentEmailHistoryRepository.save(history);
-         sendKafkaEvent(email, verifySentEmailHistory.getId(), verificationCode, now);
+        var verifySentEmailHistory = verifySentEmailHistoryRepository.save(history);
+        sendKafkaEvent(email, verifySentEmailHistory.getId().toString(), verificationCode, now);
         return verifySentEmailHistory;
     }
 
-       private void sendKafkaEvent(String email, String id, String code, LocalDateTime now) {
-        var payload = new VerifyEmailSender(
-                email,
-                id,
-                code,
-                now.plusHours(expiredDate).toString()
-        );
+    @Override
+    public TokenResponse verifyEmailCode(String verifyCodeId, String verifyCode, LocalDateTime expiredDate) {
+        UUID id;
+        try {
+            id = UUID.fromString(verifyCodeId);
+        } catch (IllegalArgumentException e) {
+            throw new InvalidVerificationCodeException();
+        }
 
+        VerifySentEmailHistory history = verifySentEmailHistoryRepository.findById(id)
+                .orElseThrow(NotFoundVerificationCodeException::new);
 
-            var message = new VerifyEmailSender(email, id, code, now.plusHours(expiredDate).toString());
-            kafkaTemplateSendMessage.send(verificationMessage, message);
-            //kafkaTemplateSendMessage.send(eventMessage, message);
+        if (history.getExpiredDate().isBefore(LocalDateTime.now())) {
+            throw new VerificationCodeExpiredException();
+        }
+        if (Boolean.TRUE.equals(history.isUsed())) {
+            throw new VerificationCodeAlreadyUsedException();
+        }
+        if (!history.getVerificationCode().equals(verifyCode)) {
+            history.setTryCount(history.getTryCount() + 1);
+            verifySentEmailHistoryRepository.save(history);
+            throw new InvalidVerificationCodeException();
+        }
 
+        history.setUsed(true);
+        history.setStatus(VerifyEmailStatus.ENABLE);
+        history.setLastModifiedDate(LocalDateTime.now());
+        verifySentEmailHistoryRepository.save(history);
 
+        UserProfile userProfile = userProfileService.createUser(history.getEmail());
+        JwtToken jwtToken = tokenService.createUser(userProfile.getEmail(), userProfile.getId());
+
+        return MapToToken.mapToTokenResponse(jwtToken);
+    }
+
+    private void sendKafkaEvent(String email, String id, String code, LocalDateTime now) {
+        var message = new VerifyEmailSender(email, id, code, now.plusHours(expiredDate).toString());
+        kafkaTemplateSendMessage.send(verificationMessage, message);
     }
 }

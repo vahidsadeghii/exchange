@@ -1,6 +1,9 @@
 package com.exchange.profile.controller.verifyuseremail;
 
-import java.time.LocalDateTime;
 
-public record VerifyUserEmailResponse (String verifySentEmailHistoryId, String verifyCode, LocalDateTime expiredDate){
+import com.exchange.profile.controller.tokenresponse.AccessTokenResponse;
+import com.exchange.profile.controller.tokenresponse.RefreshTokenResponse;
+
+public record VerifyUserEmailResponse(AccessTokenResponse accessTokenResponse,
+                                      RefreshTokenResponse refreshTokenResponse) {
 }

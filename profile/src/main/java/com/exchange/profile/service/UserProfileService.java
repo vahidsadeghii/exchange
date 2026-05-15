@@ -3,6 +3,7 @@ package com.exchange.profile.service;
 
 import com.exchange.profile.domain.GenderType;
 import com.exchange.profile.domain.JwtToken;
+import com.exchange.profile.domain.TokenResponse;
 import com.exchange.profile.domain.UserProfile;
 
 import java.time.LocalDate;
@@ -11,7 +12,9 @@ import java.util.Optional;
 
 public interface UserProfileService {
 
-    JwtToken createUser(String username, String email, String password);
+    JwtToken jwToken(String username, String email, String password);
+
+//    JwtToken createUser(String username, String email, String password);
 
     UserProfile saveUserProfile(long onlineUserId,
                                       String firstName, String lastName, String phoneNumber,
@@ -30,7 +33,9 @@ public interface UserProfileService {
     JwtToken userEmailVerificationToken(String email);
 
 
-    JwtToken userPasswordResetToken(String email);
+    UserProfile createUser(String email);
+
+    TokenResponse upgradeUser(String username, String email, String password);
 
 
 
