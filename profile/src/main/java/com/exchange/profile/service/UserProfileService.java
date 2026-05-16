@@ -11,11 +11,6 @@ import java.util.List;
 import java.util.Optional;
 
 public interface UserProfileService {
-
-    JwtToken jwToken(String username, String email, String password);
-
-//    JwtToken createUser(String username, String email, String password);
-
     UserProfile saveUserProfile(long onlineUserId,
                                       String firstName, String lastName, String phoneNumber,
                                       String avatarId, String address, GenderType genderType,
@@ -28,10 +23,6 @@ public interface UserProfileService {
     List<UserProfile> findAllUsers();
 
     Optional<UserProfile> findUserByEmail(String email);
-
-
-    JwtToken userEmailVerificationToken(String email);
-
 
     UserProfile createUser(String email);
 

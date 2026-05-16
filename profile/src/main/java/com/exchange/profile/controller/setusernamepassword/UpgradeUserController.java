@@ -2,8 +2,8 @@ package com.exchange.profile.controller.setusernamepassword;
 
 import com.exchange.profile.domain.TokenResponse;
 import com.exchange.profile.service.UserProfileService;
-import jakarta.annotation.security.RolesAllowed;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RestController;
@@ -17,8 +17,17 @@ public class UpgradeUserController {
 
 
     @PostMapping(value = "${api.prefix.secure}/set-password")
-    @RolesAllowed({"ROLE_USER"})
+      @PreAuthorize("hasRole('ROLE_USER')")
     public TokenResponse handle(@RequestBody CreateUserRequest request) {
-           return userProfileService.upgradeUser(request.username(),  request.email(), request.password());
+      try {
+        return userProfileService.upgradeUser(
+                request.username(),
+                request.email(),
+                request.password()
+        );
+    } catch (Exception e) {
+        e.printStackTrace(); // IMPORTANT
+        throw e;
     }
+}
 }

@@ -39,8 +39,10 @@ public class JWTAuthenticationConverter implements Converter<Jwt, AbstractAuthen
 
         return rolesCollection.stream()
                 .filter(String.class::isInstance)
-                .map(role -> new SimpleGrantedAuthority("ROLE_" + role))
-                .map(granted -> (GrantedAuthority) granted)
+                .map(String.class::cast)
+                .map(role -> role.startsWith("ROLE_") ? role : "ROLE_" + role)
+                .map(SimpleGrantedAuthority::new)
+                .map(GrantedAuthority.class::cast)
                 .toList();
     }
 }

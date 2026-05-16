@@ -12,6 +12,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
 import org.springframework.web.client.RestTemplate;
+
 import java.util.Map;
 
 @Component
@@ -42,6 +43,35 @@ public class KeycloakTokenClient {
         body.add("client_secret", clientSecret);
         body.add("username", username);
         body.add("password", password);
+
+        HttpEntity<MultiValueMap<String, String>> request =
+                new HttpEntity<>(body, headers);
+
+        ResponseEntity<Map> response = restTemplate.postForEntity(
+                serverUrl + "/realms/" + realm + "/protocol/openid-connect/token",
+                request,
+                Map.class
+        );
+
+        Map<String, Object> token = response.getBody();
+
+        return new JwtToken(
+                (String) token.get("access_token"),
+                (String) token.get("refresh_token"),
+                ((Number) token.get("expires_in")).longValue()
+        );
+    }
+
+    public JwtToken refreshToken(String refreshToken) {
+
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_FORM_URLENCODED);
+
+        MultiValueMap<String, String> body = new LinkedMultiValueMap<>();
+        body.add("grant_type", "refresh_token");
+        body.add("client_id", clientId);
+        body.add("client_secret", clientSecret); // remove if public client
+        body.add("refresh_token", refreshToken);
 
         HttpEntity<MultiValueMap<String, String>> request =
                 new HttpEntity<>(body, headers);
