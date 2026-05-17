@@ -17,7 +17,6 @@ public class RegisterUserEmailController {
 
     @PostMapping(value = "/open/verify-email")
     public RegisterUserEmailResponse handle(@RequestBody RegisterUserEmailRequest request) {
-
         VerifySentEmailHistory response = verifySentEmailHistoryService.registerEmail(request.email());
 
         return new RegisterUserEmailResponse(response.getId().toString(), response.getVerificationCode(), response.getExpiredDate());

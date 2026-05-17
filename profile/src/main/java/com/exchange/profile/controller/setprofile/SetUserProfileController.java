@@ -18,12 +18,13 @@ public class SetUserProfileController {
 
 
     @PostMapping(value = "${api.prefix.secure}/set-profile")
-    @PreAuthorize("hasRole('CUSTOMER')") // IMPORTANT FIX (see below)
+    @PreAuthorize("hasRole('CUSTOMER')")
     public SetUserProfileResponse setUserProfile(
             @AuthenticationPrincipal OnlineUser onlineUser,
             @RequestBody SetUserProfileRequest request) {
+
         UserProfile response = userProfileService.setUserProfile(
-                onlineUser.getUserId(),
+                onlineUser.getKeycloakUserId(),
                 request.firstName(),
                 request.lastName(),
                 request.phoneNumber(),

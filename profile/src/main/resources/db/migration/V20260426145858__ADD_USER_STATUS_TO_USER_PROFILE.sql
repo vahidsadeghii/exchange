@@ -1,1 +1,0 @@
-ALTER TABLE user_profile ADD user_status VARCHAR(20) NOT NULL;

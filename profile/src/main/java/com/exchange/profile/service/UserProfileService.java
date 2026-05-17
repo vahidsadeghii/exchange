@@ -27,7 +27,7 @@ public interface UserProfileService {
 
     TokenResponse upgradeUser(String username, String email, String password);
 
-    UserProfile setUserProfile(long onlineUser, String firstName, String lastName, String phoneNumber, GenderType genderType, LocalDate birthday, String address);
+    UserProfile setUserProfile(String onlineUser, String firstName, String lastName, String phoneNumber, GenderType genderType, LocalDate birthday, String address);
 
 
 

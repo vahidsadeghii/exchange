@@ -18,6 +18,8 @@ public class UserProfile {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    private String keycloakUserId;
+
     private String firstName;
 
     private String lastName;
@@ -45,8 +47,6 @@ public class UserProfile {
 
     @Enumerated(EnumType.STRING)
     private UserStatus userStatus;
-
-    private String keycloakUserId;
 
     private LocalDateTime createDate;
 

@@ -4,6 +4,8 @@ import com.exchange.profile.config.exception.NotFoundException;
 import com.exchange.profile.config.keycloak.KeycloakTokenClient;
 import com.exchange.profile.domain.JwtToken;
 import com.exchange.profile.exception.UserAlreadyExistException;
+import com.nimbusds.jwt.JWTClaimsSet;
+import com.nimbusds.jwt.SignedJWT;
 import jakarta.ws.rs.core.Response;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -58,6 +60,22 @@ public class TokenService {
         return keycloakTokenClient.getToken(email, password);
     }
 
+    public String getKeycloakUserId(JwtToken token) {
+        return Optional.ofNullable(parseClaims(token.accessToken()).getSubject())
+                .filter(sub -> !sub.isBlank())
+                .orElseThrow(() -> new IllegalStateException("Missing 'sub' in token"));
+    }
+
+    private JWTClaimsSet parseClaims(String accessToken) {
+        try {
+            return SignedJWT.parse(accessToken).getJWTClaimsSet();
+        } catch (Exception e) {
+            throw new IllegalArgumentException("Invalid JWT access token", e);
+        }
+    }
+
+
+
     public JwtToken refreshAccessToken(String refreshToken) {
         return keycloakTokenClient.refreshToken(refreshToken);
     }
@@ -78,7 +96,7 @@ public class TokenService {
         kcUser.setEmailVerified(true);
 
         kcUser.setAttributes(Map.of(
-                "userId", List.of(String.valueOf(internalUserId)),
+                "internalUserId", List.of(String.valueOf(internalUserId)),
                 "source", List.of("app-registration")
         ));
         Response response = realm().users().create(kcUser);
@@ -114,17 +132,6 @@ public class TokenService {
 
         realm().users().get(userId).resetPassword(credential);
     }
-
-
-    // Assign realm roles
-//    private void assignRealmRoles(String userId, List<String> roles) {
-//        UserResource user = realm().users().get(userId);
-//        List<RoleRepresentation> reps = roles.stream()
-//                .map(r -> realm().roles().get(r).toRepresentation())
-//                .toList();
-//
-//        user.roles().realmLevel().add(reps);
-//    }
 
     private void assignRealmRoles(String userId, List<String> roles) {
         if (roles == null || roles.isEmpty()) return;
@@ -174,7 +181,6 @@ public class TokenService {
         }
     }
 
-
     private RoleRepresentation safeGetRealmRole(String roleName) {
         if (roleName == null || roleName.isBlank()) {
             return null;
@@ -208,7 +214,7 @@ public class TokenService {
 
     private String findKeycloakUserIdByInternalId(long internalUserId) {
         List<UserRepresentation> users = realm().users()
-                .searchByAttributes("userId:" + internalUserId);
+                .searchByAttributes("internalUserId:" + internalUserId);
         if (users.isEmpty()) {
             throw new RuntimeException("User not found in Keycloak for internalId=" + internalUserId);
         }

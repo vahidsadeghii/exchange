@@ -92,26 +92,29 @@ public class UserProfileServiceImpl implements UserProfileService {
         userProfile.get().setPassword(encodePassword);
         userProfile.get().setUsername(username);
         JwtToken jwtToken = tokenService.upgradeUser(userProfile.get().getId(), email, encodePassword);
+        String keycloakUserId = tokenService.getKeycloakUserId(jwtToken);
+        userProfile.get().setKeycloakUserId(keycloakUserId);
 
         return MapToToken.mapToTokenResponse(jwtToken);
     }
 
     @Override
-    public UserProfile setUserProfile(long onlineUser, String firstName, String lastName, String phoneNumber,
+    public UserProfile setUserProfile(String onlineUser, String firstName, String lastName, String phoneNumber,
                                       GenderType genderType, LocalDate birthday, String address) {
-        Optional<UserProfile> userProfile = userProfileRepository.findById(onlineUser);
+        Optional<UserProfile> userProfile = userProfileRepository.findByKeycloakUserId(onlineUser);
         if (!userProfile.isPresent() || userProfile.get().getUserStatus().equals(UserStatus.INACTIVE)) {
             throw new UserCanNotFoundException();
         }
-        return userProfileRepository.save(UserProfile.builder()
-                .fileName(firstName)
-                .lastName(lastName)
-                .phoneNumber(phoneNumber)
-                .genderType(genderType)
-                .birthday(birthday)
-                .address(address)
-                .updateDate(LocalDateTime.now())
-                .build());
+        userProfile.get().setFirstName(firstName);
+        userProfile.get().setLastName(lastName);
+        userProfile.get().setPhoneNumber(phoneNumber);
+        userProfile.get().setGenderType(genderType);
+        userProfile.get().setBirthday(birthday);
+        userProfile.get().setAddress(address);
+
+        userProfileRepository.save(userProfile.get());
+
+        return userProfile.get();
     }
 
 }
