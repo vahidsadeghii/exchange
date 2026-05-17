@@ -7,8 +7,8 @@ build-dev:
  script:
   - ./gradlew clean
   - ./gradlew build -x test
-  - docker build --build-arg JAR_FILE=build/libs/*.jar -t emailmanager:latest .
-  - docker push registry.gitlab.com/group-exchange/emailmanager:dev-1.0.0
+  - docker build --build-arg JAR_FILE=build/libs/*.jar -t profile:latest .
+  - docker push registry.gitlab.com/group-exchange/profile:dev-1.0.0
  only:
   - develop
  stage: build
@@ -18,7 +18,7 @@ deploy-dev:
  script:
   - docker stop authentication || echo "Container already stopped"
   - docker rm authentication || echo "Container already removed"
-  - docker run -d --net exchange-network -p 8084:8084 --name emailmanager -v /logs:/logs -m 310m -e "SPRING_PROFILES_ACTIVE=development"  --link discovery:discovery registry.gitlab.com/group-exchange/emailmanager:dev-1.0.0
+  - docker run -d --net exchange-network -p 8084:8084 --name profile -v /logs:/logs -m 310m -e "SPRING_PROFILES_ACTIVE=development"  --link discovery:discovery registry.gitlab.com/group-exchange/profile:dev-1.0.0
  only:
   - develop
  stage: deploy
