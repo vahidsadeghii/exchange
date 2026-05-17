@@ -96,4 +96,22 @@ public class UserProfileServiceImpl implements UserProfileService {
         return MapToToken.mapToTokenResponse(jwtToken);
     }
 
+    @Override
+    public UserProfile setUserProfile(long onlineUser, String firstName, String lastName, String phoneNumber,
+                                      GenderType genderType, LocalDate birthday, String address) {
+        Optional<UserProfile> userProfile = userProfileRepository.findById(onlineUser);
+        if (!userProfile.isPresent() || userProfile.get().getUserStatus().equals(UserStatus.INACTIVE)) {
+            throw new UserCanNotFoundException();
+        }
+        return userProfileRepository.save(UserProfile.builder()
+                .fileName(firstName)
+                .lastName(lastName)
+                .phoneNumber(phoneNumber)
+                .genderType(genderType)
+                .birthday(birthday)
+                .address(address)
+                .updateDate(LocalDateTime.now())
+                .build());
+    }
+
 }

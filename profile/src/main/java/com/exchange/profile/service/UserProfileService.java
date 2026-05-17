@@ -2,7 +2,6 @@ package com.exchange.profile.service;
 
 
 import com.exchange.profile.domain.GenderType;
-import com.exchange.profile.domain.JwtToken;
 import com.exchange.profile.domain.TokenResponse;
 import com.exchange.profile.domain.UserProfile;
 
@@ -27,6 +26,8 @@ public interface UserProfileService {
     UserProfile createUser(String email);
 
     TokenResponse upgradeUser(String username, String email, String password);
+
+    UserProfile setUserProfile(long onlineUser, String firstName, String lastName, String phoneNumber, GenderType genderType, LocalDate birthday, String address);
 
 
 

@@ -17,17 +17,17 @@ public class UpgradeUserController {
 
 
     @PostMapping(value = "${api.prefix.secure}/set-password")
-      @PreAuthorize("hasRole('ROLE_USER')")
+    @PreAuthorize("hasRole('ROLE_USER')")
     public TokenResponse handle(@RequestBody CreateUserRequest request) {
-      try {
-        return userProfileService.upgradeUser(
-                request.username(),
-                request.email(),
-                request.password()
-        );
-    } catch (Exception e) {
-        e.printStackTrace(); // IMPORTANT
-        throw e;
+        try {
+            return userProfileService.upgradeUser(
+                    request.username(),
+                    request.email(),
+                    request.password()
+            );
+        } catch (Exception e) {
+            e.printStackTrace(); // IMPORTANT
+            throw e;
+        }
     }
-}
 }

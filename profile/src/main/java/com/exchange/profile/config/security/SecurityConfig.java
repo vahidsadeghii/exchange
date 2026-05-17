@@ -7,7 +7,10 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.web.context.annotation.RequestScope;
 
 @Configuration
 @RequiredArgsConstructor
@@ -34,5 +37,11 @@ public class SecurityConfig {
         return http.build();
 
     }
+
+//    @Bean
+//    public OnlineUser onlineUser() {
+//        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+//        return (OnlineUser) auth.getPrincipal();
+//    }
 
 }

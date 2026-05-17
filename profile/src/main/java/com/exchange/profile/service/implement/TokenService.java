@@ -24,7 +24,6 @@ import java.util.*;
 @RequiredArgsConstructor
 @Slf4j
 public class TokenService {
-
     private final Keycloak keycloakAdmin;
     private final KeycloakTokenClient keycloakTokenClient;
 
