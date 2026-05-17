@@ -38,4 +38,4 @@ spring:
 
 verify:
   send-email:
-    expired-date: 2
+    expired-date: 10

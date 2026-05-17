@@ -1,3 +1,10 @@
+server:
+  port: 8091
+  shutdown: graceful
+  servlet:
+    context-path: /profile
+
+
 spring:
   data:
     redis:

@@ -159,7 +159,7 @@ services:
       - kafka
      # - discovery
     ports:
-      - "6084:6084"
+      - "8092:8092"
     environment:
       SPRING.PROFILES.ACTIVE: docker
       #eureka.client.serviceUrl.defaultZone: http://discovery:8761/eureka

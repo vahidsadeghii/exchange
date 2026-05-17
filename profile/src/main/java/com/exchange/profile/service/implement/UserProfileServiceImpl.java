@@ -91,7 +91,7 @@ public class UserProfileServiceImpl implements UserProfileService {
         String encodePassword = PasswordEncoderUtil.encodePassword(password);
         userProfile.get().setPassword(encodePassword);
         userProfile.get().setUsername(username);
-        JwtToken jwtToken = tokenService.upgradeUser(userProfile.get().getId().toString(), email, encodePassword);
+        JwtToken jwtToken = tokenService.upgradeUser(userProfile.get().getId(), email, encodePassword);
 
         return MapToToken.mapToTokenResponse(jwtToken);
     }

@@ -4,6 +4,7 @@ import com.exchange.profile.config.exception.NotFoundException;
 import com.exchange.profile.config.keycloak.KeycloakTokenClient;
 import com.exchange.profile.domain.JwtToken;
 import com.exchange.profile.exception.UserAlreadyExistException;
+import jakarta.ws.rs.core.Response;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.keycloak.admin.client.CreatedResponseUtil;
@@ -37,21 +38,24 @@ public class TokenService {
 
     // STEP 1: Verify email → create user → ROLE_USER → temp login
     public JwtToken createUser(String email, long internalUserId) {
-        String userId = createKeycloakUser(email, internalUserId);
+        String keycloakUserId = createKeycloakUser(email, internalUserId);
+        assignRealmRoles(keycloakUserId, List.of("ROLE_USER"));
 
-        assignRealmRoles(userId, List.of("ROLE_USER"));
         String tempPassword = UUID.randomUUID().toString();
-        setTemporaryPassword(userId, tempPassword);
+        setTemporaryPassword(keycloakUserId, tempPassword);
 
         return keycloakTokenClient.getToken(email, tempPassword);
     }
 
     // STEP 2: Set password → ROLE_CUSTOMER → login
-    public JwtToken upgradeUser(String userId, String email, String password) {
-        removeRealmRoles(userId, List.of("ROLE_USER"));
-        assignRealmRoles(userId, List.of("ROLE_CUSTOMER"));
+    public JwtToken upgradeUser(long internalUserId, String email, String password) {
+        String keycloakUserId = findKeycloakUserIdByInternalId(internalUserId);
 
-        setUserPassword(userId, password);
+        removeRealmRoles(keycloakUserId, List.of("ROLE_USER"));
+        assignRealmRoles(keycloakUserId, List.of("ROLE_CUSTOMER"));
+
+        setUserPassword(keycloakUserId, password);
+
         return keycloakTokenClient.getToken(email, password);
     }
 
@@ -78,22 +82,16 @@ public class TokenService {
                 "userId", List.of(String.valueOf(internalUserId)),
                 "source", List.of("app-registration")
         ));
-
-        var response = realm().users().create(kcUser);
-
+        Response response = realm().users().create(kcUser);
         if (response.getStatus() == 201) {
-            return CreatedResponseUtil.getCreatedId(response);
+            return CreatedResponseUtil.getCreatedId(response); // ✅ UUID
         }
+
         if (response.getStatus() == 409) {
-            List<UserRepresentation> users = realm().users().search(email, true);
-            if (!users.isEmpty()) {
-                return users.get(0).getId();
-            }
-            throw new UserAlreadyExistException();
+            return realm().users().search(email, true).get(0).getId();
         }
-        throw new IllegalStateException(
-                "Failed to create Keycloak user: " + response.getStatus() + " " + response.getStatusInfo()
-        );
+
+        throw new IllegalStateException("Failed to create Keycloak user");
     }
 
     // Permanent password
@@ -120,15 +118,28 @@ public class TokenService {
 
 
     // Assign realm roles
+//    private void assignRealmRoles(String userId, List<String> roles) {
+//        UserResource user = realm().users().get(userId);
+//        List<RoleRepresentation> reps = roles.stream()
+//                .map(r -> realm().roles().get(r).toRepresentation())
+//                .toList();
+//
+//        user.roles().realmLevel().add(reps);
+//    }
+
     private void assignRealmRoles(String userId, List<String> roles) {
+        if (roles == null || roles.isEmpty()) return;
         UserResource user = realm().users().get(userId);
+
         List<RoleRepresentation> reps = roles.stream()
-                .map(r -> realm().roles().get(r).toRepresentation())
+                .map(this::safeGetRealmRole)
+                .filter(Objects::nonNull)
                 .toList();
 
-        user.roles().realmLevel().add(reps);
+        if (!reps.isEmpty()) {
+            user.roles().realmLevel().add(reps);
+        }
     }
-
 
     // Remove realm roles
     public void removeRealmRoles(String userId, List<String> roles) {
@@ -137,9 +148,10 @@ public class TokenService {
         }
 
         UserResource user;
+
         try {
             user = realm().users().get(userId);
-            user.toRepresentation();
+            user.toRepresentation(); // validate existence
         } catch (Exception e) {
             log.error("User {} not found in realm {}", userId, targetRealm);
             return;
@@ -151,23 +163,13 @@ public class TokenService {
                 .toList();
 
         if (toRemove.isEmpty()) {
-            log.warn("No valid roles to remove for user {}", userId);
-            return;
-        }
-
-        List<RoleRepresentation> assigned = user.roles().realmLevel().listEffective();
-        List<RoleRepresentation> safeToRemove = toRemove.stream()
-                .filter(r -> assigned.stream().anyMatch(a -> a.getName().equals(r.getName())))
-                .toList();
-
-        if (safeToRemove.isEmpty()) {
-            log.info("User {} does not have any of the roles to remove", userId);
             return;
         }
 
         try {
-            user.roles().realmLevel().remove(safeToRemove);
-            log.info("Removed roles {} from user {}", safeToRemove, userId);
+            //NO listEffective() → avoids your 404 issue
+            user.roles().realmLevel().remove(toRemove);
+
         } catch (Exception e) {
             log.error("Failed removing roles for user {}", userId, e);
         }
@@ -175,23 +177,45 @@ public class TokenService {
 
 
     private RoleRepresentation safeGetRealmRole(String roleName) {
-
         if (roleName == null || roleName.isBlank()) {
             return null;
         }
 
+        String cleaned = roleName.trim();
+
         try {
-            return realm()
-                    .roles()
-                    .get(roleName.trim())
-                    .toRepresentation();
-        } catch (NotFoundException e) {
-            log.warn("Realm role not found: {}", roleName);
-            return null;
+            return realm().roles().get(cleaned).toRepresentation();
+        } catch (NotFoundException ignored) {
+        }
+
+        try {
+            return realm().clients().findAll().stream()
+                    .map(c -> realm().clients().get(c.getId()))
+                    .map(client -> {
+                        try {
+                            return client.roles().get(cleaned).toRepresentation();
+                        } catch (NotFoundException e) {
+                            return null;
+                        }
+                    })
+                    .filter(Objects::nonNull)
+                    .findFirst()
+                    .orElse(null);
+
         } catch (Exception e) {
-            log.error("Error fetching realm role {}", roleName, e);
             return null;
         }
+    }
+
+    private String findKeycloakUserIdByInternalId(long internalUserId) {
+        List<UserRepresentation> users = realm().users()
+                .searchByAttributes("userId:" + internalUserId);
+        if (users.isEmpty()) {
+            throw new RuntimeException("User not found in Keycloak for internalId=" + internalUserId);
+        }
+
+        //THIS is the real Keycloak ID
+        return users.get(0).getId();
     }
 
 }

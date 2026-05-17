@@ -73,7 +73,7 @@ public class VerifySentEmailHistoryServiceImpl implements VerifySentEmailHistory
                 .userId(null)
                 .email(email)
                 .verificationCode(verificationCode)
-                .expiredDate(now.plusHours(expiredDate))
+                .expiredDate(now.plusDays(expiredDate))
                 .tryCount(tryCount + 1)
                 .status(VerifyEmailStatus.ENABLE)
                 .createDate(now)
@@ -121,7 +121,7 @@ public class VerifySentEmailHistoryServiceImpl implements VerifySentEmailHistory
     }
 
     private void sendKafkaEvent(String email, String id, String code, LocalDateTime now) {
-        var message = new VerifyEmailSender(email, id, code, now.plusHours(expiredDate).toString());
+        var message = new VerifyEmailSender(email, id, code, now.plusDays(expiredDate).toString());
         kafkaTemplateSendMessage.send(verificationMessage, message);
     }
 }
