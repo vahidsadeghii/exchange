@@ -1,7 +1,9 @@
 package com.exchange.profile.service.implement;
 
 import com.exchange.profile.domain.*;
+import com.exchange.profile.exception.PasswordIsInvalidException;
 import com.exchange.profile.exception.UserCanNotFoundException;
+import com.exchange.profile.exception.UserIsBlockInactiveException;
 import com.exchange.profile.repository.UserProfileRepository;
 import com.exchange.profile.service.UserProfileService;
 import com.exchange.profile.util.MapToToken;
@@ -116,5 +118,33 @@ public class UserProfileServiceImpl implements UserProfileService {
 
         return userProfile.get();
     }
+
+    @Override
+    public TokenResponse signInUser(String userName, String password) {
+        UserProfile userProfile = userProfileRepository.findByEmail(userName).orElseThrow(UserCanNotFoundException::new);
+        checkUserStatus(userProfile.getUserStatus());
+
+        String encodePassword = PasswordEncoderUtil.encodePassword(password);
+        if (!PasswordEncoderUtil.isPasswordMatches(password, userProfile.getPassword())) {
+            log.error("You have entered an invalid password");
+
+            throw new PasswordIsInvalidException();
+        }
+
+        JwtToken jwtToken = tokenService.upgradeUser(userProfile.getId(), userProfile.getEmail(), encodePassword);
+        String keycloakUserId = tokenService.getKeycloakUserId(jwtToken);
+        userProfile.setKeycloakUserId(keycloakUserId);
+
+        return MapToToken.mapToTokenResponse(jwtToken);
+    }
+
+
+    private void checkUserStatus(UserStatus userStatus) {
+        if (userStatus.equals(UserStatus.INACTIVE) || userStatus.equals(UserStatus.BLOCK)) {
+            log.error("The user is Blocked or Inactive and has no permission.");
+            throw new UserIsBlockInactiveException();
+        }
+    }
+
 
 }

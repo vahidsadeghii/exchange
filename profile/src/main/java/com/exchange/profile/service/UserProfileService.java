@@ -29,6 +29,15 @@ public interface UserProfileService {
 
     UserProfile setUserProfile(String onlineUser, String firstName, String lastName, String phoneNumber, GenderType genderType, LocalDate birthday, String address);
 
+        /**
+     * Save LoginHistory and create access token
+     *
+     * @param userName user email as userName
+     * @param password user password
+     * @return TokenResponse(AccessToken and RefreshToken)
+     */
+    TokenResponse signInUser(String userName, String password);
+
 
 
 
