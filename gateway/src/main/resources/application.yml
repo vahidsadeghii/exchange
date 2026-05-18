@@ -1,0 +1,14 @@
+server:
+  port: 8070
+  shutdown: graceful
+  servlet:
+    context-path: /gateway
+
+springdoc:
+  swagger-ui:
+    enabled: true
+    path: /swagger-ui/index.html
+
+spring:
+  application:
+    name: gateway

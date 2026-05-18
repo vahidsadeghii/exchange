@@ -72,21 +72,21 @@ services:
 
 
   # ---------------- Redis ----------------
-#  redis:
-#    image: redis:6.2-alpine
-#    container_name: redis
-#    restart: always
-#    ports:
-#      - "6379:6379"
-#    command: redis-server --save 20 1 --loglevel warning --requirepass eYVX7EwVmmxKPCDmwMtyKVge8oLd2t81
-#    environment:
-#      - SPRING_DATA_REDIS_HOST=redis
-#      - SPRING_DATA_REDIS_PORT=6379
-#      - SPRING_DATA_REDIS_PASSWORD=eYVX7EwVmmxKPCDmwMtyKVge8oLd2t81
-#    volumes:
-#      - /media/homa/home2/docker/redis:/data
-#    networks:
-#      - exchange-network
+  redis:
+    image: redis:6.2-alpine
+    container_name: redis
+    restart: always
+    ports:
+      - "6379:6379"
+    command: redis-server --save 20 1 --loglevel warning --requirepass eYVX7EwVmmxKPCDmwMtyKVge8oLd2t81
+    environment:
+      - SPRING_DATA_REDIS_HOST=redis
+      - SPRING_DATA_REDIS_PORT=6379
+      - SPRING_DATA_REDIS_PASSWORD=eYVX7EwVmmxKPCDmwMtyKVge8oLd2t81
+    volumes:
+      - /media/homa/home2/docker/redis:/data
+    networks:
+      - exchange-network
 
 
 
