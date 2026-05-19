@@ -5,6 +5,11 @@ plugins {
     id 'org.flywaydb.flyway' version '10.20.0'
 }
 
+
+application {
+    mainClass = 'com.exchange.profile.ProfileApp'
+}
+
 repositories {
     mavenCentral()
     maven {
@@ -16,6 +21,7 @@ ext {
     springCloudVersion = "2023.0.3"   // Latest compatible with Spring Boot 3.5.x
     resilience4jVersion = "2.2.0"
 }
+
 dependencyManagement {
     imports {
         mavenBom "org.springframework.cloud:spring-cloud-dependencies:${springCloudVersion}"
@@ -57,12 +63,6 @@ dependencies {
     // Resilience4j
     implementation "io.github.resilience4j:resilience4j-spring-boot3:${resilience4jVersion}"
 
-    // Eureka client: service discovery for microservices (Netflix OSS)
-    implementation 'org.springframework.cloud:spring-cloud-starter-netflix-eureka-client'
-
-    // OpenFeign: declarative REST client for inter-service communication
-    implementation 'org.springframework.cloud:spring-cloud-starter-openfeign'
-
 
     // Jackson
     implementation 'com.fasterxml.jackson.datatype:jackson-datatype-jsr310'
@@ -77,7 +77,6 @@ dependencies {
     implementation 'org.keycloak:keycloak-spring-boot-starter:21.1.1'
     implementation 'org.keycloak:keycloak-admin-client:26.0.6'
 
-    // Others
     implementation 'com.opencsv:opencsv:5.9'
     implementation libs.guava
 
@@ -88,16 +87,6 @@ dependencies {
     // Tests
     testImplementation libs.junit.jupiter
     testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
-}
-
-java {
-    toolchain {
-        languageVersion = JavaLanguageVersion.of(21)
-    }
-}
-
-application {
-    mainClass = 'com.exchange.profile.ProfileApp'
 }
 
 tasks.named('test') {

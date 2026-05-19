@@ -138,6 +138,12 @@ public class UserProfileServiceImpl implements UserProfileService {
         return MapToToken.mapToTokenResponse(jwtToken);
     }
 
+    @Override
+    public Optional<Long> findUserByKeycloakId(String keycloakId) {
+        UserProfile userProfile = userProfileRepository.findByKeycloakUserId(keycloakId).orElseThrow(UserCanNotFoundException::new);
+        return Optional.of(userProfile.getId());
+    }
+
 
     private void checkUserStatus(UserStatus userStatus) {
         if (userStatus.equals(UserStatus.INACTIVE) || userStatus.equals(UserStatus.BLOCK)) {
