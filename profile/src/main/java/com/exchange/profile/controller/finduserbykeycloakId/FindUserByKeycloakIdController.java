@@ -14,7 +14,7 @@ import java.util.Optional;
 public class FindUserByKeycloakIdController {
     private final UserProfileService userProfileService;
 
-    @GetMapping(value = "/_api/${api.version}/user-id")
+    @GetMapping(value = "/open/user-id")
     public Optional<Long> handle(@RequestParam String keycloakId) {
            return userProfileService.findUserByKeycloakId(keycloakId);
     }

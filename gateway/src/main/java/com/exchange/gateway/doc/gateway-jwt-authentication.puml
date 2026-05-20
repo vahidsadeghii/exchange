@@ -1,0 +1,50 @@
+@startuml
+
+title API Gateway + Keycloak Authentication Flow
+
+actor Client
+
+participant "API Gateway" as Gateway
+participant "Spring Security (WebFlux)" as Security
+participant "SecurityGatewayFilter" as Filter
+participant "Keycloak" as KC
+participant "Profile Service" as Profile
+participant "Wallet Service" as Wallet
+
+== Public Request ==
+
+Client -> Gateway : POST /profile/open/v1/user/signin
+
+Gateway -> Security : Check security rules
+Security --> Gateway : PERMIT ALL
+
+Gateway -> Filter : isPublic(path)
+Filter --> Gateway : bypass authentication
+
+Gateway -> Profile : Forward request
+Profile --> Gateway : 200 OK
+Gateway --> Client : 200 OK
+
+
+== Secure Request ==
+
+Client -> Gateway : GET /wallet/api/v1/balance\nAuthorization: Bearer JWT
+
+Gateway -> Security : Validate JWT
+Security -> KC : Get public key (JWK)
+KC --> Security : Public keys
+
+Security --> Gateway : Authenticated
+
+Gateway -> Filter : SecurityGatewayFilter
+Filter -> Filter : Extract JWT
+Filter -> Filter : Add headers (user info)
+Filter -> Filter : Rate limiting check
+
+Filter --> Gateway : Forward request
+
+Gateway -> Wallet : Forward request
+Wallet --> Gateway : 200 OK
+Gateway --> Client : 200 OK
+
+@enduml

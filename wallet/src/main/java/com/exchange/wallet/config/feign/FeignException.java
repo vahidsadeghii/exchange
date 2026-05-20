@@ -1,8 +1,7 @@
 package com.exchange.wallet.config.feign;
 
 
-
-import com.exchange.profile.config.exception.BusinessException;
+import com.exchange.wallet.config.exception.BusinessException;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.EqualsAndHashCode;

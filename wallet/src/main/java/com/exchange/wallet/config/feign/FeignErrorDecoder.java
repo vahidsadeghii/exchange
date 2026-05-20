@@ -1,6 +1,7 @@
 package com.exchange.wallet.config.feign;
 
-import com.exchange.profile.config.exception.BusinessException;
+
+import com.exchange.wallet.config.exception.BusinessException;
 import feign.Response;
 import feign.codec.ErrorDecoder;
 

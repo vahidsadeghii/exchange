@@ -74,19 +74,22 @@ resilience4j:
         minimum-number-of-calls: 2
         sliding-window-size: 5
         wait-duration-in-open-state: 1000
-        maxRetryAttempts: 4
-        waitDuration: 1000
-        ignoreExceptions: com.exchange.profile.config.feign.FeignException
+        ignore-exceptions:
+          - feign.FeignException
+
     instances:
       profile-instance:
-        baseConfig: default
+        base-config: default
 
   retry:
     configs:
       default:
-        maxRetryAttempts: 4
-        waitDuration: 1000
-        ignoreExceptions: com.exchange.profile.config.feign.FeignException
+        max-attempts: 4
+        wait-duration: 1000
+        ignore-exceptions:
+          - feign.FeignException
+
     instances:
       profile-instance:
         base-config: default
+

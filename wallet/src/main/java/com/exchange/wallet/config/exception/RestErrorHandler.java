@@ -1,9 +1,5 @@
 package com.exchange.wallet.config.exception;
 
-import com.exchange.profile.config.exception.BadRequestException;
-import com.exchange.profile.config.exception.ErrorContent;
-import com.exchange.profile.config.exception.MessageBundleLoader;
-import com.exchange.profile.config.exception.NotFoundException;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;

@@ -1,5 +1,7 @@
 package com.exchange.wallet.service.serviceImpl;
 
+import com.exchange.wallet.client.profileclient.ProfileClient;
+import com.exchange.wallet.controller.wallet.createwallet.AssetDTO;
 import com.exchange.wallet.domain.Asset;
 import com.exchange.wallet.domain.AssetType;
 import com.exchange.wallet.domain.Wallet;
@@ -15,22 +17,30 @@ import org.springframework.stereotype.Service;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
 public class WalletServiceImpl implements WalletService {
     private final InMemoryWalletRepository repository;
+    private final ProfileClient profileClient;
 
 
     @Override
-    public Wallet save(String keycloakId, List<Asset> assets) {
-        Long userId = getUserIdByKeycloakId(keycloakId);
-
+    public Wallet save(String keycloakId, List<AssetDTO> assets) {
+        Optional<Long> userId = getUserIdByKeycloakId(keycloakId);
+        List<Asset> assetEntities = assets.stream()
+                .map(dto -> Asset.builder()
+                        .balance(dto.balance())
+                        .blockedBalance(dto.blockedBalance())
+                        .assetType(dto.assetType())
+                        .build())
+                .toList();
         return repository.save(Wallet.builder()
                 .walletId(UUID.randomUUID().toString())
-                .userId(userId)
-                .asserts(assets)
+                .userId(userId.get())
+                .asserts(assetEntities)
                 .status(WalletStatus.ACTIVE)
                 .createdAt(LocalDateTime.now())
                 .updatedAt(LocalDateTime.now())
@@ -78,7 +88,7 @@ public class WalletServiceImpl implements WalletService {
     }
 
 
-    private Long getUserIdByKeycloakId(String keycloakId) {
-        return 100L;
+    private Optional<Long> getUserIdByKeycloakId(String keycloakId) {
+        return profileClient.findUserByKeycloakId(keycloakId);
     }
 }
