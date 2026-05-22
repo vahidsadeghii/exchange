@@ -20,27 +20,28 @@ public class RateLimiterConfig {
     private final ObjectMapper objectMapper;
     private final ReactiveRedisTemplate<String, String> reactiveRedisTemplate;
 
-    @Bean
-    public KeyResolver keyResolver() {
-        return exchange -> {
+@Bean
+public KeyResolver keyResolver() {
+    return exchange -> {
 
-            String tokenInfo = exchange.getRequest()
-                    .getHeaders()
-                    .getFirst("TokenInfo");
+        String tokenInfoJson = exchange.getRequest()
+                .getHeaders()
+                .getFirst("TokenInfo");
 
-            if (tokenInfo != null) {
-                try {
-                    TokenInfo info = objectMapper.readValue(tokenInfo, TokenInfo.class);
-                    return Mono.just("user:" + info.userId());
+        if (tokenInfoJson != null) {
+            try {
+                TokenInfo info = objectMapper.readValue(tokenInfoJson, TokenInfo.class);
+                return Mono.just("kc:" + info.keycloakUserId());
 
-                } catch (Exception e) {
-                    return Mono.error(new RuntimeException("Invalid TokenInfo header", e));
-                }
+            } catch (Exception e) {
+                return Mono.error(new RuntimeException("Invalid TokenInfo", e));
             }
+        }
 
-            return Mono.just("ip:" + getClientIp(exchange));
-        };
-    }
+        // fallback only for truly anonymous requests
+        return Mono.just("ip:" + getClientIp(exchange));
+    };
+}
 
     @Bean
     public RedisRateLimiter redisRateLimiter() {

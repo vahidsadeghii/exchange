@@ -6,7 +6,6 @@ import org.springframework.security.authentication.UsernamePasswordAuthenticatio
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.oauth2.jwt.Jwt;
-import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken;
 import org.springframework.stereotype.Component;
 
 import java.util.Collection;
@@ -16,20 +15,13 @@ import java.util.Map;
 
 @Component
 public class JWTAuthenticationConverter implements Converter<Jwt, AbstractAuthenticationToken> {
-    private static final String REALM_ACCESS = "realm_access";
-    private static final String ROLES = "roles";
 
     @Override
     public AbstractAuthenticationToken convert(Jwt jwt) {
         Collection<GrantedAuthority> authorities = extractAuthorities(jwt);
-
         OnlineUser principal = new OnlineUser(
                 jwt.getSubject(),
-                jwt.getClaimAsString("userId") != null
-                        ? Long.valueOf(jwt.getClaimAsString("userId"))
-                        : null,
-                extractRoles(jwt)
-        );
+                extractRoles(jwt));
 
         return new UsernamePasswordAuthenticationToken(
                 principal,
@@ -39,21 +31,18 @@ public class JWTAuthenticationConverter implements Converter<Jwt, AbstractAuthen
     }
 
     private List<String> extractRoles(Jwt jwt) {
-        Object realmAccessObj = jwt.getClaim(REALM_ACCESS);
 
-        if (!(realmAccessObj instanceof Map<?, ?> realmAccess)) {
-            return List.of();
-        }
+        Map<String, Object> realmAccess = jwt.getClaim("realm_access");
 
-        Object rolesObj = realmAccess.get(ROLES);
+        if (realmAccess == null) return List.of();
 
-        if (!(rolesObj instanceof Collection<?> roles)) {
-            return List.of();
-        }
+        Object rolesObj = realmAccess.get("roles");
+
+        if (!(rolesObj instanceof List<?> roles)) return List.of();
 
         return roles.stream()
-                .filter(String.class::isInstance)
-                .map(String.class::cast)
+                .map(String::valueOf)
+                .filter(r -> r.startsWith("ROLE_"))
                 .toList();
     }
 

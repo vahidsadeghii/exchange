@@ -15,6 +15,7 @@ public class RouteConfig {
     private final RedisRateLimiter redisRateLimiter;
     private final RateLimiterConfig rateLimiterConfig;
     private final SecurityGatewayFilter securityGatewayFilter;
+    private final JwtRelayGatewayFilter jwtRelayGatewayFilter;
 
     @Bean
     public RouteLocator routeLocator(
@@ -26,18 +27,11 @@ public class RouteConfig {
                         "profile",
                         r -> r.path("/profile/**")
                                 .filters(f -> f
-
+                                        .filter(jwtRelayGatewayFilter)
                                         .filter(securityGatewayFilter)
-
                                         .requestRateLimiter(rate -> {
-
-                                            rate.setKeyResolver(
-                                                    rateLimiterConfig.keyResolver()
-                                            );
-
-                                            rate.setRateLimiter(
-                                                    redisRateLimiter
-                                            );
+                                            rate.setKeyResolver(rateLimiterConfig.keyResolver());
+                                            rate.setRateLimiter(redisRateLimiter);
                                         })
                                 )
                                 .uri("http://localhost:8088")
@@ -46,17 +40,11 @@ public class RouteConfig {
                         "wallet",
                         r -> r.path("/wallet/**")
                                 .filters(f -> f
-                                        .filter(
-                                                securityGatewayFilter
-                                        )
+                                        .filter(jwtRelayGatewayFilter)
+                                        .filter(securityGatewayFilter)
                                         .requestRateLimiter(rate -> {
-                                            rate.setKeyResolver(
-                                                    rateLimiterConfig
-                                                            .keyResolver()
-                                            );
-                                            rate.setRateLimiter(
-                                                    redisRateLimiter
-                                            );
+                                            rate.setKeyResolver(rateLimiterConfig.keyResolver());
+                                            rate.setRateLimiter(redisRateLimiter);
                                         })
                                 )
                                 .uri("http://localhost:8092")

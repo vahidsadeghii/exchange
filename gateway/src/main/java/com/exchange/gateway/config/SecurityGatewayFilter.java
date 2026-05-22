@@ -5,33 +5,30 @@ import org.springframework.cloud.gateway.filter.GatewayFilter;
 import org.springframework.cloud.gateway.filter.GatewayFilterChain;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.oauth2.jwt.Jwt;
-import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken;
+import org.springframework.http.server.reactive.ServerHttpRequest;
 import org.springframework.stereotype.Component;
 import org.springframework.web.server.ServerWebExchange;
 import reactor.core.publisher.Mono;
 
-import java.util.Collection;
 import java.util.Optional;
 import java.util.UUID;
-
 
 @Component
 @RequiredArgsConstructor
 public class SecurityGatewayFilter implements GatewayFilter {
-
     private final RateLimiterConfig rateLimiterConfig;
 
     @Override
     public Mono<Void> filter(ServerWebExchange exchange, GatewayFilterChain chain) {
+
         String path = exchange.getRequest().getURI().getPath();
+
         if (isPublic(path)) {
             return chain.filter(exchange);
         }
+
         String requestId = getRequestId(exchange);
 
-        //JWT from header instead of Principal
         String authHeader = exchange.getRequest()
                 .getHeaders()
                 .getFirst(HttpHeaders.AUTHORIZATION);
@@ -39,14 +36,23 @@ public class SecurityGatewayFilter implements GatewayFilter {
         if (authHeader == null || !authHeader.startsWith("Bearer ")) {
             return unauthorized(exchange);
         }
+
         return rateLimiterConfig.validateRequest(requestId)
                 .flatMap(valid -> {
                     if (!valid) {
                         return tooManyRequests(exchange);
                     }
-                    return chain.filter(exchange.mutate()
-                            .request(r -> r.header("Request-Id", requestId))
-                            .build());
+
+                    ServerHttpRequest mutatedRequest = exchange.getRequest()
+                            .mutate()
+                            .header("Request-Id", requestId)
+                            .build();
+
+                    return chain.filter(
+                            exchange.mutate()
+                                    .request(mutatedRequest)
+                                    .build()
+                    );
                 });
     }
 
