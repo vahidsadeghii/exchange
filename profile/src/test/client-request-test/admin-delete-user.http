@@ -1,0 +1,2 @@
+### Delete user by admin
+DELETE http://{{host}}/profile/open/v1/user?userEmail=helda.musterman11@example.com

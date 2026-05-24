@@ -128,4 +128,7 @@ public interface UserProfileService {
      * @return an {@link Optional} containing the user ID if found
      */
     Optional<Long> findUserByKeycloakId(String keycloakId);
+
+
+    void deleteUserByEmail(String email);
 }

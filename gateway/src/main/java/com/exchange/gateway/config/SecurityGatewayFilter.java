@@ -1,5 +1,6 @@
 package com.exchange.gateway.config;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import org.springframework.cloud.gateway.filter.GatewayFilter;
 import org.springframework.cloud.gateway.filter.GatewayFilterChain;
@@ -16,18 +17,19 @@ import java.util.UUID;
 @Component
 @RequiredArgsConstructor
 public class SecurityGatewayFilter implements GatewayFilter {
+
     private final RateLimiterConfig rateLimiterConfig;
+    private final ObjectMapper objectMapper;
 
     @Override
-    public Mono<Void> filter(ServerWebExchange exchange, GatewayFilterChain chain) {
+    public Mono<Void> filter(ServerWebExchange exchange,
+                             GatewayFilterChain chain) {
 
         String path = exchange.getRequest().getURI().getPath();
 
         if (isPublic(path)) {
             return chain.filter(exchange);
         }
-
-        String requestId = getRequestId(exchange);
 
         String authHeader = exchange.getRequest()
                 .getHeaders()
@@ -37,8 +39,11 @@ public class SecurityGatewayFilter implements GatewayFilter {
             return unauthorized(exchange);
         }
 
+        String requestId = buildRequestId(exchange);
+
         return rateLimiterConfig.validateRequest(requestId)
                 .flatMap(valid -> {
+
                     if (!valid) {
                         return tooManyRequests(exchange);
                     }
@@ -56,6 +61,28 @@ public class SecurityGatewayFilter implements GatewayFilter {
                 });
     }
 
+    private String buildRequestId(ServerWebExchange exchange) {
+        try {
+            String tokenInfoHeader = exchange.getRequest()
+                    .getHeaders()
+                    .getFirst("TokenInfo");
+            if (tokenInfoHeader != null) {
+                TokenInfo tokenInfo = objectMapper.readValue(
+                        tokenInfoHeader,
+                        TokenInfo.class
+                );
+
+                if (tokenInfo.tokenId() != null) {
+                    return tokenInfo.tokenId() + ":" + UUID.randomUUID();
+                }
+            }
+        } catch (Exception ignored) {
+
+        }
+
+        return UUID.randomUUID().toString();
+    }
+
     private Mono<Void> unauthorized(ServerWebExchange exchange) {
         exchange.getResponse().setStatusCode(HttpStatus.UNAUTHORIZED);
         return exchange.getResponse().setComplete();
@@ -70,11 +97,5 @@ public class SecurityGatewayFilter implements GatewayFilter {
         return path.startsWith("/profile/public")
                 || path.startsWith("/profile/open")
                 || path.startsWith("/wallet/open");
-    }
-
-    private String getRequestId(ServerWebExchange exchange) {
-        return Optional.ofNullable(
-                exchange.getRequest().getHeaders().getFirst("Request-Id")
-        ).orElse(UUID.randomUUID().toString());
     }
 }

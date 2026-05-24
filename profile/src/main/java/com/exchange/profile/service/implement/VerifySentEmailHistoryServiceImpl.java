@@ -120,6 +120,13 @@ public class VerifySentEmailHistoryServiceImpl implements VerifySentEmailHistory
         return MapToToken.mapToTokenResponse(jwtToken);
     }
 
+    @Override
+    public void deleteUserByEmail(String email) {
+        tokenService.deleteKeycloakUserByEmail(email);
+        userProfileService.deleteUserByEmail(email);
+        verifySentEmailHistoryRepository.deleteAllByEmail(email);
+    }
+
     private void sendKafkaEvent(String email, String id, String code, LocalDateTime now) {
         var message = new VerifyEmailSender(email, id, code, now.plusDays(expiredDate).toString());
         kafkaTemplateSendMessage.send(verificationMessage, message);

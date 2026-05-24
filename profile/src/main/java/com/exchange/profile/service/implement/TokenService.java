@@ -75,7 +75,6 @@ public class TokenService {
     }
 
 
-
     public JwtToken refreshAccessToken(String refreshToken) {
         return keycloakTokenClient.refreshToken(refreshToken);
     }
@@ -209,6 +208,49 @@ public class TokenService {
 
         } catch (Exception e) {
             return null;
+        }
+    }
+
+    public void deleteKeycloakUserByEmail(String email) {
+    if (email == null || email.isBlank()) {
+        return;
+    }
+
+    try {
+        List<UserRepresentation> users =
+                realm().users().searchByEmail(email, true);
+
+        if (users.isEmpty()) {
+            log.warn("User with email {} not found", email);
+            return;
+        }
+
+        String userId = users.get(0).getId();
+        realm().users().get(userId).remove();
+
+    } catch (Exception e) {
+        log.error("Failed to delete Keycloak user by email {}", email, e);
+    }
+}
+
+    public void deleteKeycloakUser(String userId) {
+        if (userId == null || userId.isBlank()) {
+            return;
+        }
+        try {
+            UserResource userResource = realm().users().get(userId);
+
+            // optional: check existence
+            userResource.toRepresentation();
+
+            // delete user completely
+            userResource.remove();
+
+        } catch (jakarta.ws.rs.NotFoundException e) {
+            log.warn("User {} not found in Keycloak", userId);
+
+        } catch (Exception e) {
+            log.error("Failed to delete Keycloak user {}", userId, e);
         }
     }
 

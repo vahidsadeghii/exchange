@@ -45,7 +45,7 @@ public KeyResolver keyResolver() {
 
     @Bean
     public RedisRateLimiter redisRateLimiter() {
-        return new RedisRateLimiter(10, 20, 1);
+        return new RedisRateLimiter(1000, 2000, 1);
     }
 
     public Mono<Boolean> validateRequest(String requestId) {

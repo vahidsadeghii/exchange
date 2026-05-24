@@ -18,7 +18,7 @@ import org.springframework.web.bind.annotation.RestController;
 public class VerifyUserEmailController {
     private final VerifySentEmailHistoryService verifySentEmailHistoryService;
 
-     @PostMapping(value = "/open/verify-code")
+     @PostMapping(value = "${api.prefix.open}/verify-code")
     public JwtTokenResponse handle(@RequestBody VerifyUserEmailRequest request) {
         TokenResponse token = verifySentEmailHistoryService.verifyEmailCode(request.verifySentEmailHistoryId(), request.verifyCode(), request.expiredDate());
         return new JwtTokenResponse(new AccessTokenResponse(token.accessToken().accessToken(), token.accessToken().expirationDate())

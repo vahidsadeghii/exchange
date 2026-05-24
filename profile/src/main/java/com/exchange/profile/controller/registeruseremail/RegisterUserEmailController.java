@@ -15,7 +15,7 @@ public class RegisterUserEmailController {
     private final VerifySentEmailHistoryService verifySentEmailHistoryService;
 
 
-    @PostMapping(value = "/open/verify-email")
+    @PostMapping(value = "${api.prefix.open}/verify-email")
     public RegisterUserEmailResponse handle(@RequestBody RegisterUserEmailRequest request) {
         VerifySentEmailHistory response = verifySentEmailHistoryService.registerEmail(request.email());
 

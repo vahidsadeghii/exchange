@@ -19,4 +19,7 @@ public interface VerifySentEmailHistoryRepository extends JpaRepository<VerifySe
     );
 
 
+    long deleteAllByEmail(String email);
+
+
 }

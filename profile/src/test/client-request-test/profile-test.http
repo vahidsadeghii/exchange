@@ -1,94 +1,202 @@
-###User Signin
-POST http://{{host}}/profile/open/v1/user/signin
-Request-Id: 123
+
+### Step 1 - Register email
+POST http://{{host}}/profile/open/v1/verify-email
 Content-Type: application/json
 
 {
-  "userName": "matin111@gmail.com",
-  "password": "matin111"
+  "email": "helda.musterman11@example.com"
+}
+
+> {%
+    client.log("Status: " + response.status);
+    client.log("Body: " + JSON.stringify(response.body));
+
+    client.test("Status code is 200", function () {
+        client.assert(response.status === 200, "Expected status 200");
+    });
+
+    if (response.status === 200) {
+
+        client.global.set(
+            "verifySentEmailHistoryId",
+            response.body.verifySentEmailHistoryId
+        );
+
+        client.global.set(
+            "verifyCode",
+            response.body.verifyCode
+        );
+
+        client.global.set(
+            "expiredDate",
+            response.body.expiredDate
+        );
+
+        client.log("verifySentEmailHistoryId saved");
+        client.log("verifyCode saved");
+        client.log("expiredDate saved");
+    }
+%}
+
+### Step 2 - Verify email code
+POST http://{{host}}/profile/open/v1/verify-code
+Content-Type: application/json
+
+{
+  "verifySentEmailHistoryId": "{{verifySentEmailHistoryId}}",
+  "verifyCode": "{{verifyCode}}",
+  "expiredDate": "{{expiredDate}}"
+}
+
+> {%
+    client.log("BODY = " + JSON.stringify(response.body));
+
+    client.test("Status 200", function () {
+        client.assert(response.status === 200, "Expected 200");
+    });
+
+    if (response.status === 200 && response.body) {
+
+        const accessToken =
+            response.body?.accessTokenResponse?.accessToken;
+
+        const refreshToken =
+            response.body?.refreshTokenResponse?.refreshToken;
+
+        client.log("ACCESS TOKEN = " + accessToken);
+        client.log("REFRESH TOKEN = " + refreshToken);
+
+        client.test("Access token exists", function () {
+            client.assert(accessToken, "accessToken missing");
+        });
+
+        client.test("Refresh token exists", function () {
+            client.assert(refreshToken, "refreshToken missing");
+        });
+
+        client.global.set("accessToken", accessToken);
+        client.global.set("refreshToken", refreshToken);
+    }
+%}
+
+### Step 3 - Set password (upgrade user)
+POST http://{{host}}/profile/api/v1/set-password
+Content-Type: application/json
+Authorization: Bearer {{accessToken}}
+
+{
+  "username": "helda.musterman11@example.com",
+  "email": "helda.musterman11@example.com",
+  "password": "HeldaPass123!"
+}
+
+> {%
+    client.log("STATUS = " + response.status);
+    client.log("BODY = " + JSON.stringify(response.body));
+
+    client.test("Status code is 200", function () {
+        client.assert(response.status === 200, "Expected status 200");
+    });
+
+    client.test("Access token returned", function () {
+        client.assert(response.body.accessToken !== undefined, "accessToken missing");
+    });
+
+    client.test("Refresh token returned", function () {
+        client.assert(response.body.refreshToken !== undefined, "refreshToken missing");
+    });
+
+    client.global.set("accessToken", response.body.accessToken);
+    client.global.set("refreshToken", response.body.refreshToken);
+
+%}
+
+###User Signin
+POST http://{{host}}/profile/open/v1/user/signin
+Content-Type: application/json
+
+{
+  "userName": "helda.musterman11@example.com",
+  "password": "HeldaPass123!"
 }
 > {%
-client.test("Status code is 200", function () {
-    client.assert(response.status === 200, "Expected status 200");
-});
+    client.log("SIGNIN RESPONSE STATUS = " + response.status);
+    client.log("SIGNIN BODY = " + JSON.stringify(response.body));
 
-client.test("Access token exists", function () {
-    client.assert(response.body.accessToken !== undefined, "Missing accessToken object");
-    client.assert(response.body.accessToken.accessToken !== "", "accessToken is empty");
-});
+    if (response.status !== 200) {
+        throw "Signin failed → check backend logs";
+    }
 
-client.test("Access token expiration exists", function () {
-    client.assert(response.body.accessToken.expirationDate !== "", "accessToken expiration missing");
-});
+    const accessToken = response.body?.accessToken?.accessToken;
 
-client.test("Refresh token exists", function () {
-    client.assert(response.body.refreshToken !== undefined, "Missing refreshToken object");
-    client.assert(response.body.refreshToken.refreshToken !== "", "refreshToken is empty");
-});
+    const refreshToken = response.body?.refreshToken?.refreshToken;
 
-client.test("Refresh token expiration exists", function () {
-    client.assert(response.body.refreshToken.expirationDate !== "", "refreshToken expiration missing");
-});
+    client.log("ACCESS TOKEN = " + accessToken);
+    client.log("REFRESH TOKEN = " + refreshToken);
 
-client.test("User type is returned", function () {
-    client.assert(response.body.userType !== undefined, "userType missing");
-});
+    client.test("Access token exists", function () {
+        client.assert(accessToken !== undefined && accessToken !== "",
+            "Missing accessToken");
+    });
 
-client.global.set("loginToken", response.body.accessToken.accessToken);
+    client.test("Refresh token exists", function () {
+        client.assert(refreshToken !== undefined && refreshToken !== "",
+            "Missing refreshToken");
+    });
 
+    client.global.set("loginToken", accessToken);
 %}
 
 
 ###Set user Profile
 POST http://{{host}}/profile/api/v1/set-profile
 Authorization: Bearer {{loginToken}}
-Request-Id: 128
 Content-Type: application/json
 
 {
-   "firstName": "Martin1111",
-   "lastName": "Musterman",
-   "phoneNumber": "06995858545",
-   "genderType":"MALE",
-   "birthday": "1990-11-01",
-   "address": "Wien 1110"
+  "firstName": "Helda",
+  "lastName": "musterman11",
+  "phoneNumber": "06995858545",
+  "genderType": "FEMALE",
+  "birthday": "1990-01-01",
+  "address": "Wien 1140"
 }
 
 > {%
-client.test("Status code is 200", function () {
-    client.assert(response.status === 200, "Expected status 200");
-});
+    client.test("Status code is 200", function () {
+        client.assert(response.status === 200, "Expected status 200");
+    });
 
-client.test("First name matches", function () {
-    client.assert(response.body.firstName === "Martin", "firstName mismatch");
-});
+    client.test("First name matches", function () {
+        client.assert(response.body.firstName === "Helda", "firstName mismatch");
+    });
 
-client.test("Last name matches", function () {
-    client.assert(response.body.lastName === "Musterman", "lastName mismatch");
-});
+    client.test("Last name matches", function () {
+        client.assert(response.body.lastName === "musterman11", "lastName mismatch");
+    });
 
-client.test("Phone number matches", function () {
-    client.assert(response.body.phoneNumber === "06995858545", "phoneNumber mismatch");
-});
+    client.test("Phone number matches", function () {
+        client.assert(response.body.phoneNumber === "06995858545", "phoneNumber mismatch");
+    });
 
-client.test("Gender type matches", function () {
-    client.assert(response.body.genderType === "MALE", "genderType mismatch");
-});
+    client.test("Gender type matches", function () {
+        client.assert(response.body.genderType === "FEMALE", "genderType mismatch");
+    });
 
-client.test("Birthday matches", function () {
-    client.assert(response.body.birthday === "1990-11-01", "birthday mismatch");
-});
+    client.test("Birthday matches", function () {
+        client.assert(response.body.birthday === "1990-01-01", "birthday mismatch");
+    });
 
-client.test("Address matches", function () {
-    client.assert(response.body.address === "Wien 1110", "address mismatch");
-});
+    client.test("Address matches", function () {
+        client.assert(response.body.address === "Wien 1140", "address mismatch");
+    });
 
-client.test("Email exists", function () {
-    client.assert(response.body.email !== undefined, "email missing");
-    client.assert(response.body.email !== "", "email empty");
-});
+    client.test("Email exists", function () {
+        client.assert(response.body.email !== undefined, "email missing");
+        client.assert(response.body.email !== "", "email empty");
+    });
 
-client.test("User status exists", function () {
-    client.assert(response.body.status !== undefined, "status missing");
-});
- %}
+    client.test("User status exists", function () {
+        client.assert(response.body.status !== undefined, "status missing");
+    });
+%}

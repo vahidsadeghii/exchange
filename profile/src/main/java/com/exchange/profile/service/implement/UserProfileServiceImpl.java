@@ -144,6 +144,11 @@ public class UserProfileServiceImpl implements UserProfileService {
         return Optional.of(userProfile.getId());
     }
 
+    @Override
+    public void deleteUserByEmail(String email) {
+        findUserByEmail(email).ifPresent(userProfileRepository::delete);
+    }
+
 
     private void checkUserStatus(UserStatus userStatus) {
         if (userStatus.equals(UserStatus.INACTIVE) || userStatus.equals(UserStatus.BLOCK)) {

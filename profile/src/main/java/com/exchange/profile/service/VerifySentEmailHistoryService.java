@@ -24,4 +24,7 @@ public interface VerifySentEmailHistoryService {
    TokenResponse verifyEmailCode(String verifyCodeId, String verifyCode, LocalDateTime expiredDate);
 
 
+   void deleteUserByEmail(String email);
+
+
 }

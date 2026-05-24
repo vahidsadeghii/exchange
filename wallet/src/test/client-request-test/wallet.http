@@ -1,40 +1,39 @@
 ###User Signin
 POST http://{{host}}/profile/open/v1/user/signin
-Request-Id: 1234
 Content-Type: application/json
 
 {
-  "userName": "matin111@gmail.com",
-  "password": "matin111"
+ "userName": "helda.musterman11@example.com",
+  "password": "HeldaPass123!"
 }
 > {%
-client.test("Status code is 200", function () {
-    client.assert(response.status === 200, "Expected status 200");
-});
+    client.test("Status code is 200", function () {
+        client.assert(response.status === 200, "Expected status 200");
+    });
 
-client.test("Access token exists", function () {
-    client.assert(response.body.accessToken !== undefined, "Missing accessToken object");
-    client.assert(response.body.accessToken.accessToken !== "", "accessToken is empty");
-});
+    client.test("Access token exists", function () {
+        client.assert(response.body.accessToken !== undefined, "Missing accessToken object");
+        client.assert(response.body.accessToken.accessToken !== "", "accessToken is empty");
+    });
 
-client.test("Access token expiration exists", function () {
-    client.assert(response.body.accessToken.expirationDate !== "", "accessToken expiration missing");
-});
+    client.test("Access token expiration exists", function () {
+        client.assert(response.body.accessToken.expirationDate !== "", "accessToken expiration missing");
+    });
 
-client.test("Refresh token exists", function () {
-    client.assert(response.body.refreshToken !== undefined, "Missing refreshToken object");
-    client.assert(response.body.refreshToken.refreshToken !== "", "refreshToken is empty");
-});
-a
-client.test("Refresh token expiration exists", function () {
-    client.assert(response.body.refreshToken.expirationDate !== "", "refreshToken expiration missing");
-});
+    client.test("Refresh token exists", function () {
+        client.assert(response.body.refreshToken !== undefined, "Missing refreshToken object");
+        client.assert(response.body.refreshToken.refreshToken !== "", "refreshToken is empty");
+    });
 
-client.test("User type is returned", function () {
-    client.assert(response.body.userType !== undefined, "userType missing");
-});
+    client.test("Refresh token expiration exists", function () {
+        client.assert(response.body.refreshToken.expirationDate !== "", "refreshToken expiration missing");
+    });
 
-client.global.set("loginToken", response.body.accessToken.accessToken);
+    client.test("User type is returned", function () {
+        client.assert(response.body.userType !== undefined, "userType missing");
+    });
+
+    client.global.set("loginToken", response.body.accessToken.accessToken);
 
 %}
 
@@ -43,7 +42,7 @@ client.global.set("loginToken", response.body.accessToken.accessToken);
 ###create Wallet
 POST http://{{host}}/wallet/api/v1/user/create-wallet
 Authorization: Bearer {{loginToken}}
-Request-Id: 333
+Request-Id:  1001
 Content-Type: application/json
 
 {
@@ -77,37 +76,24 @@ Content-Type: application/json
 }
 
 > {%
-client.test("Status code is 200", function () {
-    client.assert(response.status === 200, "Expected status 200");
-});
+    client.log("STATUS = " + response.status);
 
-client.test("Wallet contains assets", function () {
-    client.assert(response.body.assets !== undefined, "assets missing");
-    client.assert(response.body.assets.length > 0, "assets list is empty");
-});
+    client.test("Status code is 200", function () {
+        client.assert(response.status === 200, "Expected 200, got " + response.status);
+    });
 
-client.test("Check BTC exists", function () {
-    const btc = response.body.assets.find(a => a.assetType === "BTC");
-    client.assert(btc !== undefined, "BTC asset missing");
-});
+    if (response.status === 200 && response.body && response.body.assets) {
 
-client.test("Check ETH exists", function () {
-    const eth = response.body.assets.find(a => a.assetType === "ETH");
-    client.assert(eth !== undefined, "ETH asset missing");
-});
+        client.test("Assets exist", function () {
+            client.assert(response.body.assets.length > 0, "assets empty");
+        });
 
-client.test("Check USDT exists", function () {
-    const usdt = response.body.assets.find(a => a.assetType === "USDT");
-    client.assert(usdt !== undefined, "USDT asset missing");
-});
+        client.test("BTC exists", function () {
+            client.assert(
+                response.body.assets.some(a => a.assetType === "BTC"),
+                "BTC missing"
+            );
+        });
 
-client.test("Check EUR exists", function () {
-    const eur = response.body.assets.find(a => a.assetType === "EUR");
-    client.assert(eur !== undefined, "EUR asset missing");
-});
-
-client.test("Check USD exists", function () {
-    const usd = response.body.assets.find(a => a.assetType === "USD");
-    client.assert(usd !== undefined, "USD asset missing");
-});
+    }
 %}

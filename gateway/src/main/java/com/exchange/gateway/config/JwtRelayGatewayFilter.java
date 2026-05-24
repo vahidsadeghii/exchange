@@ -4,7 +4,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import org.springframework.cloud.gateway.filter.GatewayFilter;
 import org.springframework.cloud.gateway.filter.GatewayFilterChain;
-import org.springframework.cloud.gateway.filter.GlobalFilter;
 import org.springframework.core.Ordered;
 import org.springframework.http.server.reactive.ServerHttpRequest;
 import org.springframework.security.oauth2.jwt.Jwt;
@@ -18,7 +17,7 @@ import java.util.Map;
 
 @Component
 @RequiredArgsConstructor
-public class JwtRelayGatewayFilter implements GatewayFilter, Ordered {
+public class JwtRelayGatewayFilter implements GatewayFilter {
 
     private final ObjectMapper objectMapper;
 
@@ -32,19 +31,14 @@ public class JwtRelayGatewayFilter implements GatewayFilter, Ordered {
                 .cast(JwtAuthenticationToken.class)
 
                 .flatMap(auth -> {
-
                     Jwt jwt = auth.getToken();
-                    String userId = jwt.getClaimAsString("userId");
                     List<String> roles = extractRoles(jwt);
-
                     TokenInfo tokenInfo = new TokenInfo(
                             roles,
                             jwt.getSubject(),
                             jwt.getId()
                     );
-
                     try {
-
                         String json =
                                 objectMapper.writeValueAsString(tokenInfo);
 
@@ -64,19 +58,15 @@ public class JwtRelayGatewayFilter implements GatewayFilter, Ordered {
                         return Mono.error(e);
                     }
                 })
-
                 .switchIfEmpty(chain.filter(exchange));
     }
 
     private List<String> extractRoles(Jwt jwt) {
-
         Map<String, Object> realmAccess =
                 jwt.getClaim("realm_access");
-
         if (realmAccess == null) {
             return List.of();
         }
-
         Object rolesObj = realmAccess.get("roles");
 
         if (!(rolesObj instanceof List<?> roles)) {
@@ -89,8 +79,4 @@ public class JwtRelayGatewayFilter implements GatewayFilter, Ordered {
                 .toList();
     }
 
-    @Override
-    public int getOrder() {
-        return -1;
-    }
 }
