@@ -48,7 +48,7 @@ public class WalletServiceImpl implements WalletService {
     }
 
     @Override
-    public Wallet deposit(String walletId, String onlineUser, AssetType assetType, BigDecimal amount) {
+    public Wallet increaseWallet(String walletId, String onlineUser, AssetType assetType, BigDecimal amount) {
 
         if (amount == null || amount.signum() <= 0) {
             throw new AmountMustBePositiveException();
@@ -62,7 +62,7 @@ public class WalletServiceImpl implements WalletService {
                 .findFirst()
                 .orElseThrow(AssetNotFoundException::new);
 
-        asset.deposit(amount);
+        asset.increase(amount);
         wallet.setUpdatedAt(LocalDateTime.now());
 
         repository.save(wallet);

@@ -11,5 +11,5 @@ public interface WalletService {
 
     Wallet save(String keycloakId, List<AssetDTO> assets);
 
-    Wallet deposit(String walletId, String onlineUser, AssetType assetType, BigDecimal amount);
+    Wallet increaseWallet(String walletId, String onlineUser, AssetType assetType, BigDecimal amount);
 }

@@ -5,7 +5,6 @@ import com.exchange.wallet.config.security.OnlineUser;
 import com.exchange.wallet.domain.Wallet;
 import com.exchange.wallet.service.WalletService;
 import lombok.RequiredArgsConstructor;
-import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -22,7 +21,7 @@ public class DepositController {
     //@PreAuthorize("hasRole('CUSTOMER')")
     public Wallet handle(@AuthenticationPrincipal OnlineUser onlineUser,
                           @RequestBody DepositRequest request) {
-        return walletService.deposit(request.walletId(), onlineUser.getKeycloakUserId(),
+        return walletService.increaseWallet(request.walletId(), onlineUser.getKeycloakUserId(),
                 request.assetType(), request.amount()
         );
     }

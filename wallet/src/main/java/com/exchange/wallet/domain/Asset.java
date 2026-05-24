@@ -22,7 +22,7 @@ public class Asset {
     private AssetType assetType;
 
 
-    public void deposit(BigDecimal amount) {
+    public void increase(BigDecimal amount) {
         this.balance = this.balance.add(amount);
     }
 

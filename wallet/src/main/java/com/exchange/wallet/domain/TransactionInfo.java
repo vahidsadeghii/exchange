@@ -1,5 +1,7 @@
 package com.exchange.wallet.domain;
 
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 import lombok.*;
 
 import java.math.BigDecimal;
@@ -15,12 +17,13 @@ public class TransactionInfo {
     private String id;
     private Long userId;
     private String walletId;
+
+    @Enumerated(EnumType.STRING)
     private AssetType assetType;
-    private BigDecimal amount;
-
-    private TransactionType type;
-
+    @Enumerated(EnumType.STRING)
     private TransactionStatus status;
+    private BigDecimal amount;
+    private TransactionType type;
 
     private BigDecimal balanceBefore;
     private BigDecimal balanceAfter;
