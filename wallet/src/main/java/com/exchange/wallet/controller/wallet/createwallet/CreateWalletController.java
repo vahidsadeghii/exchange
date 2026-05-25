@@ -1,29 +1,27 @@
 package com.exchange.wallet.controller.wallet.createwallet;
 
 
-import com.exchange.wallet.config.security.OnlineUser;
+import com.exchange.wallet.controller.wallet.AssetDTO;
+import com.exchange.wallet.domain.AssetType;
 import com.exchange.wallet.domain.Wallet;
 import com.exchange.wallet.service.WalletService;
 import lombok.RequiredArgsConstructor;
-
-import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+
+import java.math.BigDecimal;
+import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequiredArgsConstructor
 public class CreateWalletController {
     private final WalletService walletService;
 
-    @PostMapping(value = "${api.prefix.secure}/user/create-wallet")
-    @PreAuthorize("hasRole('CUSTOMER')")
-    public Wallet handle(@AuthenticationPrincipal OnlineUser onlineUser,
-                         @RequestBody CreateWalletRequest request) {
+    @PostMapping(value = "${api.prefix.internal}/user/wallet")
+    public Map<String, Wallet> handle(@RequestParam("userId") Long userId) {
 
-        return walletService.save(onlineUser.getKeycloakUserId(), request.assets());
+        return walletService.save(userId, null, List.of(new AssetDTO(BigDecimal.ZERO, BigDecimal.ZERO, AssetType.EUR)));
     }
-
-
 }

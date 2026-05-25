@@ -16,25 +16,26 @@ public class InMemoryWalletRepository {
 
     private final Map<String, Wallet> walletMap = new ConcurrentHashMap<>();
 
-
-    public Wallet save(Wallet wallet) {
+    public Map<String, Wallet> save(Wallet wallet) {
         walletMap.put(wallet.getWalletId(), wallet);
-        return wallet;
+
+        System.out.println(walletMap);
+
+        return walletMap;
     }
 
     public Optional<Wallet> findById(String walletId) {
         return Optional.ofNullable(walletMap.get(walletId));
     }
 
-    public List<Wallet> findAll() {
-        return new ArrayList<>(walletMap.values());
-    }
 
-    public List<Wallet> findByUserId(Long userId) {
+    public Wallet findByUserId(Long userId) {
         return walletMap.values().stream()
                 .filter(w -> w.getUserId().equals(userId))
-                .toList();
+                .findFirst()
+                .orElse(null);
     }
+
 
     public void delete(String walletId) {
         walletMap.remove(walletId);

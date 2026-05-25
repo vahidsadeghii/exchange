@@ -1,7 +1,7 @@
 package com.exchange.wallet.service.serviceImpl;
 
 import com.exchange.wallet.client.profileclient.ProfileClient;
-import com.exchange.wallet.controller.wallet.createwallet.AssetDTO;
+import com.exchange.wallet.controller.wallet.AssetDTO;
 import com.exchange.wallet.domain.Asset;
 import com.exchange.wallet.domain.AssetType;
 import com.exchange.wallet.domain.Wallet;
@@ -17,8 +17,10 @@ import org.springframework.stereotype.Service;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -28,28 +30,33 @@ public class WalletServiceImpl implements WalletService {
 
 
     @Override
-    public Wallet save(String keycloakId, List<AssetDTO> assets) {
-        Optional<Long> userId = getUserIdByKeycloakId(keycloakId);
-        List<Asset> assetEntities = assets.stream()
-                .map(dto -> Asset.builder()
-                        .balance(dto.balance())
-                        .blockedBalance(dto.blockedBalance())
-                        .assetType(dto.assetType())
-                        .build())
-                .toList();
-        return repository.save(Wallet.builder()
-                .walletId(UUID.randomUUID().toString())
-                .userId(userId.get())
-                .asserts(assetEntities)
-                .status(WalletStatus.ACTIVE)
-                .createdAt(LocalDateTime.now())
-                .updatedAt(LocalDateTime.now())
-                .build());
+    public Map<String, Wallet> save(Long userId, String keycloakId, List<AssetDTO> assets) {
+        List<Asset> assetEntities = assetEntities(assets);
+        if (userId != null) {
+            return repository.save(Wallet.builder()
+                    .walletId(UUID.randomUUID().toString())
+                    .userId(userId)
+                    .asserts(assetEntities)
+                    .status(WalletStatus.ACTIVE)
+                    .createdAt(LocalDateTime.now())
+                    .updatedAt(LocalDateTime.now())
+                    .build());
+        }
+
+        if (keycloakId == null || keycloakId.isBlank()) {
+            throw new RuntimeException("keycloakId is required for wallet update");
+        }
+        Optional<Long> userIdByKeycloakId = getUserIdByKeycloakId(keycloakId);
+        Wallet existingWallet = repository.findByUserId(userIdByKeycloakId.get());
+        mergeAssets(existingWallet, assetEntities);
+
+        existingWallet.setUpdatedAt(LocalDateTime.now());
+        return repository.save(existingWallet);
     }
+
 
     @Override
     public Wallet increaseWallet(String walletId, String onlineUser, AssetType assetType, BigDecimal amount) {
-
         if (amount == null || amount.signum() <= 0) {
             throw new AmountMustBePositiveException();
         }
@@ -66,11 +73,10 @@ public class WalletServiceImpl implements WalletService {
         wallet.setUpdatedAt(LocalDateTime.now());
 
         repository.save(wallet);
-
         return wallet;
     }
 
-    public Wallet withdraw(String walletId, AssetType type, BigDecimal amount) {
+    public Map<String, Wallet> withdraw(String walletId, AssetType type, BigDecimal amount) {
 
         Wallet wallet = repository.findById(walletId)
                 .orElseThrow(() -> new RuntimeException("Wallet not found"));
@@ -87,8 +93,41 @@ public class WalletServiceImpl implements WalletService {
         return repository.save(wallet);
     }
 
+    private List<Asset> assetEntities(List<AssetDTO> assets) {
+        return assets.stream()
+                .map(dto -> Asset.builder()
+                        .balance(dto.balance())
+                        .blockedBalance(dto.blockedBalance())
+                        .assetType(dto.assetType())
+                        .build())
+                .toList();
+    }
 
     private Optional<Long> getUserIdByKeycloakId(String keycloakId) {
         return profileClient.findUserByKeycloakId(keycloakId);
+    }
+
+    private void mergeAssets(Wallet wallet, List<Asset> newAssets) {
+        Map<AssetType, Asset> existingAssets =
+                wallet.getAsserts()
+                        .stream()
+                        .collect(Collectors.toMap(
+                                Asset::getAssetType,
+                                asset -> asset
+                        ));
+        for (Asset newAsset : newAssets) {
+            Asset existing = existingAssets.get(newAsset.getAssetType());
+
+            // update existing asset
+            if (existing != null) {
+
+                existing.setBalance(newAsset.getBalance());
+                existing.setBlockedBalance(newAsset.getBlockedBalance());
+
+            } else {
+                // add new asset
+                wallet.getAsserts().add(newAsset);
+            }
+        }
     }
 }

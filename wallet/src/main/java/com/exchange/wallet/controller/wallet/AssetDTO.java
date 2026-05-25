@@ -1,4 +1,4 @@
-package com.exchange.wallet.controller.wallet.createwallet;
+package com.exchange.wallet.controller.wallet;
 
 import com.exchange.wallet.domain.AssetType;
 

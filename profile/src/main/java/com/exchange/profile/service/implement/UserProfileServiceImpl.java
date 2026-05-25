@@ -1,5 +1,7 @@
 package com.exchange.profile.service.implement;
 
+
+import com.exchange.profile.client.wallet.WalletClient;
 import com.exchange.profile.domain.*;
 import com.exchange.profile.exception.PasswordIsInvalidException;
 import com.exchange.profile.exception.UserCanNotFoundException;
@@ -28,6 +30,7 @@ public class UserProfileServiceImpl implements UserProfileService {
     private final Keycloak keycloakAdmin;
     private final UserProfileRepository userProfileRepository;
     private final TokenService tokenService;
+    private final WalletClient walletClient;
 
     @Value("${keycloak.realm}")
     private String targetRealm;
@@ -42,7 +45,7 @@ public class UserProfileServiceImpl implements UserProfileService {
         if (userProfile.isEmpty()) {
             throw new UserCanNotFoundException();
         }
-        return userProfileRepository.save(UserProfile.builder()
+       return userProfileRepository.save(UserProfile.builder()
                 .firstName(firstName)
                 .lastName(lastName)
                 .phoneNumber(phoneNumber)
@@ -77,11 +80,15 @@ public class UserProfileServiceImpl implements UserProfileService {
 
     @Override
     public UserProfile createUser(String email) {
-        return userProfileRepository.save(UserProfile.builder()
+
+        UserProfile profile = userProfileRepository.save(UserProfile.builder()
                 .email(email)
                 .userStatus(UserStatus.ACTIVE)
                 .createDate(LocalDateTime.now())
                 .build());
+         walletClient.createWallet(profile.getId());
+
+         return  profile;
     }
 
     @Override
