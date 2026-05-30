@@ -1,30 +1,34 @@
 package com.exchange.gateway.config;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import org.springframework.cloud.gateway.filter.GatewayFilter;
 import org.springframework.cloud.gateway.filter.GatewayFilterChain;
 import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.server.reactive.ServerHttpRequest;
 import org.springframework.stereotype.Component;
 import org.springframework.web.server.ServerWebExchange;
 import reactor.core.publisher.Mono;
 
-import java.util.Optional;
-import java.util.UUID;
+import java.util.Set;
+
+
 
 @Component
 @RequiredArgsConstructor
 public class SecurityGatewayFilter implements GatewayFilter {
+    private final GatewayConfig gatewayConfig;
 
-    private final RateLimiterConfig rateLimiterConfig;
-    private final ObjectMapper objectMapper;
+    private static final Set<HttpMethod> IDEMPOTENT_METHODS =
+            Set.of(HttpMethod.POST,
+                    HttpMethod.PUT,
+                    HttpMethod.PATCH,
+                    HttpMethod.DELETE);
 
     @Override
     public Mono<Void> filter(ServerWebExchange exchange,
                              GatewayFilterChain chain) {
-
         String path = exchange.getRequest().getURI().getPath();
 
         if (isPublic(path)) {
@@ -39,9 +43,19 @@ public class SecurityGatewayFilter implements GatewayFilter {
             return unauthorized(exchange);
         }
 
-        String requestId = buildRequestId(exchange);
+        HttpMethod method = exchange.getRequest().getMethod();
+        boolean requiresIdempotency = IDEMPOTENT_METHODS.contains(method);
 
-        return rateLimiterConfig.validateRequest(requestId)
+        if (!requiresIdempotency) {
+            return chain.filter(exchange);
+        }
+
+        String requestId = exchange.getRequest().getHeaders().getFirst("Request-Id");
+
+        if (requestId == null || requestId.isBlank()) {
+            return badRequest(exchange, "Missing request-id");
+        }
+        return gatewayConfig.validateRequest(requestId)
                 .flatMap(valid -> {
 
                     if (!valid) {
@@ -61,35 +75,17 @@ public class SecurityGatewayFilter implements GatewayFilter {
                 });
     }
 
-    private String buildRequestId(ServerWebExchange exchange) {
-        try {
-            String tokenInfoHeader = exchange.getRequest()
-                    .getHeaders()
-                    .getFirst("TokenInfo");
-            if (tokenInfoHeader != null) {
-                TokenInfo tokenInfo = objectMapper.readValue(
-                        tokenInfoHeader,
-                        TokenInfo.class
-                );
-
-                if (tokenInfo.tokenId() != null) {
-                    return tokenInfo.tokenId() + ":" + UUID.randomUUID();
-                }
-            }
-        } catch (Exception ignored) {
-
-        }
-
-        return UUID.randomUUID().toString();
-    }
-
     private Mono<Void> unauthorized(ServerWebExchange exchange) {
-        exchange.getResponse().setStatusCode(HttpStatus.UNAUTHORIZED);
+        exchange.getResponse()
+                .setStatusCode(HttpStatus.UNAUTHORIZED);
+
         return exchange.getResponse().setComplete();
     }
 
     private Mono<Void> tooManyRequests(ServerWebExchange exchange) {
-        exchange.getResponse().setStatusCode(HttpStatus.TOO_MANY_REQUESTS);
+        exchange.getResponse()
+                .setStatusCode(HttpStatus.TOO_MANY_REQUESTS);
+
         return exchange.getResponse().setComplete();
     }
 
@@ -97,5 +93,10 @@ public class SecurityGatewayFilter implements GatewayFilter {
         return path.startsWith("/profile/public")
                 || path.startsWith("/profile/open")
                 || path.startsWith("/wallet/open");
+    }
+
+    private Mono<Void> badRequest(ServerWebExchange exchange, String message) {
+        exchange.getResponse().setStatusCode(HttpStatus.BAD_REQUEST);
+        return exchange.getResponse().setComplete();
     }
 }

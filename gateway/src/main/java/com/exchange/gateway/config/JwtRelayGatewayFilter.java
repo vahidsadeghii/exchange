@@ -62,20 +62,17 @@ public class JwtRelayGatewayFilter implements GatewayFilter {
     }
 
     private List<String> extractRoles(Jwt jwt) {
-        Map<String, Object> realmAccess =
-                jwt.getClaim("realm_access");
+        Map<String, Object> realmAccess = jwt.getClaim("realm_access");
         if (realmAccess == null) {
             return List.of();
         }
         Object rolesObj = realmAccess.get("roles");
-
         if (!(rolesObj instanceof List<?> roles)) {
             return List.of();
         }
-
         return roles.stream()
                 .map(String::valueOf)
-                .filter(r -> r.startsWith("ROLE_"))
+                .filter(role -> role.startsWith("ROLE_"))
                 .toList();
     }
 
