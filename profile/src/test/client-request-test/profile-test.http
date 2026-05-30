@@ -3,6 +3,7 @@
 POST http://{{host}}/profile/open/v1/verify-email
 Content-Type: application/json
 
+
 {
   "email": "helda.musterman11@example.com"
 }
@@ -83,6 +84,7 @@ Content-Type: application/json
 POST http://{{host}}/profile/api/v1/set-password
 Content-Type: application/json
 Authorization: Bearer {{accessToken}}
+Request-Id: 123
 
 {
   "username": "helda.musterman11@example.com",
@@ -114,6 +116,7 @@ Authorization: Bearer {{accessToken}}
 ###User Signin
 POST http://{{host}}/profile/open/v1/user/signin
 Content-Type: application/json
+
 
 {
   "userName": "helda.musterman11@example.com",
@@ -151,6 +154,7 @@ Content-Type: application/json
 ###Set user Profile
 POST http://{{host}}/profile/api/v1/set-profile
 Authorization: Bearer {{loginToken}}
+Request-Id: 123
 Content-Type: application/json
 
 {
