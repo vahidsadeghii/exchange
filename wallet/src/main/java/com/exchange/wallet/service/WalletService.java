@@ -14,5 +14,7 @@ public interface WalletService {
     Map<String, Wallet> save(Long userId, String keycloakId, List<AssetDTO> assets);
 
 
-    Wallet increaseWallet(String walletId, String onlineUser, AssetType assetType, BigDecimal amount);
+    Wallet increaseWallet(String walletId, String onlineUserId, AssetType assetType, BigDecimal amount);
+
+    Wallet userWalletInfo(String keycloakId, AssetType assetType);
 }

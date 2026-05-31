@@ -3,7 +3,7 @@ POST http://{{host}}/profile/open/v1/user/signin
 Content-Type: application/json
 
 {
- "userName": "helda.musterman11@example.com",
+  "userName": "helda.musterman11@example.com",
   "password": "HeldaPass123!"
 }
 > {%
@@ -39,8 +39,8 @@ Content-Type: application/json
 
 
 
-###create Wallet
-POST http://{{host}}/wallet/api/v1/user/create-wallet
+###update Wallet
+POST http://{{host}}/wallet/api/v1/user/wallet
 Authorization: Bearer {{loginToken}}
 Request-Id:  1001
 Content-Type: application/json
@@ -59,7 +59,7 @@ Content-Type: application/json
     },
     {
       "balance": 1000,
-      "blockedBalance": 100,
+      "blockedBalance": 0,
       "assetType": "USDT"
     },
     {
@@ -69,7 +69,7 @@ Content-Type: application/json
     },
     {
       "balance": 250,
-      "blockedBalance": 50,
+      "blockedBalance": 0,
       "assetType": "USD"
     }
   ]
@@ -96,4 +96,81 @@ Content-Type: application/json
         });
 
     }
+%}
+
+###User Wallet Info
+GET http://{{host}}/wallet/api/v1/user/wallet-info/assetType?assetType=BTC
+Authorization: Bearer {{loginToken}}
+Request-Id: 1001
+Accept: application/json
+
+> {%
+    client.test("Status is 200", function () {
+        client.assert(response.status === 200, "Expected HTTP 200");
+    });
+
+    client.test("Wallet ID exists", function () {
+        client.assert(response.body.walletId != null, "walletId is missing");
+    });
+
+    client.test("Asset type is BTC", function () {
+        client.assert(response.body.assetType === "BTC",
+            "Expected assetType to be BTC");
+    });
+
+    client.test("Balance exists", function () {
+        client.assert(response.body.balance != null,
+            "balance is missing");
+    });
+
+    client.test("Balance is non-negative", function () {
+        client.assert(response.body.balance >= 0,
+            "balance should be >= 0");
+    });
+
+
+    client.global.set("walletId", response.body.walletId);
+%}
+
+
+### Deposit Wallet
+POST http://{{host}}/wallet/api/v1/user/deposit
+Authorization: Bearer {{loginToken}}
+Request-Id: 1001
+Content-Type: application/json
+
+{
+  "walletId": "{{walletId}}",
+  "assetType": "BTC",
+  "amount": 1000
+}
+
+> {%
+    client.test("Status is 200", function () {
+        client.assert(response.status === 200);
+    });
+
+    client.test("Wallet ID matches", function () {
+        client.assert(response.body.walletId === client.global.get("walletId"));
+    });
+
+    client.test("BTC asset exists", function () {
+        const btc = response.body.asserts.find(a => a.assetType === "BTC");
+        client.assert(btc != null, "BTC asset not found");
+    });
+
+    client.test("BTC balance increased", function () {
+        const btc = response.body.asserts.find(a => a.assetType === "BTC");
+
+        const oldBalance = parseFloat(client.global.get("oldBalance"));
+        const newBalance = parseFloat(btc.balance);
+
+        client.assert(
+            newBalance >= oldBalance + 1000,
+            `Expected balance >= ${oldBalance + 1000}, actual ${newBalance}`
+        );
+    });
+
+    client.log("STATUS = " + response.status);
+    client.log(JSON.stringify(response.body, null, 2));
 %}

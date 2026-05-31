@@ -40,8 +40,6 @@ springdoc:
     enabled: true
     path: /swagger-ui/index.html
 
-
-
 management:
   endpoints:
     web:

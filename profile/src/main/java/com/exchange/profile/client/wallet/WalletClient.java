@@ -10,10 +10,8 @@ import org.springframework.cloud.openfeign.FeignClient;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 
-import java.util.Map;
 
-
-@FeignClient(name = "wallet", url = "http://localhost:8092")
+@FeignClient(name = "wallet", url = "http://localhost:8092/wallet")
 public interface WalletClient {
     Logger logger = LoggerFactory.getLogger(WalletClient.class);
 
@@ -27,13 +25,11 @@ public interface WalletClient {
             return new FallBackException();
     }
 
-
     @CircuitBreaker(name = "wallet-instance", fallbackMethod = "createWalletFallBack")
-    @PostMapping(value = "${api.prefix.internal}/user/wallet")
-    void createWallet(@RequestParam Long userId);
+    @PostMapping("/_api/v1/user/wallet")
+    void createWallet(@RequestParam("userId") Long userId);
 
-
-    default void createWalletFallBack(@RequestParam Long userId, Throwable t) {
-        logger.error("Wallet service failed for userId=" + userId + " | " + t.getMessage());
+    default void createWalletFallBack(Long userId, Throwable t) {
+        logger.error("Wallet service failed for userId=" + userId, t);
     }
 }

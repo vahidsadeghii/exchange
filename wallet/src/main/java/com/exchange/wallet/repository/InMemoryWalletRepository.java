@@ -1,5 +1,6 @@
 package com.exchange.wallet.repository;
 
+import com.exchange.wallet.domain.AssetType;
 import com.exchange.wallet.domain.Wallet;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Repository;
@@ -40,4 +41,18 @@ public class InMemoryWalletRepository {
     public void delete(String walletId) {
         walletMap.remove(walletId);
     }
+
+    public Optional<Wallet> findByUserIdAndAssetType(Long userId, AssetType assetType) {
+        return walletMap.values().stream()
+                .filter(wallet -> wallet.getUserId().equals(userId))
+                .filter(wallet -> containsAssetType(wallet, assetType))
+                .findFirst();
+    }
+
+    private boolean containsAssetType(Wallet wallet, AssetType assetType) {
+        return wallet.getAsserts() != null &&
+                wallet.getAsserts().stream()
+                        .anyMatch(asset -> asset.getAssetType() == assetType);
+    }
+
 }

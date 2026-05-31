@@ -19,7 +19,7 @@ import java.util.Map;
 public class UpdateWalletController {
     private final WalletService walletService;
 
-    @PostMapping(value = "/_api/v1/user/create-wallet")
+    @PostMapping(value = "${api.prefix.secure}/user/wallet")
     @PreAuthorize("hasRole('CUSTOMER')")
     public Map<String, Wallet> handle(@AuthenticationPrincipal OnlineUser onlineUser,
                                       @RequestBody UpdateWalletRequest request) {

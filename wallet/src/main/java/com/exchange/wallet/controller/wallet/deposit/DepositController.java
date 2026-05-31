@@ -18,7 +18,7 @@ public class DepositController {
 
 
 
-    @PostMapping(value = "/open/deposit")
+    @PostMapping(value = "${api.prefix.secure}/deposit")
     @PreAuthorize("hasRole('CUSTOMER')")
     public Wallet handle(@AuthenticationPrincipal OnlineUser onlineUser,
                           @RequestBody DepositRequest request) {

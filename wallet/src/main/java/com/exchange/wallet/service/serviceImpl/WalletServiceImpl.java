@@ -8,18 +8,17 @@ import com.exchange.wallet.domain.Wallet;
 import com.exchange.wallet.domain.WalletStatus;
 import com.exchange.wallet.exception.AmountMustBePositiveException;
 import com.exchange.wallet.exception.AssetNotFoundException;
+import com.exchange.wallet.exception.UserCanNotFoundException;
 import com.exchange.wallet.exception.WalletNotFoundException;
 import com.exchange.wallet.repository.InMemoryWalletRepository;
 import com.exchange.wallet.service.WalletService;
+import io.micrometer.common.util.StringUtils;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.UUID;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @Service
@@ -32,6 +31,8 @@ public class WalletServiceImpl implements WalletService {
     @Override
     public Map<String, Wallet> save(Long userId, String keycloakId, List<AssetDTO> assets) {
         List<Asset> assetEntities = assetEntities(assets);
+
+        //Create Wallet
         if (userId != null) {
             return repository.save(Wallet.builder()
                     .walletId(UUID.randomUUID().toString())
@@ -43,11 +44,19 @@ public class WalletServiceImpl implements WalletService {
                     .build());
         }
 
-        if (keycloakId == null || keycloakId.isBlank()) {
+        //Update Wallet
+        if (StringUtils.isEmpty(keycloakId)) {
             throw new RuntimeException("keycloakId is required for wallet update");
         }
-        Optional<Long> userIdByKeycloakId = getUserIdByKeycloakId(keycloakId);
-        Wallet existingWallet = repository.findByUserId(userIdByKeycloakId.get());
+
+        Long resolvedUserId = getUserIdByKeycloakId(keycloakId)
+                .orElseThrow(UserCanNotFoundException::new);
+        Wallet existingWallet = repository.findByUserId(resolvedUserId);
+
+        if (existingWallet == null) {
+            throw new WalletNotFoundException();
+        }
+
         mergeAssets(existingWallet, assetEntities);
 
         existingWallet.setUpdatedAt(LocalDateTime.now());
@@ -56,7 +65,7 @@ public class WalletServiceImpl implements WalletService {
 
 
     @Override
-    public Wallet increaseWallet(String walletId, String onlineUser, AssetType assetType, BigDecimal amount) {
+    public Wallet increaseWallet(String walletId, String onlineUserId, AssetType assetType, BigDecimal amount) {
         if (amount == null || amount.signum() <= 0) {
             throw new AmountMustBePositiveException();
         }
@@ -74,6 +83,16 @@ public class WalletServiceImpl implements WalletService {
 
         repository.save(wallet);
         return wallet;
+    }
+
+    @Override
+    public Wallet userWalletInfo(String keycloakId, AssetType assetType) {
+        Long userId = getUserIdByKeycloakId(keycloakId)
+                .orElseThrow(UserCanNotFoundException::new);
+
+        return repository
+                .findByUserIdAndAssetType(userId, assetType)
+                .orElse(null);
     }
 
     public Map<String, Wallet> withdraw(String walletId, AssetType type, BigDecimal amount) {
@@ -108,26 +127,32 @@ public class WalletServiceImpl implements WalletService {
     }
 
     private void mergeAssets(Wallet wallet, List<Asset> newAssets) {
-        Map<AssetType, Asset> existingAssets =
-                wallet.getAsserts()
-                        .stream()
-                        .collect(Collectors.toMap(
-                                Asset::getAssetType,
-                                asset -> asset
-                        ));
-        for (Asset newAsset : newAssets) {
-            Asset existing = existingAssets.get(newAsset.getAssetType());
 
-            // update existing asset
-            if (existing != null) {
+    if (wallet.getAsserts() == null) {
+        wallet.setAsserts(new ArrayList<>());
+    } else if (!(wallet.getAsserts() instanceof ArrayList)) {
+        wallet.setAsserts(new ArrayList<>(wallet.getAsserts()));
+    }
 
-                existing.setBalance(newAsset.getBalance());
-                existing.setBlockedBalance(newAsset.getBlockedBalance());
+    Map<AssetType, Asset> existingAssets =
+            wallet.getAsserts()
+                    .stream()
+                    .collect(Collectors.toMap(
+                            Asset::getAssetType,
+                            asset -> asset,
+                            (a, b) -> a
+                    ));
 
-            } else {
-                // add new asset
-                wallet.getAsserts().add(newAsset);
-            }
+    for (Asset newAsset : newAssets) {
+
+        Asset existing = existingAssets.get(newAsset.getAssetType());
+
+        if (existing != null) {
+            existing.setBalance(newAsset.getBalance());
+            existing.setBlockedBalance(newAsset.getBlockedBalance());
+        } else {
+            wallet.getAsserts().add(newAsset); // ✅ now safe
         }
     }
+}
 }
