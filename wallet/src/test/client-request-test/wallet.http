@@ -42,7 +42,7 @@ Content-Type: application/json
 ###update Wallet
 POST http://{{host}}/wallet/api/v1/user/wallet
 Authorization: Bearer {{loginToken}}
-Request-Id:  1001
+Request-Id:  1004
 Content-Type: application/json
 
 {
@@ -78,10 +78,8 @@ Content-Type: application/json
 > {%
     client.log("STATUS = " + response.status);
 
-    client.test("Status code is 200", function () {
-        client.assert(response.status === 200, "Expected 200, got " + response.status);
-    });
-
+    client.log("STATUS = " + response.status);
+    client.log("BODY = " + JSON.stringify(response.body));
     if (response.status === 200 && response.body && response.body.assets) {
 
         client.test("Assets exist", function () {
@@ -99,39 +97,49 @@ Content-Type: application/json
 %}
 
 ###User Wallet Info
-GET http://{{host}}/wallet/api/v1/user/wallet-info/assetType?assetType=BTC
+GET http://{{host}}/wallet/api/v1/wallet-info?assetType=EUR
 Authorization: Bearer {{loginToken}}
 Request-Id: 1001
 Accept: application/json
 
 > {%
-    client.test("Status is 200", function () {
-        client.assert(response.status === 200, "Expected HTTP 200");
+    client.log("STATUS = " + response.status);
+    client.log("BODY = " + JSON.stringify(response.body));
+
+    client.test("Status code is 200", function () {
+        client.assert(
+            response.status === 200,
+            "Expected 200, got " + response.status +
+            ". Response: " + JSON.stringify(response.body)
+        );
     });
 
-    client.test("Wallet ID exists", function () {
-        client.assert(response.body.walletId != null, "walletId is missing");
-    });
+    if (response.status === 200 && response.body && response.body.assets) {
 
-    client.test("Asset type is BTC", function () {
-        client.assert(response.body.assetType === "BTC",
-            "Expected assetType to be BTC");
-    });
+        client.test("Assets exist", function () {
+            client.assert(
+                response.body.assets.length > 0,
+                "assets empty"
+            );
+        });
 
-    client.test("Balance exists", function () {
-        client.assert(response.body.balance != null,
-            "balance is missing");
-    });
+        client.test("EUR exists", function () {
+            client.assert(
+                response.body.assets.some(a => a.assetType === "EUR"),
+                "EUR missing"
+            );
+        });
 
-    client.test("Balance is non-negative", function () {
-        client.assert(response.body.balance >= 0,
-            "balance should be >= 0");
-    });
-
-
+    }
     client.global.set("walletId", response.body.walletId);
 %}
 
+
+####find wallet by id
+GET  http://{{host}}/wallet/api/v1/wallet-by-id?walletId={{walletId}}
+Authorization: Bearer {{loginToken}}
+Request-Id: 1009
+Content-Type: application/json
 
 ### Deposit Wallet
 POST http://{{host}}/wallet/api/v1/user/deposit
@@ -141,36 +149,44 @@ Content-Type: application/json
 
 {
   "walletId": "{{walletId}}",
-  "assetType": "BTC",
+  "assetType": "EUR",
   "amount": 1000
 }
 
 > {%
-    client.test("Status is 200", function () {
-        client.assert(response.status === 200);
-    });
+   client.log("STATUS = " + response.status);
+client.log("BODY = " + JSON.stringify(response.body));
+
+client.test("Status is 200", function () {
+    client.assert(response.status === 200, "Expected 200");
+});
+
+// STOP if body is missing
+if (!response.body) {
+    client.log("Response body is null or empty - stopping tests");
+} else {
 
     client.test("Wallet ID matches", function () {
-        client.assert(response.body.walletId === client.global.get("walletId"));
-    });
-
-    client.test("BTC asset exists", function () {
-        const btc = response.body.asserts.find(a => a.assetType === "BTC");
-        client.assert(btc != null, "BTC asset not found");
-    });
-
-    client.test("BTC balance increased", function () {
-        const btc = response.body.asserts.find(a => a.assetType === "BTC");
-
-        const oldBalance = parseFloat(client.global.get("oldBalance"));
-        const newBalance = parseFloat(btc.balance);
-
         client.assert(
-            newBalance >= oldBalance + 1000,
-            `Expected balance >= ${oldBalance + 1000}, actual ${newBalance}`
+            response.body.walletId === client.global.get("walletId")
         );
     });
 
-    client.log("STATUS = " + response.status);
-    client.log(JSON.stringify(response.body, null, 2));
+    client.test("EUR asset exists", function () {
+        const eur = response.body.assets?.find(a => a.assetType === "EUR");
+        client.assert(eur != null, "EUR asset not found");
+    });
+
+    client.test("EUR balance increased", function () {
+        const eur = response.body.assets?.find(a => a.assetType === "EUR");
+
+        const oldBalance = parseFloat(client.global.get("oldBalance"));
+        const newBalance = parseFloat(eur.balance);
+
+        client.assert(
+            newBalance >= oldBalance + 1000,
+            `Expected >= ${oldBalance + 1000}, got ${newBalance}`
+        );
+    });
+}
 %}

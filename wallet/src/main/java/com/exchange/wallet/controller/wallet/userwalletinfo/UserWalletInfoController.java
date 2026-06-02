@@ -19,7 +19,7 @@ import org.springframework.web.bind.annotation.RestController;
 public class UserWalletInfoController {
     private final WalletService walletService;
 
-    @GetMapping(value = "${api.prefix.secure}/wallet-info/assetType")
+    @GetMapping(value = "${api.prefix.secure}/wallet-info")
     @PreAuthorize("hasRole('CUSTOMER')")
     public WalletInfoResponse handle(@RequestParam("assetType") AssetType assetType,
                                      @AuthenticationPrincipal OnlineUser onlineUser) {

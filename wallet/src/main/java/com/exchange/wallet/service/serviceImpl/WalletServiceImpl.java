@@ -95,6 +95,12 @@ public class WalletServiceImpl implements WalletService {
                 .orElse(null);
     }
 
+    @Override
+    public Wallet findWalletById(String walletId) {
+        return repository.findById(walletId)
+                .orElseThrow(() -> new RuntimeException("Wallet not found"));
+    }
+
     public Map<String, Wallet> withdraw(String walletId, AssetType type, BigDecimal amount) {
 
         Wallet wallet = repository.findById(walletId)
@@ -151,7 +157,7 @@ public class WalletServiceImpl implements WalletService {
             existing.setBalance(newAsset.getBalance());
             existing.setBlockedBalance(newAsset.getBlockedBalance());
         } else {
-            wallet.getAsserts().add(newAsset); // ✅ now safe
+            wallet.getAsserts().add(newAsset);
         }
     }
 }

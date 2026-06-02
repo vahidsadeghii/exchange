@@ -70,12 +70,10 @@ resilience4j:
     configs:
       default:
         sliding-window-type: COUNT_BASED
-        failure-rate-threshold: 20
-        minimum-number-of-calls: 2
         sliding-window-size: 5
-        wait-duration-in-open-state: 1000
-        ignore-exceptions:
-          - feign.FeignException
+        minimum-number-of-calls: 2
+        failure-rate-threshold: 20
+        wait-duration-in-open-state: 1s
 
     instances:
       profile-instance:
@@ -85,9 +83,7 @@ resilience4j:
     configs:
       default:
         max-attempts: 4
-        wait-duration: 1000
-        ignore-exceptions:
-          - feign.FeignException
+        wait-duration: 1s
 
     instances:
       profile-instance:

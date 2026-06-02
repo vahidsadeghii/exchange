@@ -17,4 +17,6 @@ public interface WalletService {
     Wallet increaseWallet(String walletId, String onlineUserId, AssetType assetType, BigDecimal amount);
 
     Wallet userWalletInfo(String keycloakId, AssetType assetType);
+
+    Wallet findWalletById(String walletId);
 }
