@@ -84,6 +84,8 @@ dependencies {
     // Tests
     testImplementation libs.junit.jupiter
     testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+    testImplementation 'org.springframework.cloud:spring-cloud-starter-contract-stub-runner'
+    testImplementation 'org.springframework.security:spring-security-test'
 
 }
 
