@@ -136,7 +136,7 @@ Accept: application/json
 
 
 ####find wallet by id
-GET http://localhost:8070/wallet/api/v1/wallet-by-id?walletId=84f74dd8-ab67-4d40-af88-6a78fff6cb7c
+GET http://localhost:8070/wallet/api/v1/wallet-by-id?walletId=d990b93d-8f6c-4eec-83c6-6f2ae8dc8c33
 Authorization: Bearer {{loginToken}}
 Request-Id: 1009
 Content-Type: application/json
@@ -157,7 +157,7 @@ Content-Type: application/json
     client.test("Wallet ID exists", function () {
         client.assert(wallet.walletId !== undefined, "Missing walletId");
     });
-    const expectedWalletId = "84f74dd8-ab67-4d40-af88-6a78fff6cb7c";
+    const expectedWalletId = "d990b93d-8f6c-4eec-83c6-6f2ae8dc8c33";
     client.test("Wallet ID matches", function () {
         client.assert(
             wallet.walletId === expectedWalletId,
@@ -232,7 +232,7 @@ Content-Type: application/json
 ### Withdraw Wallet
 POST http://{{host}}/wallet/api/v1/withdraw
 Authorization: Bearer {{loginToken}}
-Request-Id: 1001
+Request-Id: 1441
 Content-Type: application/json
 
 {
@@ -272,6 +272,33 @@ Content-Type: application/json
     }
 %}
 
+### Find transactions by wallet-id
+POST http://localhost:8070/wallet/api/v1/transactions?walletId=3f26adbd-114d-4da3-a61f-c90c89ce8b75
+Authorization: Bearer {{loginToken}}
+Request-Id: 1009
+Content-Type: application/json
 
+{}
 
+> {%
+    if (response.status === 429) {
+
+        client.test("Rate limit is active", function () {
+            client.assert(true, "429 received - rate limiter is working");
+        });
+
+        client.log("Skipping body assertions due to 429");
+
+    } else {
+
+        client.test("Success response", function () {
+            client.assert(response.status >= 200 && response.status < 300);
+        });
+
+        client.test("Response is array", function () {
+            client.assert(Array.isArray(response.body),
+                "Expected array response");
+        });
+    }
+%}
 

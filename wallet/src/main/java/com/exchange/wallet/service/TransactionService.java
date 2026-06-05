@@ -5,6 +5,7 @@ import com.exchange.wallet.domain.TransactionInfo;
 import com.exchange.wallet.domain.TransactionType;
 
 import java.math.BigDecimal;
+import java.util.List;
 
 
 public interface TransactionService {
@@ -15,4 +16,6 @@ public interface TransactionService {
                                       BigDecimal balanceBefore,
                                       BigDecimal balanceAfter,
                                       TransactionType type);
+
+    List<TransactionInfo> findTransactions(String walletId);
 }

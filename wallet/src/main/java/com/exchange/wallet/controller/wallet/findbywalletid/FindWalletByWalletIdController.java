@@ -1,4 +1,4 @@
-package com.exchange.wallet.controller.findbywalletid;
+package com.exchange.wallet.controller.wallet.findbywalletid;
 
 
 import com.exchange.wallet.domain.Wallet;

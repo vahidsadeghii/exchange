@@ -12,6 +12,7 @@ import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.UUID;
 
 
@@ -52,5 +53,11 @@ public class TransactionServiceImpl implements TransactionService {
                 .createdAt(LocalDateTime.now())
                 .build());
 
+    }
+
+    @Override
+    public List<TransactionInfo> findTransactions(String walletId) {
+        List<TransactionInfo> allByWalletId = inMemoryTransactionInfoRepository.findAllByWalletId(walletId);
+        return allByWalletId;
     }
 }
