@@ -20,7 +20,7 @@ public class CreateWalletController {
     private final WalletService walletService;
 
     @PostMapping(value = "${api.prefix.internal}/user/wallet")
-    public Map<String, Wallet> handle(@RequestParam("userId") Long userId) {
+    public Wallet handle(@RequestParam("userId") Long userId) {
 
         return walletService.save(userId, null, List.of(new AssetDTO(BigDecimal.ZERO, BigDecimal.ZERO, AssetType.EUR)));
     }

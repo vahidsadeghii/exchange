@@ -6,17 +6,19 @@ import com.exchange.wallet.domain.Wallet;
 
 import java.math.BigDecimal;
 import java.util.List;
-import java.util.Map;
 
 public interface WalletService {
 
 
-    Map<String, Wallet> save(Long userId, String keycloakId, List<AssetDTO> assets);
+    Wallet save(Long userId, String keycloakId, List<AssetDTO> assets);
 
+    Wallet withdrawWallet(String walletId, AssetType type, BigDecimal amount);
 
-    Wallet increaseWallet(String walletId, String onlineUserId, AssetType assetType, BigDecimal amount);
+    Wallet depositWallet(String walletId, String onlineUserId, AssetType assetType, BigDecimal amount);
 
     Wallet userWalletInfo(String keycloakId, AssetType assetType);
 
     Wallet findWalletById(String walletId);
+
+
 }

@@ -21,7 +21,7 @@ public class UpdateWalletController {
 
     @PostMapping(value = "${api.prefix.secure}/user/wallet")
     @PreAuthorize("hasRole('CUSTOMER')")
-    public Map<String, Wallet> handle(@AuthenticationPrincipal OnlineUser onlineUser,
+    public Wallet handle(@AuthenticationPrincipal OnlineUser onlineUser,
                                       @RequestBody UpdateWalletRequest request) {
 
         return walletService.save(null, onlineUser.getKeycloakUserId(), request.assets());
