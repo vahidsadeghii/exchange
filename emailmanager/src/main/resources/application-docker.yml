@@ -1,0 +1,15 @@
+server:
+  address: 0.0.0.0
+  port: 8092
+  shutdown: graceful
+  servlet:
+    context-path: /emailmanager
+
+spring:
+  kafka:
+    bootstrap-servers: kafka:9092
+
+
+
+
+

@@ -1,0 +1,168 @@
+package com.exchange.profile.service.implement;
+
+
+import com.exchange.profile.client.wallet.WalletClient;
+import com.exchange.profile.domain.*;
+import com.exchange.profile.exception.PasswordIsInvalidException;
+import com.exchange.profile.exception.UserCanNotFoundException;
+import com.exchange.profile.exception.UserIsBlockInactiveException;
+import com.exchange.profile.repository.UserProfileRepository;
+import com.exchange.profile.service.UserProfileService;
+import com.exchange.profile.util.MapToToken;
+import com.exchange.profile.util.PasswordEncoderUtil;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.keycloak.admin.client.Keycloak;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.util.*;
+
+
+@Service
+@Transactional
+@RequiredArgsConstructor
+@Slf4j
+public class UserProfileServiceImpl implements UserProfileService {
+    private final Keycloak keycloakAdmin;
+    private final UserProfileRepository userProfileRepository;
+    private final TokenService tokenService;
+    private final WalletClient walletClient;
+
+    @Value("${keycloak.realm}")
+    private String targetRealm;
+
+    @Override
+    public UserProfile saveUserProfile(long onlineUserId, String firstName,
+                                       String lastName, String phoneNumber,
+                                       String avatarId, String address,
+                                       GenderType genderType, LocalDate birthday,
+                                       String avtarLink, String fileName) {
+        Optional<UserProfile> userProfile = findUserById(onlineUserId);
+        if (userProfile.isEmpty()) {
+            throw new UserCanNotFoundException();
+        }
+       return userProfileRepository.save(UserProfile.builder()
+                .firstName(firstName)
+                .lastName(lastName)
+                .phoneNumber(phoneNumber)
+                .avatarId(avatarId)
+                .address(address)
+                .genderType(genderType)
+                .birthday(birthday)
+                .avatarLink(avtarLink)
+                .fileName(fileName)
+                .build());
+    }
+
+    @Override
+    public UserProfile getProfile(long onlineUserId) {
+        return null;
+    }
+
+    @Override
+    public Optional<UserProfile> findUserById(long userId) {
+        return userProfileRepository.findById(userId);
+    }
+
+    @Override
+    public List<UserProfile> findAllUsers() {
+        return List.of();
+    }
+
+    @Override
+    public Optional<UserProfile> findUserByEmail(String email) {
+        return userProfileRepository.findByEmail(email);
+    }
+
+    @Override
+    public UserProfile createUser(String email) {
+
+        UserProfile profile = userProfileRepository.save(UserProfile.builder()
+                .email(email)
+                .userStatus(UserStatus.ACTIVE)
+                .createDate(LocalDateTime.now())
+                .build());
+         walletClient.createWallet(profile.getId());
+
+         return  profile;
+    }
+
+    @Override
+    public TokenResponse upgradeUser(String username, String email, String password) {
+        Optional<UserProfile> userProfile = userProfileRepository.findByEmail(email);
+        if (!userProfile.isPresent() || userProfile.get().getUserStatus().equals(UserStatus.INACTIVE)) {
+            throw new UserCanNotFoundException();
+        }
+        String encodePassword = PasswordEncoderUtil.encodePassword(password);
+        userProfile.get().setPassword(encodePassword);
+        userProfile.get().setUsername(username);
+        JwtToken jwtToken = tokenService.upgradeUser(userProfile.get().getId(), email, encodePassword);
+        String keycloakUserId = tokenService.getKeycloakUserId(jwtToken);
+        userProfile.get().setKeycloakUserId(keycloakUserId);
+
+        return MapToToken.mapToTokenResponse(jwtToken);
+    }
+
+    @Override
+    public UserProfile setUserProfile(String onlineUser, String firstName, String lastName, String phoneNumber,
+                                      GenderType genderType, LocalDate birthday, String address) {
+        Optional<UserProfile> userProfile = userProfileRepository.findByKeycloakUserId(onlineUser);
+        if (!userProfile.isPresent() || userProfile.get().getUserStatus().equals(UserStatus.INACTIVE)) {
+            throw new UserCanNotFoundException();
+        }
+        userProfile.get().setFirstName(firstName);
+        userProfile.get().setLastName(lastName);
+        userProfile.get().setPhoneNumber(phoneNumber);
+        userProfile.get().setGenderType(genderType);
+        userProfile.get().setBirthday(birthday);
+        userProfile.get().setAddress(address);
+
+        userProfileRepository.save(userProfile.get());
+
+        return userProfile.get();
+    }
+
+    @Override
+    public TokenResponse signInUser(String userName, String password) {
+        UserProfile userProfile = userProfileRepository.findByEmail(userName).orElseThrow(UserCanNotFoundException::new);
+        checkUserStatus(userProfile.getUserStatus());
+
+        String encodePassword = PasswordEncoderUtil.encodePassword(password);
+        if (!PasswordEncoderUtil.isPasswordMatches(password, userProfile.getPassword())) {
+            log.error("You have entered an invalid password");
+
+            throw new PasswordIsInvalidException();
+        }
+
+        JwtToken jwtToken = tokenService.upgradeUser(userProfile.getId(), userProfile.getEmail(), encodePassword);
+        String keycloakUserId = tokenService.getKeycloakUserId(jwtToken);
+        userProfile.setKeycloakUserId(keycloakUserId);
+
+        return MapToToken.mapToTokenResponse(jwtToken);
+    }
+
+    @Override
+    public Optional<Long> findUserByKeycloakId(String keycloakId) {
+        UserProfile userProfile = userProfileRepository.findByKeycloakUserId(keycloakId).orElseThrow(UserCanNotFoundException::new);
+        return Optional.of(userProfile.getId());
+    }
+
+    @Override
+    public void deleteUserByEmail(String email) {
+        findUserByEmail(email).ifPresent(userProfileRepository::delete);
+    }
+
+
+    private void checkUserStatus(UserStatus userStatus) {
+        if (userStatus.equals(UserStatus.INACTIVE) || userStatus.equals(UserStatus.BLOCK)) {
+            log.error("The user is Blocked or Inactive and has no permission.");
+            throw new UserIsBlockInactiveException();
+        }
+    }
+
+
+}

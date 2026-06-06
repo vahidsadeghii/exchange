@@ -1,0 +1,26 @@
+stages:
+ - build
+ - deploy
+build-dev:
+ before_script:
+  - 'chmod +x gradlew'
+ script:
+  - ./gradlew clean
+  - ./gradlew build -x test
+  - docker build --build-arg JAR_FILE=build/libs/*.jar -t emailmanager:latest .
+  - docker push registry.gitlab.com/group-healthycare/emailmanager:dev-1.0.0
+ only:
+  - develop
+ stage: build
+ tags:
+  - dev
+deploy-dev:
+ script:
+  - docker stop authentication || echo "Container already stopped"
+  - docker rm authentication || echo "Container already removed"
+  - docker run -d --net healthy-network -p 8084:8084 --name emailmanager -v /logs:/logs -m 310m -e "SPRING_PROFILES_ACTIVE=development"  --link discovery:discovery registry.gitlab.com/group-healthycare/emailmanager:dev-1.0.0
+ only:
+  - develop
+ stage: deploy
+ tags:
+  - dev

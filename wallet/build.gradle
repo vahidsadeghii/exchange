@@ -1,23 +1,92 @@
 plugins {
     id 'application'
-    id 'org.springframework.boot' version '3.2.0'
+    id 'org.springframework.boot' version '3.3.4'
     id 'io.spring.dependency-management' version '1.1.4'
+}
+
+
+application {
+    mainClass = 'com.exchange.wallet.WalletApp'
 }
 
 repositories {
     mavenCentral()
+    maven {
+        url "https://maven.keycloak.org"
+    }
 }
 
+ext {
+    springCloudVersion = "2023.0.3"   // Latest compatible with Spring Boot 3.5.x
+    resilience4jVersion = "2.2.0"
+}
+
+dependencyManagement {
+    imports {
+        mavenBom "org.springframework.cloud:spring-cloud-dependencies:${springCloudVersion}"
+    }
+}
+
+java {
+    toolchain {
+        languageVersion = JavaLanguageVersion.of(21)
+    }
+}
+
+configurations.all {
+    exclude group: 'commons-logging', module: 'commons-logging'
+}
+
+
 dependencies {
-    // Use JUnit Jupiter for testing.
+    implementation 'org.springframework.boot:spring-boot-starter-web'
+    implementation 'org.springframework.boot:spring-boot-starter-security'
+    implementation 'org.springframework.boot:spring-boot-starter-aop'
+    implementation 'org.springframework.boot:spring-boot-starter-actuator'
+
+
+    // Micrometer
+    implementation 'io.micrometer:micrometer-registry-prometheus'
+
+    // Spring Cloud
+    implementation 'org.springframework.cloud:spring-cloud-starter-netflix-eureka-client'
+    implementation 'org.springframework.cloud:spring-cloud-starter-openfeign'
+    implementation 'org.springframework.cloud:spring-cloud-config-client'
+
+    // Resilience4j
+    implementation "io.github.resilience4j:resilience4j-spring-boot3:${resilience4jVersion}"
+
+    // Jackson
+    implementation 'com.fasterxml.jackson.datatype:jackson-datatype-jsr310'
+
+    //jakarta
+    implementation 'jakarta.persistence:jakarta.persistence-api:3.1.0'
+
+    // Kafka
+    implementation 'org.springframework.kafka:spring-kafka'
+
+    // OAuth2
+    implementation 'org.springframework.boot:spring-boot-starter-oauth2-resource-server'
+
+    // Lombok
+    compileOnly 'org.projectlombok:lombok'
+    annotationProcessor 'org.projectlombok:lombok'
+
+
+    // Keycloak
+    implementation 'org.keycloak:keycloak-spring-boot-starter:21.1.1'
+    implementation 'org.keycloak:keycloak-admin-client:26.0.6'
+
+    // Guava
+    implementation 'com.opencsv:opencsv:5.9'
+    implementation libs.guava
+
+    // Tests
     testImplementation libs.junit.jupiter
     testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+    testImplementation 'org.springframework.cloud:spring-cloud-starter-contract-stub-runner'
+    testImplementation 'org.springframework.security:spring-security-test'
 
-    // Spring Boot dependencies
-    implementation 'org.springframework.boot:spring-boot-starter-web'
-    
-    // Guava
-    implementation libs.guava
 }
 
 java {
