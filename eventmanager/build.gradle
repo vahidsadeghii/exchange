@@ -1,24 +1,26 @@
 plugins {
-    id 'application'
-    id 'org.springframework.boot' version '3.3.4'
-    id 'io.spring.dependency-management' version '1.1.4'
+    id 'java'
+    id 'org.springframework.boot' version '3.3.6'
+    id 'io.spring.dependency-management' version '1.1.7'
 }
 
+group = 'com.exchange'
+version = '0.0.1-SNAPSHOT'
+description = 'eventmanager'
 
-application {
-    mainClass = 'com.exchange.wallet.WalletApp'
+java {
+    toolchain {
+        languageVersion = JavaLanguageVersion.of(21)
+    }
 }
 
 repositories {
     mavenCentral()
-    maven {
-        url "https://maven.keycloak.org"
-    }
 }
 
 ext {
-    springCloudVersion = "2023.0.3"   // Latest compatible with Spring Boot 3.5.x
-    resilience4jVersion = "2.2.0"
+    springCloudVersion = "2025.1.0"
+    resilience4jVersion = "2.3.0" // latest 2.x line recommended
 }
 
 dependencyManagement {
@@ -27,23 +29,9 @@ dependencyManagement {
     }
 }
 
-java {
-    toolchain {
-        languageVersion = JavaLanguageVersion.of(21)
-    }
-}
-
-configurations.all {
-    exclude group: 'commons-logging', module: 'commons-logging'
-}
-
 
 dependencies {
     implementation 'org.springframework.boot:spring-boot-starter-web'
-    implementation 'org.springframework.boot:spring-boot-starter-security'
-    implementation 'org.springframework.boot:spring-boot-starter-aop'
-    implementation 'org.springframework.boot:spring-boot-starter-actuator'
-
 
     // Micrometer
     implementation 'io.micrometer:micrometer-registry-prometheus'
@@ -64,6 +52,7 @@ dependencies {
 
     // Kafka
     implementation 'org.springframework.kafka:spring-kafka'
+    implementation 'org.apache.camel.springboot:camel-kafka-starter:4.20.0'
 
     // OAuth2
     implementation 'org.springframework.boot:spring-boot-starter-oauth2-resource-server'
@@ -72,37 +61,25 @@ dependencies {
     compileOnly 'org.projectlombok:lombok'
     annotationProcessor 'org.projectlombok:lombok'
 
+    // Apache Camel
+    implementation 'org.apache.camel.springboot:camel-spring-boot-starter:4.20.0'
+
+
+    // MongoDB
+    implementation 'org.springframework.boot:spring-boot-starter-data-mongodb'
+
     // logs
     implementation 'de.siegmar:logback-gelf:4.0.0'
     implementation("org.zalando:logbook-spring-boot-starter:3.12.0")
     implementation("org.zalando:logbook-json:3.12.0")
     implementation("org.zalando:logbook-core:3.12.0")
 
-    // Keycloak
-    implementation 'org.keycloak:keycloak-spring-boot-starter:21.1.1'
-    implementation 'org.keycloak:keycloak-admin-client:26.0.6'
-
-
-    // Guava
-    implementation 'com.opencsv:opencsv:5.9'
-    implementation libs.guava
-
-    // Tests
-    testImplementation libs.junit.jupiter
+    // test
+    testImplementation 'org.springframework.boot:spring-boot-starter-data-mongodb-test'
+    testImplementation 'org.springframework.boot:spring-boot-starter-kafka-test'
+    testCompileOnly 'org.projectlombok:lombok'
     testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
-    testImplementation 'org.springframework.cloud:spring-cloud-starter-contract-stub-runner'
-    testImplementation 'org.springframework.security:spring-security-test'
-
-}
-
-java {
-    toolchain {
-        languageVersion = JavaLanguageVersion.of(21)
-    }
-}
-
-application {
-    mainClass = 'com.exchange.wallet.WalletApp'
+    testAnnotationProcessor 'org.projectlombok:lombok'
 }
 
 tasks.named('test') {

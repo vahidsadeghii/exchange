@@ -1,0 +1,25 @@
+spring:
+  cloud:
+    config:
+      enabled: false
+    compatibility-verifier:
+      enabled: false
+    stream:
+      kafka:
+        binder:
+          brokers: kafka-service:9092
+
+eureka:
+  client:
+    service-url:
+      defaultZone: http://discovery:8761/eureka
+    enabled: true
+  instance:
+    metadata-map:
+      versions: ${version}
+      metrics.path: /eventmanager/actuator/prometheus
+      health.path: /eventmanager/actuator/health
+      context-path: /eventmanager
+      management.context-path: /eventmanager
+    hostname: eventmanager
+    appname: eventmanager

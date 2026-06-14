@@ -1,0 +1,49 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  creationTimestamp: null
+  labels:
+    app: profile
+  name: profile
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: profile
+  strategy: {}
+  template:
+    metadata:
+      creationTimestamp: null
+      labels:
+        app: profile
+    spec:
+      containers:
+      - image: exchange/profile:latest
+        imagePullPolicy: IfNotPresent
+        name: profile
+        ports:
+        - containerPort: 8092
+        env:
+        - name: SPRING_PROFILES_ACTIVE
+          value: kuber
+        resources: {}
+status: {}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  creationTimestamp: null
+  labels:
+    app: profile
+  name: profile
+spec:
+  ports:
+  - name: 8092-8092
+    port: 8092
+    protocol: TCP
+    targetPort: 8092
+  selector:
+    app: profile
+  type: ClusterIP
+status:
+  loadBalancer: {}

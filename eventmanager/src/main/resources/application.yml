@@ -1,0 +1,35 @@
+server:
+  port: 8085
+  servlet:
+    context-path: /eventmanager
+  shutdown: graceful
+
+spring:
+  cloud:
+    config:
+      enabled: false
+
+camel:
+  springboot:
+    jmx-enabled: true
+
+
+
+logging:
+  level:
+    org.springframework.security: DEBUG
+    org.springframework.security.oauth2: DEBUG
+
+springdoc:
+  swagger-ui:
+    enabled: true
+    path: /swagger-ui/index.html
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: prometheus,health,info
+  endpoint:
+    prometheus:
+      enabled: true
