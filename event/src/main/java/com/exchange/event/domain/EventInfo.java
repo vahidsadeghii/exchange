@@ -1,23 +1,24 @@
-package com.exchange.profile.domain;
+package com.exchange.event.domain;
 
 
-import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import lombok.*;
+import org.springframework.data.annotation.Id;
+import org.springframework.data.mongodb.core.mapping.Document;
 
 import java.time.LocalDateTime;
 
-
+@Document
 @Getter
 @Setter
 @Builder
 @AllArgsConstructor
 @NoArgsConstructor
-@JsonDeserialize
-public class EventInfoMessage<T> {
+public class EventInfo {
+    @Id
+    private String id;
     private String tag;
     private String title;
     private String serviceName;
-    private boolean persistent;
+    private String event;
     private LocalDateTime createDate;
-    private T event;
 }

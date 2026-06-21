@@ -20,5 +20,6 @@ include('profile')
 include('mm')
 include('ce')
 include('gateway')
-include('eventmanager')
+include('event')
+include('admin')
 

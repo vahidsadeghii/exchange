@@ -1,4 +1,4 @@
-package com.exchange.profile.domain;
+package com.exchange.emailmanager.domain;
 
 
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;

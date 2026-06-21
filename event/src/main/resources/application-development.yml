@@ -1,0 +1,10 @@
+spring:
+  data:
+    mongodb:
+      uri: mongodb://eventmanager_user:eventmanager@localhost:27017/eventmanager?authSource=eventmanager
+  kafka:
+    bootstrap-servers: localhost:9092
+
+
+
+

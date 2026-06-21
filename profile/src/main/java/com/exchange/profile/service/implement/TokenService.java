@@ -100,7 +100,7 @@ public class TokenService {
         ));
         Response response = realm().users().create(kcUser);
         if (response.getStatus() == 201) {
-            return CreatedResponseUtil.getCreatedId(response); // ✅ UUID
+            return CreatedResponseUtil.getCreatedId(response);
         }
 
         if (response.getStatus() == 409) {

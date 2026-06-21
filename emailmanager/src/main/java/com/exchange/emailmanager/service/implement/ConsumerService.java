@@ -2,6 +2,7 @@ package com.exchange.emailmanager.service.implement;
 
 
 import com.exchange.emailmanager.domain.*;
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import lombok.RequiredArgsConstructor;
@@ -17,6 +18,7 @@ import java.io.IOException;
 @Slf4j
 public class ConsumerService {
     private final EmailSenderServiceImpl emailSenderService;
+    private final ObjectMapper objectMapper;
 
 
     @KafkaListener(topics = "${custom-config.kafka.emailverification-input-message.topic}")
@@ -24,9 +26,14 @@ public class ConsumerService {
         try {
             log.info("EMAIL CONSUMER RECEIVED: {}", message);
 
-            ObjectMapper objectMapper = new ObjectMapper();
-            VerifyEmailSender emailMessage =
-                    objectMapper.readValue(message, VerifyEmailSender.class);
+            EventInfoMessage<VerifyEmailSender> wrapper =
+                    objectMapper.readValue(
+                            message,
+                            new TypeReference<EventInfoMessage<VerifyEmailSender>>() {
+                            }
+                    );
+
+            VerifyEmailSender emailMessage = wrapper.getEvent();
 
             emailSenderService.mailSender(
                     emailMessage.emailTo(),
@@ -46,7 +53,7 @@ public class ConsumerService {
         ObjectMapper objectMapper = new ObjectMapper();
         try {
             VerifyEmailSender emailMessage = objectMapper.readValue(message, VerifyEmailSender.class);
-            emailSenderService.changeEmailSender(emailMessage.emailTo(), emailMessage.verifySentEmailHistoryId() , emailMessage.verificationCode(), emailMessage.expiredDate());
+            emailSenderService.changeEmailSender(emailMessage.emailTo(), emailMessage.verifySentEmailHistoryId(), emailMessage.verificationCode(), emailMessage.expiredDate());
         } catch (MessagingException e) {
             e.printStackTrace();
         }
