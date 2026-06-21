@@ -3,6 +3,7 @@ package com.exchange.oms.config.security;
 
 import lombok.Data;
 import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 
 import java.util.Collection;
@@ -10,13 +11,30 @@ import java.util.List;
 
 @Data
 public class OnlineUser implements UserDetails {
-    private List<String> roles;
-    private Long userId;
+    private final String keycloakUserId; // JWT sub
+    // private final Long userId;           // DB ID
+    private final List<String> roles;
 
+    public OnlineUser(String keycloakUserId, List<String> roles) {
+        this.keycloakUserId = keycloakUserId;
+        this.roles = roles;
+    }
+
+    public String getKeycloakUserId() {
+        return keycloakUserId;
+    }
+
+    @Override
+    public String getUsername() {
+        return keycloakUserId;
+    }
 
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
-        return List.of();
+        return roles.stream()
+                .map(r -> r.startsWith("ROLE_") ? r : "ROLE_" + r)
+                .map(SimpleGrantedAuthority::new)
+                .toList();
     }
 
     @Override
@@ -24,29 +42,24 @@ public class OnlineUser implements UserDetails {
         return "";
     }
 
-
-    @Override
-    public String getUsername() {
-        return userId != null ? userId.toString() : "";
-    }
-
     @Override
     public boolean isAccountNonExpired() {
-        return false;
+        return true;
     }
 
     @Override
     public boolean isAccountNonLocked() {
-        return false;
+        return true;
     }
 
     @Override
     public boolean isCredentialsNonExpired() {
-        return false;
+        return true;
     }
 
     @Override
     public boolean isEnabled() {
-        return false;
+        return true;
     }
 }
+

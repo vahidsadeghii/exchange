@@ -5,7 +5,7 @@ import com.exchange.oms.domain.*;
 
 public interface OrderService {
 
-     Order createOrder(long userId, TradePair tradePair,TradeSide tradeSide,
+     Order createOrder(String keycloakUserId, TradePair tradePair,TradeSide tradeSide,
                        OrderType orderType, double quantity, double price);
 
      Order updateOrder(long orderId, long userId, MatchEventStatus orderStatus);

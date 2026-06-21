@@ -20,7 +20,7 @@ public class Order {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
-    private Long userId;
+    private Long keycloakUserId ;
     @Enumerated(EnumType.STRING)
     private OrderType orderType;
     @Enumerated(EnumType.STRING)

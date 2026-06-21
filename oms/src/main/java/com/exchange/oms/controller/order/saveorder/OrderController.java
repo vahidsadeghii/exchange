@@ -5,6 +5,8 @@ import com.exchange.oms.domain.Order;
 import com.exchange.oms.exception.order.MissingUserIdException;
 import io.micrometer.common.util.StringUtils;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RestController;
@@ -15,10 +17,11 @@ import com.exchange.oms.service.OrderService;
 @RequiredArgsConstructor
 public class OrderController {
     private final OrderService orderService;
-    private final OnlineUser onlineUser;
 
     @PostMapping(value = "/orders")
-    public CreateOrderResponse createOrder(@RequestBody CreateOrderRequest request) {
+     @PreAuthorize("hasRole('CUSTOMER')")
+    public CreateOrderResponse createOrder(@AuthenticationPrincipal OnlineUser onlineUser,
+                                           @RequestBody CreateOrderRequest request) {
         //TODO: check the userID
         // I plan to validate the userId after adding security to the application.
         // The following check is only a prototype.
@@ -27,7 +30,7 @@ public class OrderController {
             throw new MissingUserIdException();
         }
         Order order = orderService.createOrder(
-                onlineUser.getUserId(),
+                onlineUser.getKeycloakUserId(),
                 request.tradePair(),
                 request.tradeSide(),
                 request.orderType(),
