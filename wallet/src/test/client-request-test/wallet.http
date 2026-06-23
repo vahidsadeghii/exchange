@@ -76,6 +76,14 @@ Content-Type: application/json
 }
 
 > {%
+    let jsonData = response.body;
+
+    if (typeof jsonData === "string") {
+        jsonData = JSON.parse(jsonData);
+    }
+
+    const wallet = jsonData;
+
     client.log("STATUS = " + response.status);
 
     client.log("STATUS = " + response.status);
@@ -92,7 +100,7 @@ Content-Type: application/json
                 "BTC missing"
             );
         });
-
+        client.log("WalletId: " + wallet.walletId);
     }
 %}
 
@@ -131,12 +139,12 @@ Accept: application/json
         });
 
     }
-    client.global.set("walletId", response.body.walletId);
+    client.log("WalletId: " + wallet.walletId);
 %}
 
 
 ####find wallet by id
-GET http://localhost:8070/wallet/api/v1/wallet-by-id?walletId=d990b93d-8f6c-4eec-83c6-6f2ae8dc8c33
+GET http://localhost:8070/wallet/api/v1/wallet-by-id?walletId={{walletId}}
 Authorization: Bearer {{loginToken}}
 Request-Id: 1009
 Content-Type: application/json

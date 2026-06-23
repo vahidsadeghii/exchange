@@ -14,7 +14,6 @@ import com.exchange.oms.service.OrderService;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
-import java.time.ZoneId;
 
 @Service
 @Transactional
@@ -27,10 +26,10 @@ public class OrderServiceImpl implements OrderService {
 
 
     @Override
-    public Order createOrder(String keycloakUserId, TradePair tradePair, TradeSide tradeSide, OrderType orderType, double quantity, double price) {
+    public Order createOrder(Long onlineUser, TradePair tradePair, TradeSide tradeSide, OrderType orderType, double quantity, double price) {
 
         Order order = orderRepository.save(Order.builder()
-                .keycloakUserId(keycloakUserId)
+                .userId(onlineUser)
                 .tradePair(tradePair)
                 .orderType(orderType)
                 .tradeSide(tradeSide)
@@ -43,7 +42,7 @@ public class OrderServiceImpl implements OrderService {
         matchingEngineClient.createOrderMatchingEngine(
                 new createOrderRequest(
                         order.getId(),
-                      1L,
+                        order.getUserId(),
                         order.getTradePair(),
                         order.getOrderType(),
                         order.getTradeSide(),
@@ -53,9 +52,7 @@ public class OrderServiceImpl implements OrderService {
         return order;
     }
 
-    //TODO: find by orderId oder userId
-    // Currently, findById uses orderId.
-    // Consider whether userId is a better practice for locating an order.
+
     @Override
     public Order updateOrder(long orderId, long userId, MatchEventStatus orderStatus) {
         return orderRepository.findByUserId(userId)

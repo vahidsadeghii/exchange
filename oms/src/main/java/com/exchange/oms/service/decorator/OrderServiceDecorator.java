@@ -23,8 +23,8 @@ public class OrderServiceDecorator implements OrderService {
     private final OrderRepository orderRepository;
 
     @Override
-    public Order createOrder(String keycloakUserId, TradePair tradePair, TradeSide tradeSide, OrderType orderType, double quantity, double price) {
-        if(StringUtils.isEmpty(keycloakUserId)) {
+    public Order createOrder(Long onlineUser, TradePair tradePair, TradeSide tradeSide, OrderType orderType, double quantity, double price) {
+        if(onlineUser == null) {
             throw new MissingUserIdException();
         }
         if (StringUtils.isEmpty(tradePair.name())) {
@@ -41,7 +41,7 @@ public class OrderServiceDecorator implements OrderService {
             throw new InvalidTradSideException();
         }
 
-        return orderService.createOrder(keycloakUserId, tradePair, tradeSide , orderType, quantity, price);
+        return orderService.createOrder(onlineUser, tradePair, tradeSide , orderType, quantity, price);
     }
 
     @Override
