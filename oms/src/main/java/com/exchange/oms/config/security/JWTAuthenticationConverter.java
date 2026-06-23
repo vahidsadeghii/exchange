@@ -1,4 +1,4 @@
-package com.exchange.profile.config.security;
+package com.exchange.oms.config.security;
 
 import org.springframework.core.convert.converter.Converter;
 import org.springframework.security.authentication.AbstractAuthenticationToken;
@@ -19,7 +19,6 @@ public class JWTAuthenticationConverter implements Converter<Jwt, AbstractAuthen
     @Override
     public AbstractAuthenticationToken convert(Jwt jwt) {
         Collection<GrantedAuthority> authorities = extractAuthorities(jwt);
-
         Long internalUserId =
                 Long.valueOf(jwt.getClaimAsString("internalUserId"));
 

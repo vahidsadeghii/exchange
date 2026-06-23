@@ -5,12 +5,10 @@ import com.exchange.wallet.controller.wallet.AssetDTO;
 import com.exchange.wallet.domain.*;
 import com.exchange.wallet.exception.AmountMustBePositiveException;
 import com.exchange.wallet.exception.AssetNotFoundException;
-import com.exchange.wallet.exception.UserCanNotFoundException;
 import com.exchange.wallet.exception.WalletNotFoundException;
 import com.exchange.wallet.repository.InMemoryWalletRepository;
 import com.exchange.wallet.service.TransactionService;
 import com.exchange.wallet.service.WalletService;
-import io.micrometer.common.util.StringUtils;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -28,47 +26,46 @@ public class WalletServiceImpl implements WalletService {
 
 
     @Override
-    public Wallet save(Long userId, String keycloakId, List<AssetDTO> assets) {
-        //Create Wallet
-        if (userId != null) {
-            Wallet wallet = createWallet(userId, assets);
+    public Wallet save(Long userId, List<AssetDTO> assets) {
+        Wallet existingWallet = repository.findByUserId(userId);
 
+        // Create new
+        if (existingWallet == null) {
+            Wallet wallet = createWallet(userId, assets);
             repository.save(wallet);
             return wallet;
         }
 
-        //Update Wallet
-        if (StringUtils.isEmpty(keycloakId)) {
-            throw new RuntimeException("keycloakId is required for wallet update");
-        }
-        Long resolvedUserId = getUserIdByKeycloakId(keycloakId)
-                .orElseThrow(UserCanNotFoundException::new);
+        // Update
+        Map<AssetType, BigDecimal> oldBalances =
+                existingWallet.getAsserts().stream()
+                        .collect(Collectors.toMap(
+                                Asset::getAssetType,
+                                Asset::getBalance
+                        ));
 
-        Wallet existingWallet = repository.findByUserId(resolvedUserId);
-        if (existingWallet == null) {
-            throw new WalletNotFoundException();
-        }
-        Map<AssetType, BigDecimal> oldBalances = existingWallet.getAsserts().stream()
-                .collect(Collectors.toMap(
-                        Asset::getAssetType,
-                        Asset::getBalance
-                ));
         mergeAssets(existingWallet, assets);
         existingWallet.setUpdatedAt(LocalDateTime.now());
+
         repository.save(existingWallet);
+
         existingWallet.getAsserts().forEach(asset -> {
+
             BigDecimal balanceBefore = oldBalances.getOrDefault(
                     asset.getAssetType(),
                     BigDecimal.ZERO
             );
-             BigDecimal balanceAfter = asset.getBalance();
+
+            BigDecimal balanceAfter = asset.getBalance();
 
             if (balanceBefore.compareTo(balanceAfter) == 0) {
                 return;
             }
-            TransactionType type = balanceAfter.compareTo(balanceBefore) > 0
-                    ? TransactionType.DEPOSIT
-                    : TransactionType.WITHDRAW;
+
+            TransactionType type =
+                    balanceAfter.compareTo(balanceBefore) > 0
+                            ? TransactionType.DEPOSIT
+                            : TransactionType.WITHDRAW;
 
             transactionService.createTransaction(
                     existingWallet.getWalletId(),
@@ -84,7 +81,7 @@ public class WalletServiceImpl implements WalletService {
     }
 
     @Override
-    public Wallet depositWallet(String walletId, String onlineUserId, AssetType assetType, BigDecimal amount) {
+    public Wallet depositWallet(String walletId,  AssetType assetType, BigDecimal amount) {
         if (amount == null || amount.signum() <= 0) {
             throw new AmountMustBePositiveException();
         }
@@ -137,12 +134,9 @@ public class WalletServiceImpl implements WalletService {
     }
 
     @Override
-    public Wallet userWalletInfo(String keycloakId, AssetType assetType) {
-        Long userId = getUserIdByKeycloakId(keycloakId)
-                .orElseThrow(UserCanNotFoundException::new);
-
+    public Wallet userWalletInfo(Long onlineUser, AssetType assetType) {
         return repository
-                .findByUserIdAndAssetType(userId, assetType)
+                .findByUserIdAndAssetType(onlineUser, assetType)
                 .orElse(null);
     }
 
@@ -150,6 +144,21 @@ public class WalletServiceImpl implements WalletService {
     public Wallet findWalletById(String walletId) {
         return repository.findById(walletId)
                 .orElseThrow(WalletNotFoundException::new);
+    }
+
+    @Override
+    public BigDecimal findBalanceByUserId(Long onlineUser, AssetType assetType) {
+        Wallet wallet = repository.findByUserId(onlineUser);
+        if (wallet == null) {
+            throw new WalletNotFoundException();
+        }
+
+        return wallet.getAsserts()
+                .stream()
+                .filter(asset -> asset.getAssetType() == assetType)
+                .findFirst()
+                .map(Asset::getBalance)
+                .orElse(BigDecimal.ZERO);
     }
 
     private List<Asset> assetEntities(List<AssetDTO> assets) {
@@ -187,10 +196,6 @@ public class WalletServiceImpl implements WalletService {
         });
 
         return wallet;
-    }
-
-    private Optional<Long> getUserIdByKeycloakId(String keycloakId) {
-        return profileClient.findUserByKeycloakId(keycloakId);
     }
 
     private void mergeAssets(Wallet wallet, List<AssetDTO> assets) {

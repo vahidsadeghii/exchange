@@ -16,11 +16,16 @@ import java.util.List;
 @Setter
 @Builder
 public class OnlineUser implements UserDetails {
-    private final String keycloakUserId; // JWT sub
+    private final String keycloakUserId;
+    private final Long internalUserId;
     private final List<String> roles;
 
-    public OnlineUser(String keycloakUserId, List<String> roles) {
+    public OnlineUser(String keycloakUserId,
+                      Long internalUserId,
+                      List<String> roles) {
+
         this.keycloakUserId = keycloakUserId;
+        this.internalUserId = internalUserId;
         this.roles = roles;
     }
 
@@ -41,9 +46,28 @@ public class OnlineUser implements UserDetails {
                 .toList();
     }
 
-    @Override public String getPassword() { return ""; }
-    @Override public boolean isAccountNonExpired() { return true; }
-    @Override public boolean isAccountNonLocked() { return true; }
-    @Override public boolean isCredentialsNonExpired() { return true; }
-    @Override public boolean isEnabled() { return true; }
+    @Override
+    public String getPassword() {
+        return "";
+    }
+
+    @Override
+    public boolean isAccountNonExpired() {
+        return true;
+    }
+
+    @Override
+    public boolean isAccountNonLocked() {
+        return true;
+    }
+
+    @Override
+    public boolean isCredentialsNonExpired() {
+        return true;
+    }
+
+    @Override
+    public boolean isEnabled() {
+        return true;
+    }
 }

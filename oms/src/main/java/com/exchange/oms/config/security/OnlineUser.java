@@ -11,12 +11,16 @@ import java.util.List;
 
 @Data
 public class OnlineUser implements UserDetails {
-    private final String keycloakUserId; // JWT sub
-    // private final Long userId;           // DB ID
+      private final String keycloakUserId;
+    private final Long internalUserId;
     private final List<String> roles;
 
-    public OnlineUser(String keycloakUserId, List<String> roles) {
+    public OnlineUser(String keycloakUserId,
+                      Long internalUserId,
+                      List<String> roles) {
+
         this.keycloakUserId = keycloakUserId;
+        this.internalUserId = internalUserId;
         this.roles = roles;
     }
 

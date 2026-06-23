@@ -23,7 +23,7 @@ public class UserWalletInfoController {
     @PreAuthorize("hasRole('CUSTOMER')")
     public WalletInfoResponse handle(@RequestParam("assetType") AssetType assetType,
                                      @AuthenticationPrincipal OnlineUser onlineUser) {
-        Wallet wallet = walletService.userWalletInfo(onlineUser.getKeycloakUserId(), assetType);
+        Wallet wallet = walletService.userWalletInfo(onlineUser.getInternalUserId(), assetType);
 
         if (wallet == null) {
             throw new WalletNotFoundException();

@@ -2,6 +2,7 @@ package com.exchange.oms.service.impl;
 
 import com.exchange.oms.client.matchingengine.MatchingInfoClient;
 import com.exchange.oms.client.matchingengine.createOrderRequest;
+import com.exchange.oms.client.wallet.WalletClient;
 import com.exchange.oms.controller.order.findorderbook.OrderBookResponse;
 import com.exchange.oms.domain.*;
 import jakarta.persistence.EntityNotFoundException;
@@ -22,13 +23,14 @@ import java.time.ZoneId;
 public class OrderServiceImpl implements OrderService {
     private final OrderRepository orderRepository;
     private final MatchingInfoClient matchingEngineClient;
+    private final WalletClient walletClient;
+
 
     @Override
-    public Order createOrder(long userId, TradePair tradePair, TradeSide tradeSide, OrderType orderType, double quantity, double price) {
-        //TODO: check the order properties
-        //Property validation is handled in OrderServiceDecorator
+    public Order createOrder(String keycloakUserId, TradePair tradePair, TradeSide tradeSide, OrderType orderType, double quantity, double price) {
+
         Order order = orderRepository.save(Order.builder()
-                .userId(1L)
+                .keycloakUserId(keycloakUserId)
                 .tradePair(tradePair)
                 .orderType(orderType)
                 .tradeSide(tradeSide)
@@ -41,7 +43,7 @@ public class OrderServiceImpl implements OrderService {
         matchingEngineClient.createOrderMatchingEngine(
                 new createOrderRequest(
                         order.getId(),
-                        order.getUserId(),
+                      1L,
                         order.getTradePair(),
                         order.getOrderType(),
                         order.getTradeSide(),

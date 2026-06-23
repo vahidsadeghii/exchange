@@ -1,4 +1,4 @@
-package com.exchange.profile.config.security;
+package com.exchange.oms.config.security;
 
 import java.util.List;
 

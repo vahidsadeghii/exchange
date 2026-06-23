@@ -2,11 +2,8 @@ package com.exchange.wallet.repository;
 
 import com.exchange.wallet.domain.AssetType;
 import com.exchange.wallet.domain.Wallet;
-import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Repository;
 
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
