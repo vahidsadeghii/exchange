@@ -1,0 +1,103 @@
+###User Signin
+POST http://{{host}}/profile/open/v1/user/signin
+Content-Type: application/json
+
+{
+  "userName": "helda.musterman11@example.com",
+  "password": "HeldaPass123!"
+}
+> {%
+    client.test("Status code is 200", function () {
+        client.assert(response.status === 200, "Expected status 200");
+    });
+
+    client.test("Access token exists", function () {
+        client.assert(response.body.accessToken !== undefined, "Missing accessToken object");
+        client.assert(response.body.accessToken.accessToken !== "", "accessToken is empty");
+    });
+
+    client.test("Access token expiration exists", function () {
+        client.assert(response.body.accessToken.expirationDate !== "", "accessToken expiration missing");
+    });
+
+    client.test("Refresh token exists", function () {
+        client.assert(response.body.refreshToken !== undefined, "Missing refreshToken object");
+        client.assert(response.body.refreshToken.refreshToken !== "", "refreshToken is empty");
+    });
+
+    client.test("Refresh token expiration exists", function () {
+        client.assert(response.body.refreshToken.expirationDate !== "", "refreshToken expiration missing");
+    });
+
+    client.test("User type is returned", function () {
+        client.assert(response.body.userType !== undefined, "userType missing");
+    });
+
+    client.global.set("loginToken", response.body.accessToken.accessToken);
+
+%}
+
+
+
+
+
+### Create Order
+POST http://localhost:8070/orders
+Authorization: Bearer {{loginToken}}
+Content-Type: application/json
+Request-Id: 2001
+
+{
+  "assetType": "EUR",
+  "tradePair": "BTC_EUR",
+  "orderType": "LIMIT",
+  "tradeSide": "BUY",
+  "quantity": 0.5,
+  "price": 42000.75
+}
+
+> {%
+    const body = response.body;
+
+    client.test("Status code is 200", function () {
+        client.assert(response.status === 200,
+            "Expected 200 but got " + response.status);
+    });
+
+    client.test("Order ID exists", function () {
+        client.assert(body.id !== undefined,
+            "Order id is missing");
+    });
+
+    client.test("Trade pair is correct", function () {
+        client.assert(body.tradePair === "BTC_EUR",
+            "Trade pair mismatch");
+    });
+
+    client.test("Trade side is BUY", function () {
+        client.assert(body.tradeSide === "BUY",
+            "Trade side mismatch");
+    });
+
+    client.test("Order type is LIMIT", function () {
+        client.assert(body.orderType === "LIMIT",
+            "Order type mismatch");
+    });
+
+    client.test("Quantity is correct", function () {
+        client.assert(body.quantity == 0.5,
+            "Quantity mismatch");
+    });
+
+    client.test("Price is correct", function () {
+        client.assert(body.price == 42000.75,
+            "Price mismatch");
+    });
+
+    client.test("CreatedAt exists", function () {
+        client.assert(body.createDate !== undefined,
+            "createDate missing");
+    });
+
+    client.log("Created order id = " + body.id);
+%}

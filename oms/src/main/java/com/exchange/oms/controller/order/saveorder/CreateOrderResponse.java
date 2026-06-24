@@ -1,5 +1,6 @@
 package com.exchange.oms.controller.order.saveorder;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 public record CreateOrderResponse(
@@ -8,8 +9,8 @@ public record CreateOrderResponse(
         String tradeSide,
         String orderType,
         String orderStatus,
-        double quantity,
-        double price,
+        BigDecimal quantity,
+        BigDecimal price,
         LocalDateTime createDate) {
 }
 

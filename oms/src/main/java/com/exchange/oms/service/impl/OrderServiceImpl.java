@@ -5,6 +5,7 @@ import com.exchange.oms.client.matchingengine.createOrderRequest;
 import com.exchange.oms.client.wallet.WalletClient;
 import com.exchange.oms.controller.order.findorderbook.OrderBookResponse;
 import com.exchange.oms.domain.*;
+import com.exchange.oms.exception.order.InsufficientBalanceException;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -13,6 +14,7 @@ import com.exchange.oms.repository.OrderRepository;
 import com.exchange.oms.service.OrderService;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 @Service
@@ -26,7 +28,19 @@ public class OrderServiceImpl implements OrderService {
 
 
     @Override
-    public Order createOrder(Long onlineUser, TradePair tradePair, TradeSide tradeSide, OrderType orderType, double quantity, double price) {
+    public Order createOrder(Long onlineUser, AssetType assetType,
+                             TradePair tradePair, TradeSide tradeSide,
+                             OrderType orderType, BigDecimal quantity, BigDecimal price) {
+
+        BigDecimal userWalletBalance = walletClient.findUserWalletBalance(onlineUser, assetType);
+
+        BigDecimal orderValue = quantity.multiply(price);
+
+        if (userWalletBalance == null ||
+                userWalletBalance.compareTo(orderValue) < 0) {
+
+            throw new InsufficientBalanceException();
+        }
 
         Order order = orderRepository.save(Order.builder()
                 .userId(onlineUser)

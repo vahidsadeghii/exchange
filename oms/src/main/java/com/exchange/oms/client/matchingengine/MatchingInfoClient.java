@@ -13,7 +13,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 
 import java.time.LocalDateTime;
 
-@FeignClient(name = "em")
+@FeignClient(name = "me")
 public interface MatchingInfoClient {
     Logger logger = LoggerFactory.getLogger(MatchingInfoClient.class);
 

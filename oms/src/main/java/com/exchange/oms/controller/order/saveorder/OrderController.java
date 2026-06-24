@@ -23,6 +23,7 @@ public class OrderController {
 
         Order order = orderService.createOrder(
                 onlineUser.getInternalUserId(),
+                request.assetType(),
                 request.tradePair(),
                 request.tradeSide(),
                 request.orderType(),

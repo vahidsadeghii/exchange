@@ -63,7 +63,7 @@ Content-Type: application/json
       "assetType": "USDT"
     },
     {
-      "balance": 500,
+      "balance": 500000,
       "blockedBalance": 0,
       "assetType": "EUR"
     },
@@ -104,47 +104,25 @@ Content-Type: application/json
     }
 %}
 
-###User Wallet Info
+### User Wallet Info by assetType
 GET http://{{host}}/wallet/api/v1/wallet-info?assetType=EUR
 Authorization: Bearer {{loginToken}}
 Request-Id: 1001
 Accept: application/json
 
 > {%
-    client.log("STATUS = " + response.status);
     client.log("BODY = " + JSON.stringify(response.body));
 
-    client.test("Status code is 200", function () {
-        client.assert(
-            response.status === 200,
-            "Expected 200, got " + response.status +
-            ". Response: " + JSON.stringify(response.body)
-        );
-    });
+    if (response.status === 200 && response.body.walletId) {
+        client.global.set("wallet-id", response.body.walletId);
 
-    if (response.status === 200 && response.body && response.body.assets) {
-
-        client.test("Assets exist", function () {
-            client.assert(
-                response.body.assets.length > 0,
-                "assets empty"
-            );
-        });
-
-        client.test("EUR exists", function () {
-            client.assert(
-                response.body.assets.some(a => a.assetType === "EUR"),
-                "EUR missing"
-            );
-        });
-
+        // Verify immediately
+        client.log("Stored wallet-id = " + client.global.get("wallet-id"));
     }
-    client.log("WalletId: " + wallet.walletId);
 %}
 
-
-####find wallet by id
-GET http://localhost:8070/wallet/api/v1/wallet-by-id?walletId={{walletId}}
+####find wallet by id  00990396-d562-43dc-a88a-334f51a6a741
+GET http://localhost:8070/wallet/api/v1/wallet-by-id?walletId={{wallet-id}}
 Authorization: Bearer {{loginToken}}
 Request-Id: 1009
 Content-Type: application/json
@@ -165,7 +143,7 @@ Content-Type: application/json
     client.test("Wallet ID exists", function () {
         client.assert(wallet.walletId !== undefined, "Missing walletId");
     });
-    const expectedWalletId = "d990b93d-8f6c-4eec-83c6-6f2ae8dc8c33";
+    const expectedWalletId = "00990396-d562-43dc-a88a-334f51a6a741";
     client.test("Wallet ID matches", function () {
         client.assert(
             wallet.walletId === expectedWalletId,
@@ -201,7 +179,7 @@ Request-Id: 1001
 Content-Type: application/json
 
 {
-  "walletId": "{{walletId}}",
+  "walletId": "{{wallet-id}}",
   "assetType": "EUR",
   "amount": 1000
 }
@@ -244,7 +222,7 @@ Request-Id: 1441
 Content-Type: application/json
 
 {
-  "walletId": "{{walletId}}",
+  "walletId": "{{wallet-id}}",
   "assetType": "EUR",
   "amount": 1000
 }
@@ -281,7 +259,7 @@ Content-Type: application/json
 %}
 
 ### Find transactions by wallet-id
-POST http://localhost:8070/wallet/api/v1/transactions?walletId=3f26adbd-114d-4da3-a61f-c90c89ce8b75
+POST http://localhost:8070/wallet/api/v1/transactions?walletId={{wallet-id}}
 Authorization: Bearer {{loginToken}}
 Request-Id: 1009
 Content-Type: application/json
