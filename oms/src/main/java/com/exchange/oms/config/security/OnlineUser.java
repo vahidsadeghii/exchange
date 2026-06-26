@@ -1,7 +1,9 @@
 package com.exchange.oms.config.security;
 
 
-import lombok.Data;
+import lombok.Builder;
+import lombok.Getter;
+import lombok.Setter;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -9,9 +11,12 @@ import org.springframework.security.core.userdetails.UserDetails;
 import java.util.Collection;
 import java.util.List;
 
-@Data
+
+@Getter
+@Setter
+@Builder
 public class OnlineUser implements UserDetails {
-      private final String keycloakUserId;
+    private final String keycloakUserId;
     private final Long internalUserId;
     private final List<String> roles;
 
@@ -66,4 +71,3 @@ public class OnlineUser implements UserDetails {
         return true;
     }
 }
-

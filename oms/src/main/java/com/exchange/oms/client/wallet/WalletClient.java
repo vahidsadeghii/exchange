@@ -8,12 +8,13 @@ import io.github.resilience4j.circuitbreaker.annotation.CircuitBreaker;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.cloud.openfeign.FeignClient;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 
 import java.math.BigDecimal;
 
-@FeignClient(name = "wallet")
+@FeignClient(name = "wallet", url = "http://localhost:8092/wallet")
 public interface WalletClient {
     Logger logger = LoggerFactory.getLogger(WalletClient.class);
 
@@ -27,7 +28,7 @@ public interface WalletClient {
 
 
     @CircuitBreaker(name = "oms-instance", fallbackMethod = "createOrderMatchingEngineFallBack")
-    @PostMapping(value = "/api/${api.prefix.internal}/order")
+    @GetMapping(value = "/_api/v1/wallet-balance")
     BigDecimal findUserWalletBalance(@RequestParam Long userId, @RequestParam AssetType assetType);
 
     default void findUserWalletBalanceFallBack(@RequestParam Long userId, @RequestParam AssetType assetType, Throwable t) throws Throwable {

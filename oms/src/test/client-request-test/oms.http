@@ -42,7 +42,7 @@ Content-Type: application/json
 
 
 ### Create Order
-POST http://localhost:8070/orders
+POST http://{{host}}/oms/api/v1/orders
 Authorization: Bearer {{loginToken}}
 Content-Type: application/json
 Request-Id: 2001

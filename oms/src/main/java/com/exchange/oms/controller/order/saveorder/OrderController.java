@@ -16,7 +16,7 @@ import com.exchange.oms.service.OrderService;
 public class OrderController {
     private final OrderService orderService;
 
-    @PostMapping(value = "/orders")
+    @PostMapping(value = "${api.prefix.secure}/orders")
      @PreAuthorize("hasRole('CUSTOMER')")
     public CreateOrderResponse createOrder(@AuthenticationPrincipal OnlineUser onlineUser,
                                            @RequestBody CreateOrderRequest request) {

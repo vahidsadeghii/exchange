@@ -5,9 +5,9 @@ Spring:
 
 custom-config:
   kafka:
-    updatematchingEngine-output-message:
-      topic: updatematchingEngine-message
     savematchingEngine-output-message:
-      topic: savematchingEngine-message
+      topic: save-matching-engine
 
 
+ #   updatematchingEngine-output-message:
+#      topic: updatematchingEngine-message

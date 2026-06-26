@@ -1,12 +1,13 @@
 package com.exchange.oms.config.security;
 
+
 import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-import lombok.RequiredArgsConstructor;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.Authentication;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -15,12 +16,13 @@ import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
 import java.util.List;
+import java.util.Objects;
+
 
 @Component
-@RequiredArgsConstructor
-public class TokenInfoFilter extends OncePerRequestFilter {
+public class TrustedHeaderAuthenticationFilter extends OncePerRequestFilter {
 
-    private final ObjectMapper objectMapper;
+    private final ObjectMapper objectMapper = new ObjectMapper();
 
     @Override
     protected void doFilterInternal(
@@ -28,28 +30,34 @@ public class TokenInfoFilter extends OncePerRequestFilter {
             HttpServletResponse response,
             FilterChain filterChain
     ) throws ServletException, IOException {
-        String header = request.getHeader("TokenInfo");
+        String tokenInfoHeader = request.getHeader("TokenInfo");
+        if (tokenInfoHeader != null) {
+            TokenInfo tokenInfo =
+                    objectMapper.readValue(tokenInfoHeader, TokenInfo.class);
+            List<String> cleanRoles = tokenInfo.roles().stream()
+                    .filter(Objects::nonNull)
+                    .filter(r -> !r.isBlank())
+                    .filter(r -> r.startsWith("ROLE_"))
+                    .toList();
 
-        if (header != null) {
-            TokenInfo info = objectMapper.readValue(header, TokenInfo.class);
-            List<GrantedAuthority> authorities = info.roles().stream()
-                    .map(r -> r.startsWith("ROLE_") ? r : "ROLE_" + r)
+            List<GrantedAuthority> authorities = cleanRoles.stream()
                     .map(SimpleGrantedAuthority::new)
-                    .map(a -> (GrantedAuthority) a)
+                    .map(GrantedAuthority.class::cast)
                     .toList();
 
             OnlineUser principal = new OnlineUser(
-                    info.keycloakUserId(),
-                    info.internalUserId(),
-                    info.roles());
+                    tokenInfo.keycloakUserId(),
+                    tokenInfo.internalUserId(),
+                    cleanRoles);
 
-            UsernamePasswordAuthenticationToken auth =
+            Authentication authentication =
                     new UsernamePasswordAuthenticationToken(
                             principal,
                             null,
                             authorities);
 
-            SecurityContextHolder.getContext().setAuthentication(auth);
+            SecurityContextHolder.getContext()
+                    .setAuthentication(authentication);
         }
 
         filterChain.doFilter(request, response);

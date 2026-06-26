@@ -11,27 +11,34 @@ import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 
-@Configuration
-@RequiredArgsConstructor
-@EnableMethodSecurity
-public class SecurityConfig {
 
-    private final TokenInfoFilter tokenInfoFilter;
+@Configuration
+@EnableMethodSecurity
+@RequiredArgsConstructor
+public class SecurityConfig {
+    private final TrustedHeaderAuthenticationFilter filter;
 
     @Bean
-    public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
+    public SecurityFilterChain securityFilterChain(HttpSecurity http)
+            throws Exception {
 
         http.csrf(AbstractHttpConfigurer::disable)
                 .sessionManagement(session ->
-                        session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+                        session.sessionCreationPolicy(
+                                SessionCreationPolicy.STATELESS))
+                .securityContext(context ->
+                        context.requireExplicitSave(false))
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/public/**").permitAll()
                         .requestMatchers("/open/**").permitAll()
                         .requestMatchers("/_api/**").permitAll()
                         .anyRequest().authenticated())
                 .addFilterBefore(
-                        tokenInfoFilter,
-                        UsernamePasswordAuthenticationFilter.class);
+                        filter,
+                        UsernamePasswordAuthenticationFilter.class)
+                .anonymous(AbstractHttpConfigurer::disable)
+                .formLogin(AbstractHttpConfigurer::disable)
+                .httpBasic(AbstractHttpConfigurer::disable);
 
         return http.build();
     }

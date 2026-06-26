@@ -63,7 +63,7 @@ Content-Type: application/json
       "assetType": "USDT"
     },
     {
-      "balance": 500000,
+      "balance": 5000000,
       "blockedBalance": 0,
       "assetType": "EUR"
     },
@@ -121,7 +121,7 @@ Accept: application/json
     }
 %}
 
-####find wallet by id  00990396-d562-43dc-a88a-334f51a6a741
+####find wallet by id
 GET http://localhost:8070/wallet/api/v1/wallet-by-id?walletId={{wallet-id}}
 Authorization: Bearer {{loginToken}}
 Request-Id: 1009

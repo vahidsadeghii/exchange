@@ -1,7 +1,7 @@
 package com.exchange.oms.service.impl;
 
 import com.exchange.oms.client.matchingengine.MatchingInfoClient;
-import com.exchange.oms.client.matchingengine.createOrderRequest;
+import com.exchange.oms.client.matchingengine.CreateOrderRequest;
 import com.exchange.oms.client.wallet.WalletClient;
 import com.exchange.oms.controller.order.findorderbook.OrderBookResponse;
 import com.exchange.oms.domain.*;
@@ -54,14 +54,14 @@ public class OrderServiceImpl implements OrderService {
                 .build());
 
         matchingEngineClient.createOrderMatchingEngine(
-                new createOrderRequest(
+                new CreateOrderRequest(
                         order.getId(),
                         order.getUserId(),
                         order.getTradePair(),
                         order.getOrderType(),
                         order.getTradeSide(),
-                        order.getQuantity(),
-                        order.getPrice()));
+                        order.getQuantity().doubleValue(),
+                        order.getPrice().doubleValue()));
 
         return order;
     }

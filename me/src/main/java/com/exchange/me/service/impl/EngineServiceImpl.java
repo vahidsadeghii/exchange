@@ -8,22 +8,23 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
-@Slf4j
+
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class EngineServiceImpl implements EngineService {
     private final MatchEventService matchEngineEventService;
-    private final OrderBookServiceImpl orderBookService;
 
-    @Value("${custom-config.kafka.updatematchingEngine-output-message.topic}")
-    private String updatematchingEngineTopic;
+
+//    @Value("${custom-config.kafka.updatematchingEngine-output-message.topic}")
+//    private String updatematchingEngineTopic;
 
     @Value("${custom-config.kafka.savematchingEngine-output-message.topic}")
     private String savematchingEngineTopic;
 
     @Override
     public void processOrder(long orderId, long userId, TradePair tradePair, OrderType orderType,
-                       TradeSide tradeSide, double quantity, double price) {
+                             TradeSide tradeSide, double quantity, double price) {
 
         Order order = Order.builder()
                 .id(orderId)

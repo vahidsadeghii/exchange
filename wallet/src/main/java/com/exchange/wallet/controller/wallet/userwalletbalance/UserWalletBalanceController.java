@@ -18,7 +18,7 @@ public class UserWalletBalanceController {
 
 
 
-     @GetMapping(value = " /_api/${api.version}/wallet-balance")
+     @GetMapping(value = "/_api/${api.version}/wallet-balance")
     public BigDecimal handle(@RequestParam Long userId, @RequestParam AssetType assetType) {
 
         return walletService.findBalanceByUserId(userId, assetType);

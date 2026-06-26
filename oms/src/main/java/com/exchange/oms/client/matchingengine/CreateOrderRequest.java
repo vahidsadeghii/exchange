@@ -7,8 +7,8 @@ import com.exchange.oms.domain.TradeSide;
 
 import java.math.BigDecimal;
 
-public record createOrderRequest(long orderId, long userId,
+public record CreateOrderRequest(long orderId, long userId,
                                  TradePair tradePair, OrderType orderType,
                                  TradeSide tradeSide,
-                                 BigDecimal quantity, BigDecimal price) {
+                                 double quantity, double price) {
 }
