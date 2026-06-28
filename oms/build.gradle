@@ -62,8 +62,7 @@ dependencies {
         // Config client
         implementation 'org.springframework.cloud:spring-cloud-config-client'
 
-        // H2 database
-        runtimeOnly 'com.h2database:h2'
+
 
         // Resilience4j
         implementation "io.github.resilience4j:resilience4j-spring-boot3:${resilience4jVersion}"
@@ -77,6 +76,9 @@ dependencies {
         // JUnit
         testImplementation libs.junit.jupiter
         testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+
+        // H2 database
+        testRuntimeOnly 'com.h2database:h2'
 
         // Guava: Google core libraries (collections, caching, utilities)
         implementation libs.guava

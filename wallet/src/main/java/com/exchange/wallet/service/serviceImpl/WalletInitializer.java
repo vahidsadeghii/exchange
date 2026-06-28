@@ -5,6 +5,7 @@ import com.exchange.wallet.domain.AssetType;
 import com.exchange.wallet.domain.Wallet;
 import com.exchange.wallet.repository.InMemoryWalletRepository;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.stereotype.Component;
 
@@ -16,6 +17,7 @@ import java.util.UUID;
 
 @Component
 @RequiredArgsConstructor
+@Slf4j
 public class WalletInitializer implements CommandLineRunner {
 
     private final InMemoryWalletRepository repository;
@@ -55,7 +57,7 @@ public class WalletInitializer implements CommandLineRunner {
 
             repository.save(wallet);
 
-            System.out.println("Default wallet created for user 111");
+            log.info("Default wallet created for user 111");
         }
     }
 }

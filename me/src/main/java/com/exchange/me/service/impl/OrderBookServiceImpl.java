@@ -4,9 +4,11 @@ import com.exchange.me.domain.*;
 import com.exchange.me.exception.InvalidTradPairException;
 import com.exchange.me.exception.NotFoundOrderBookHandlerException;
 import com.exchange.me.handler.OrderBookHandler;
+import com.exchange.me.repository.InMemoryOrderRepository;
 import com.exchange.me.service.EngineService;
 import com.exchange.me.service.OrderBookService;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
@@ -18,8 +20,10 @@ import java.util.concurrent.ConcurrentHashMap;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class OrderBookServiceImpl implements OrderBookService {
     private final EngineService engineService;
+    private final InMemoryOrderRepository orderRepository;
 
     private final Map<TradePair, OrderBookHandler> orderBooks = new ConcurrentHashMap<>();
 
@@ -34,19 +38,22 @@ public class OrderBookServiceImpl implements OrderBookService {
 
         OrderBookHandler handler = getOrCreateBook(tradePair);
 
+        Order order = Order.builder()
+                .id(orderId)
+                .userId(userId)
+                .tradeSide(tradeSide)
+                .orderType(orderType)
+                .tradePair(tradePair)
+                .quantity(quantity)
+                .price(price)
+                .build();
         List<MatchInfo> matchInfos = handler.matchOrder(LocalDateTime.now()
                         .atZone(ZoneId.systemDefault())
                         .toInstant()
-                        .toEpochMilli(),
-                Order.builder()
-                        .id(orderId)
-                        .userId(userId)
-                        .tradeSide(tradeSide)
-                        .orderType(orderType)
-                        .tradePair(tradePair)
-                        .quantity(quantity)
-                        .price(price)
-                        .build());
+                        .toEpochMilli(), order);
+
+        Map<Long, Order> save = orderRepository.save(order);
+        log.info("Save order id {}, order {}", orderId, save);
 
         engineService.processOrder(orderId, userId, tradePair, orderType, tradeSide, quantity, price);
 

@@ -35,6 +35,8 @@ custom-config:
 logging:
   level:
     org.springframework.web.servlet.mvc.method.annotation.RequestMappingHandlerMapping: TRACE
+    feign: DEBUG
+    com.exchange: DEBUG
 
 management:
   endpoints:

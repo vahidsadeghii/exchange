@@ -86,6 +86,6 @@ resilience4j:
         wait-duration: 1s
 
     instances:
-      profile-instance:
+      wallet-instance:
         base-config: default
 

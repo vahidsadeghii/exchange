@@ -5,6 +5,7 @@ import com.exchange.oms.config.exception.FallBackException;
 import com.exchange.oms.config.feign.FeignException;
 import com.exchange.oms.domain.AssetType;
 import io.github.resilience4j.circuitbreaker.annotation.CircuitBreaker;
+import io.github.resilience4j.retry.annotation.Retry;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.cloud.openfeign.FeignClient;
@@ -27,11 +28,17 @@ public interface WalletClient {
     }
 
 
-    @CircuitBreaker(name = "oms-instance", fallbackMethod = "createOrderMatchingEngineFallBack")
+    @CircuitBreaker(name = "wallet-instance", fallbackMethod = "findUserWalletBalanceFallBack")
     @GetMapping(value = "/_api/v1/wallet-balance")
+    @Retry(name = "wallet-instance")
     BigDecimal findUserWalletBalance(@RequestParam Long userId, @RequestParam AssetType assetType);
 
-    default void findUserWalletBalanceFallBack(@RequestParam Long userId, @RequestParam AssetType assetType, Throwable t) throws Throwable {
-        throw parseThrowable(t);
+    default BigDecimal findUserWalletBalanceFallBack(@RequestParam Long userId, @RequestParam AssetType assetType, Throwable t) {
+        logger.error(
+                "Wallet service unavailable. userId={}, assetType={}",
+                userId, assetType,
+                t
+        );
+        return BigDecimal.ZERO;
     }
 }
