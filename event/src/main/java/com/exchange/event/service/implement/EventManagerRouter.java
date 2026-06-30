@@ -73,7 +73,7 @@ public class EventManagerRouter extends RouteBuilder {
             Map<String, List<TagRouter>> topics = tags.stream().collect(Collectors.groupingBy(TagRouter::getTag));
             topics.forEach((k, v) ->
                     choice.when()
-                            .jsonpath("$.[?(@.tag == '" + k + "' )]")
+                            .jsonpath("$.[?(@.routingEnabled == true && @.tag == '" + k + "' )]")
                             .transform(ExpressionBuilder.languageExpression("jsonpath", "$.event")).marshal().json(JsonLibrary.Jackson)
                             .multicast()
                             .to(v.stream().map(tagRout -> "kafka:" + tagRout.getTitleTopic() + "?brokers=kafka-service:9092")

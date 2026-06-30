@@ -5,6 +5,7 @@ import com.exchange.oms.client.wallet.WalletClient;
 import com.exchange.oms.config.exception.FallBackException;
 import com.exchange.oms.config.feign.FeignException;
 import com.exchange.oms.controller.order.findorderbook.OrderBookResponse;
+import com.exchange.oms.domain.MatchEngineResponse;
 import io.github.resilience4j.circuitbreaker.annotation.CircuitBreaker;
 import io.github.resilience4j.retry.annotation.Retry;
 import org.slf4j.Logger;
@@ -14,8 +15,6 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestParam;
-
-import java.util.List;
 
 
 @FeignClient(
@@ -37,14 +36,16 @@ public interface MatchingInfoClient {
     @PostMapping("/_api/v1/order")
     @CircuitBreaker(name = "me-instance", fallbackMethod = "createOrderMatchingEngineFallback")
     @Retry(name = "me-instance")
-    void createOrderMatchingEngine(@RequestBody NewOrderRequest request);
+    MatchEngineResponse createOrderMatchingEngine(@RequestBody CreateUpdateOrderRequestClient request);
 
-    default void createOrderMatchingEngineFallback(@RequestBody NewOrderRequest request, Throwable t) {
+    default MatchEngineResponse createOrderMatchingEngineFallback(@RequestBody CreateUpdateOrderRequestClient request, Throwable t) {
         logger.error(
                 "ME service unavailable, order dropped. orderId={}",
                 request.orderId(),
                 t
         );
+
+        return null;
 
     }
 

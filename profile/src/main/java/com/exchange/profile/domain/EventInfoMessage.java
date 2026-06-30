@@ -17,6 +17,7 @@ public class EventInfoMessage<T> {
     private String tag;
     private String title;
     private String serviceName;
+    private boolean routingEnabled;
     private boolean persistent;
     private LocalDateTime createDate;
     private T event;

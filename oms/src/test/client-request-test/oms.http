@@ -224,5 +224,71 @@ Request-Id: 2001
             "createDate missing");
     });
 
+    client.global.set("orderId", body.id);
+
+    client.log("Saved orderId = " + body.id);
+%}
+
+
+#####Update Order three
+
+POST http://{{host}}/oms/api/v1/orders
+Authorization: Bearer {{loginToken}}
+Content-Type: application/json
+Request-Id: 2001
+
+{
+  "oldOrderId": 3,
+  "assetType": "EUR",
+  "tradePair": "BTC_EURO",
+  "orderType": "LIMIT",
+  "tradeSide": "BUY",
+  "quantity": 0.5,
+  "price": 1300.75
+}
+
+> {%
+    const body = response.body;
+
+    client.test("Status code is 200", function () {
+        client.assert(response.status === 200,
+            "Expected 200 but got " + response.status);
+    });
+
+    client.test("Order ID exists", function () {
+        client.assert(body.id !== undefined,
+            "Order id is missing");
+    });
+
+    client.test("Trade pair is correct", function () {
+        client.assert(body.tradePair === "BTC_EUR",
+            "Trade pair mismatch");
+    });
+
+    client.test("Trade side is BUY", function () {
+        client.assert(body.tradeSide === "BUY",
+            "Trade side mismatch");
+    });
+
+    client.test("Order type is LIMIT", function () {
+        client.assert(body.orderType === "LIMIT",
+            "Order type mismatch");
+    });
+
+    client.test("Quantity is correct", function () {
+        client.assert(body.quantity == 0.5,
+            "Quantity mismatch");
+    });
+
+    client.test("Price is correct", function () {
+        client.assert(body.price == 1300.75,
+            "Price mismatch");
+    });
+
+    client.test("CreatedAt exists", function () {
+        client.assert(body.createDate !== undefined,
+            "createDate missing");
+    });
+
     client.log("Created order id = " + body.id);
 %}

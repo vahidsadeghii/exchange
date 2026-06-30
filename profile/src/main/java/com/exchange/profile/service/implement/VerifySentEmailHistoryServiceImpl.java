@@ -135,6 +135,7 @@ public class VerifySentEmailHistoryServiceImpl implements VerifySentEmailHistory
                 .tag(eventMessage)
                 .title("event-verify-email")
                 .serviceName("verify-sent-email-history")
+                .routingEnabled(true)
                 .persistent(true)
                 .createDate(LocalDateTime.now())
                 .event(message)

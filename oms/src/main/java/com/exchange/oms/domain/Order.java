@@ -32,6 +32,9 @@ public class Order {
     @Enumerated(EnumType.STRING)
     private OrderStatus status = OrderStatus.NEW;
 
+    @Enumerated(EnumType.STRING)
+    private MarketType marketType;
+
     private BigDecimal quantity;
 
     private BigDecimal price;

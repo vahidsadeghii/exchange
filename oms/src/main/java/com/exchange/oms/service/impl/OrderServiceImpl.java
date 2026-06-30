@@ -1,12 +1,11 @@
 package com.exchange.oms.service.impl;
 
 import com.exchange.oms.client.matchingengine.MatchingInfoClient;
-import com.exchange.oms.client.matchingengine.NewOrderRequest;
+import com.exchange.oms.client.matchingengine.CreateUpdateOrderRequestClient;
 import com.exchange.oms.client.wallet.WalletClient;
-import com.exchange.oms.controller.order.findorderbook.OrderBookResponse;
+import com.exchange.oms.config.exception.NotFoundException;
 import com.exchange.oms.domain.*;
 import com.exchange.oms.exception.order.InsufficientBalanceException;
-import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -28,11 +27,61 @@ public class OrderServiceImpl implements OrderService {
 
 
     @Override
-    public Order createOrder(Long onlineUser, AssetType assetType,
-                             TradePair tradePair, TradeSide tradeSide,
-                             OrderType orderType, BigDecimal quantity, BigDecimal price) {
+    public Order createUpdateOrder(Long oldOrderId, Long onlineUser, AssetType assetType,
+                                   TradePair tradePair, TradeSide tradeSide,
+                                   MarketType marketType, OrderType orderType, BigDecimal quantity, BigDecimal price) {
 
-        BigDecimal userWalletBalance = walletClient.findUserWalletBalance(onlineUser, assetType);
+
+        if (oldOrderId != null) {
+            Order oldOrder = orderRepository
+                    .findByIdAndStatus(oldOrderId, OrderStatus.NEW)
+                    .orElseThrow(NotFoundException::new);
+
+            oldOrder.setStatus(OrderStatus.CANCELED);
+            orderRepository.save(oldOrder);
+        }
+
+        validateSufficientBalance(onlineUser, assetType, quantity, price);
+
+        Order order = orderRepository.save(Order.builder()
+                .userId(onlineUser)
+                .tradePair(tradePair)
+                .orderType(orderType)
+                .tradeSide(tradeSide)
+                .marketType(marketType)
+                .status(OrderStatus.NEW)
+                .quantity(quantity)
+                .price(price)
+                .createdAt(LocalDateTime.now())
+                .build());
+
+        MatchEngineResponse orderMatchingEngine = matchingEngineClient.createOrderMatchingEngine(
+                new CreateUpdateOrderRequestClient(
+                        oldOrderId,
+                        order.getId(),
+                        order.getUserId(),
+                        order.getTradePair(),
+                        order.getOrderType(),
+                        order.getTradeSide(),
+                        order.getMarketType(),
+                        order.getQuantity().doubleValue(),
+                        order.getPrice().doubleValue()));
+
+        order.setMatchEngineStatus(orderMatchingEngine.status());
+        return order;
+    }
+
+    @Override
+    public Order getOrder(long orderId) {
+        return null;
+    }
+
+    private void validateSufficientBalance(Long userId,
+                                           AssetType assetType,
+                                           BigDecimal quantity,
+                                           BigDecimal price) {
+
+        BigDecimal userWalletBalance = walletClient.findUserWalletBalance(userId, assetType);
 
         BigDecimal orderValue = quantity.multiply(price);
 
@@ -41,45 +90,6 @@ public class OrderServiceImpl implements OrderService {
 
             throw new InsufficientBalanceException();
         }
-
-        Order order = orderRepository.save(Order.builder()
-                .userId(onlineUser)
-                .tradePair(tradePair)
-                .orderType(orderType)
-                .tradeSide(tradeSide)
-                .status(OrderStatus.NEW)
-                .quantity(quantity)
-                .price(price)
-                .createdAt(LocalDateTime.now())
-                .build());
-
-        matchingEngineClient.createOrderMatchingEngine(
-                new NewOrderRequest(
-                        order.getId(),
-                        order.getUserId(),
-                        order.getTradePair(),
-                        order.getOrderType(),
-                        order.getTradeSide(),
-                        order.getQuantity().doubleValue(),
-                        order.getPrice().doubleValue()));
-
-        return order;
-    }
-
-
-    @Override
-    public Order updateOrder(long orderId, long userId, MatchEventStatus orderStatus) {
-        return orderRepository.findByUserId(userId)
-                .map(order -> {
-                    order.setMatchEngineStatus(orderStatus);
-                    return orderRepository.save(order);
-                })
-                .orElseThrow(() -> new EntityNotFoundException("Order not found with userId: " + userId));
-    }
-
-    @Override
-    public OrderBookResponse getOrder(long orderId) {
-        return null;
     }
 
 
