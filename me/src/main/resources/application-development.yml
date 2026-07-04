@@ -12,3 +12,5 @@ custom-config:
       topic: send-message
     event-output-message:
       topic: event-topic
+    me-create-update-output-message:
+      topic: me-create-update-topic

@@ -16,6 +16,7 @@ public class Order {
     private OrderType orderType;
     private TradePair tradePair;
     private MarketType  marketType;
+    private MatchEventStatus matchEngineStatus;
     private double quantity;
     private double price;
     private double filled;

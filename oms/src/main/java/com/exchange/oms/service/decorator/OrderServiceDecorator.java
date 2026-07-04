@@ -78,5 +78,14 @@ public class OrderServiceDecorator implements OrderService {
         return orderService.getOrder(orderId);
     }
 
+    @Override
+    public void matchEngineStatus(long orderId, long userId, MatchEventStatus matchEngineStatus) {
+        if (orderId <= 0) {
+            throw new MissingOrderIdException();
+        }
+        orderService.matchEngineStatus(orderId, userId, matchEngineStatus);
+
+    }
+
 
 }

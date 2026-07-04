@@ -27,11 +27,6 @@ api:
     open: /open/${api.version}
     internal: /_api/${api.version}
 
-custom-config:
-  kafka:
-    event-output-message:
-      topic: event-topic
-
 logging:
   level:
     org.springframework.web.servlet.mvc.method.annotation.RequestMappingHandlerMapping: TRACE

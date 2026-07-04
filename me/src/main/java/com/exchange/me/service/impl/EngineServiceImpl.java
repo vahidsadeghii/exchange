@@ -57,6 +57,7 @@ public class EngineServiceImpl implements EngineService {
                 .toInstant()
                 .toEpochMilli(),
                 order);
+        order.setMatchEngineStatus(MatchEventStatus.FILLED);
 
         return matchEngineEventService.saveMatchEvent(order);
     }

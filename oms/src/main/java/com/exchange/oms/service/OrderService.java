@@ -11,4 +11,6 @@ public interface OrderService {
                              OrderType orderType, BigDecimal quantity, BigDecimal price);
 
      Order getOrder(long orderId);
+
+     void matchEngineStatus(long orderId, long userId, MatchEventStatus matchEngineStatus);
 }

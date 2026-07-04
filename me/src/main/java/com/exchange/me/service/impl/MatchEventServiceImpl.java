@@ -1,9 +1,6 @@
 package com.exchange.me.service.impl;
 
-import com.exchange.me.domain.EventInfoMessage;
-import com.exchange.me.domain.MatchEngine;
-import com.exchange.me.domain.MatchEventStatus;
-import com.exchange.me.domain.Order;
+import com.exchange.me.domain.*;
 import com.exchange.me.service.MatchEventService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -23,20 +20,25 @@ public class MatchEventServiceImpl implements MatchEventService {
     @Value("${custom-config.kafka.event-output-message.topic}")
     private String eventMessage;
 
+    @Value("${custom-config.kafka.me-create-update-output-message.topic}")
+    String createUpdateMeMessage;
+
+
     @Override
     public MatchEngine saveMatchEvent(Order order) {
+        MatchEngineUpdate matchEngineUpdate = new MatchEngineUpdate(order.getId(), order.getUserId(), order.getMatchEngineStatus());
 
         //eventMessage
         EventInfoMessage eventInfoMessage = EventInfoMessage.builder()
-                .tag(eventMessage)
-                .title("event-verify-email")
+                .tag(createUpdateMeMessage)
+                .title("save-update-order")
                 .serviceName("matchingengine")
                 .persistent(true)
                 .routingEnabled(false)
                 .createDate(LocalDateTime.now())
-                .event(order)
+                .event(matchEngineUpdate)
                 .build();
-        kafkaTemplateSendMessage.send("", eventInfoMessage)
+        kafkaTemplateSendMessage.send(eventMessage, eventInfoMessage)
                 .whenComplete((r, e) -> {
                     if (e != null)
                         log.error("send error", e);

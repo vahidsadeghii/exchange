@@ -67,13 +67,19 @@ public class OrderServiceImpl implements OrderService {
                         order.getQuantity().doubleValue(),
                         order.getPrice().doubleValue()));
 
-        order.setMatchEngineStatus(orderMatchingEngine.status());
+      //  order.setMatchEngineStatus(orderMatchingEngine.status());
         return order;
     }
 
     @Override
     public Order getOrder(long orderId) {
         return null;
+    }
+
+    @Override
+    public void matchEngineStatus(long orderId, long userId, MatchEventStatus matchEngineStatus) {
+        Order order = orderRepository.findById(orderId).orElseThrow(NotFoundException::new);
+        order.setMatchEngineStatus(matchEngineStatus);
     }
 
     private void validateSufficientBalance(Long userId,

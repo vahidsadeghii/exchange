@@ -30,7 +30,8 @@ public class OrderController {
                 onlineUser.getInternalUserId(),
                 request.assetType(),
                 request.tradePair(),
-                request.tradeSide(), ,
+                request.tradeSide(),
+                request.marketType(),
                 request.orderType(), request.quantity(), request.price());
 
         return new CreateUpdateOrderResponse(

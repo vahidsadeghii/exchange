@@ -39,8 +39,6 @@ Content-Type: application/json
 
 
 
-
-
 ### Create Order
 POST http://{{host}}/oms/api/v1/orders
 Authorization: Bearer {{loginToken}}
@@ -52,54 +50,70 @@ Request-Id: 2001
   "tradePair": "BTC_EURO",
   "orderType": "LIMIT",
   "tradeSide": "BUY",
+  "marketType": "MARKET",
   "quantity": 0.5,
-  "price": 420.75
+  "price": 180.75
 }
 
 > {%
-    const body = response.body;
+    client.log("Status: " + response.status);
+    client.log("Headers: " + JSON.stringify(response.headers));
+    client.log("Body: " + JSON.stringify(response.body));
+
+
 
     client.test("Status code is 200", function () {
         client.assert(response.status === 200,
             "Expected 200 but got " + response.status);
     });
 
-    client.test("Order ID exists", function () {
-        client.assert(body.id !== undefined,
-            "Order id is missing");
+    client.test("Response body exists", function () {
+        client.assert(response.body != null,
+            "Response body is null");
     });
 
-    client.test("Trade pair is correct", function () {
-        client.assert(body.tradePair === "BTC_EUR",
-            "Trade pair mismatch");
-    });
+    if (response.body) {
 
-    client.test("Trade side is BUY", function () {
-        client.assert(body.tradeSide === "BUY",
-            "Trade side mismatch");
-    });
+        client.test("Order ID exists", function () {
+            client.assert(response.body.id !== undefined,
+                "Order id is missing");
+        });
 
-    client.test("Order type is LIMIT", function () {
-        client.assert(body.orderType === "LIMIT",
-            "Order type mismatch");
-    });
+        client.test("Trade pair is correct", function () {
+            client.assert(response.body.tradePair === "BTC_EUR",
+                "Trade pair mismatch");
+        });
 
-    client.test("Quantity is correct", function () {
-        client.assert(body.quantity == 0.5,
-            "Quantity mismatch");
-    });
+        client.test("Trade side is BUY", function () {
+            client.assert(response.body.tradeSide === "BUY",
+                "Trade side mismatch");
+        });
 
-    client.test("Price is correct", function () {
-        client.assert(body.price == 420.75,
-            "Price mismatch");
-    });
+        client.test("Order type is LIMIT", function () {
+            client.assert(response.body.orderType === "LIMIT",
+                "Order type mismatch");
+        });
 
-    client.test("CreatedAt exists", function () {
-        client.assert(body.createDate !== undefined,
-            "createDate missing");
-    });
+        client.test("Quantity is correct", function () {
+            client.assert(response.body.quantity == 0.5,
+                "Quantity mismatch");
+        });
 
-    client.log("Created order id = " + body.id);
+        client.test("Price is correct", function () {
+            client.assert(response.body.price == 420.75,
+                "Price mismatch");
+        });
+
+        client.test("CreatedAt exists", function () {
+            client.assert(response.body.createDate !== undefined,
+                "createDate missing");
+        });
+
+        client.log("Created order id = " + response.body.id);
+    } else {
+        client.log("Response body is null");
+        client.log("Status: " + response.status);
+    }
 %}
 
 
@@ -116,7 +130,7 @@ Request-Id: 2001
   "orderType": "LIMIT",
   "tradeSide": "BUY",
   "quantity": 0.5,
-  "price": 820.75
+  "price": 120.75
 }
 
 > {%
@@ -133,7 +147,7 @@ Request-Id: 2001
     });
 
     client.test("Trade pair is correct", function () {
-        client.assert(body.tradePair === "BTC_EUR",
+        client.assert(body.tradePair === "BTC_EURO",
             "Trade pair mismatch");
     });
 
@@ -195,7 +209,7 @@ Request-Id: 2001
     });
 
     client.test("Trade pair is correct", function () {
-        client.assert(body.tradePair === "BTC_EUR",
+        client.assert(body.tradePair === "BTC_EURO",
             "Trade pair mismatch");
     });
 
@@ -261,7 +275,7 @@ Request-Id: 2001
     });
 
     client.test("Trade pair is correct", function () {
-        client.assert(body.tradePair === "BTC_EUR",
+        client.assert(body.tradePair === "BTC_EURO",
             "Trade pair mismatch");
     });
 
