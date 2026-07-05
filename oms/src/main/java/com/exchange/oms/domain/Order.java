@@ -41,6 +41,8 @@ public class Order {
 
     private MatchEventStatus matchEngineStatus;
 
+    private Long expireDays;
+
     private LocalDateTime createdAt;
 
     private LocalDateTime updatedAt;

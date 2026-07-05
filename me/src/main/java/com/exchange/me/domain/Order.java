@@ -20,6 +20,8 @@ public class Order {
     private double quantity;
     private double price;
     private double filled;
+    private Long expireDays;
+
 
     public double getRemainingQuantity() {
         return quantity - filled;

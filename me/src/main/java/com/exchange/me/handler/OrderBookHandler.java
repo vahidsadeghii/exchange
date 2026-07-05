@@ -29,48 +29,48 @@ public class OrderBookHandler {
     private final Map<Long, OrderLocation> orderIndex; // Fast lookup by order ID
     private long updateTime;
 
-    // Helper class to track order location for fast cancellation
-    public record OrderLocation(double price, TradeSide side, Order order) {
-    }
-
-    // Helper classes for market depth
-    public record MarketDepth(List<PriceLevel> bids, List<PriceLevel> asks) {
-    }
-
-    // Helper classes for price level
-    public record PriceLevel(long price, double volume, int orderCount) {
-    }
 
     public OrderBookHandler(TradePair tradePair) {
         this.tradePair = tradePair;
+
+        // BUY: highest price first
         bids = new TreeMap<>(Collections.reverseOrder());
+
+        // SELL: lowest price first
         asks = new TreeMap<>();
         orderIndex = new HashMap<>();
     }
 
+    // MATCH ENGINE ENTRY POINT
     public List<MatchInfo> matchOrder(
             long timestamp, Order incomingOrder) {
         updateTime = timestamp;
+
         if (!incomingOrder.getTradePair().equals(this.tradePair)) {
             throw new IllegalArgumentException("Order pair " + incomingOrder.getTradePair() +
                     " does not match handler pair " + this.tradePair);
         }
-        if (incomingOrder.getTradeSide() == TradeSide.BUY) {
-            return executeBuyOrder(timestamp, incomingOrder);
-        } else {
-            return executeSellOrder(timestamp, incomingOrder);
-        }
+
+        return incomingOrder.getTradeSide() == TradeSide.BUY
+                ? executeBuyOrder(timestamp, incomingOrder)
+                : executeSellOrder(timestamp, incomingOrder);
     }
 
+    // BUY SIDE
     public List<MatchInfo> executeBuyOrder(
             long timestamp,
             Order buyOrder) {
 
         List<MatchInfo> matches = new ArrayList<>();
+
         // Only process the best ask levels until order is filled
         while (!asks.isEmpty() && buyOrder.getRemainingQuantity() > 0) {
+
             // Get the best (lowest) ask price level
             Map.Entry<Long, Deque<Order>> bestAsk = asks.firstEntry();
+            if (bestAsk == null) {
+                break;
+            }
 
             long askPrice = bestAsk.getKey();
 
@@ -85,7 +85,11 @@ public class OrderBookHandler {
                 if (askOrder == null)
                     break;
 
-                double tradedQuantity = Math.min(buyOrder.getRemainingQuantity(), askOrder.getRemainingQuantity());
+                double tradedQuantity = Math.min(
+                        buyOrder.getRemainingQuantity(),
+                        askOrder.getRemainingQuantity()
+                );
+
                 buyOrder.setFilled(buyOrder.getFilled() + tradedQuantity);
                 askOrder.setFilled(askOrder.getFilled() + tradedQuantity);
 
@@ -125,6 +129,7 @@ public class OrderBookHandler {
         return matches;
     }
 
+    // SELL SIDE
     public List<MatchInfo> executeSellOrder(
             long timestamp,
             Order sellOrder) {
@@ -132,6 +137,7 @@ public class OrderBookHandler {
 
         // Only process the best bid levels until order is filled
         while (!bids.isEmpty() && sellOrder.getRemainingQuantity() > 0) {
+
             // Get the best (highest) bid price level
             Map.Entry<Long, Deque<Order>> bestBid = bids.firstEntry();
             long bidPrice = bestBid.getKey();
@@ -181,15 +187,19 @@ public class OrderBookHandler {
         return matches;
     }
 
-    /**
-     * Add order to the book (for unfilled orders after matching)
-     */
+
+    // ADD ORDER TO BOOK(for unfilled orders after matching)
     private void addOrderToBook(Order order) {
         TreeMap<Long, Deque<Order>> book = order.getTradeSide() == TradeSide.BUY ? bids : asks;
+
         long priceKey = (long) order.getPrice();
-        Deque<Order> queue = book.computeIfAbsent(priceKey, k -> new ArrayDeque<>(100));
+        Deque<Order> queue = book.computeIfAbsent(
+                priceKey, k -> new ArrayDeque<>(100)
+        );
         queue.addLast(order);
-        orderIndex.put(order.getId(), new OrderLocation(order.getPrice(), order.getTradeSide(), order));
+
+        orderIndex.put(order.getId(),
+                new OrderLocation(order.getPrice(), order.getTradeSide(), order));
     }
 
     /**
@@ -284,4 +294,53 @@ public class OrderBookHandler {
 
         return levelList;
     }
+
+    // Helper class to track order location for fast cancellation
+    public record OrderLocation(double price, TradeSide side, Order order) {
+    }
+
+    // Helper classes for market depth
+    public record MarketDepth(List<PriceLevel> bids, List<PriceLevel> asks) {
+    }
+
+    // Helper classes for price level
+    public record PriceLevel(long price, double volume, int orderCount) {
+    }
+
+
+
+    public List<PriceLevel> getBidsList(int depth) {
+        return buildLevels(bids, depth);
+
+    }
+
+    public List<PriceLevel> getAsksList(int depth) {
+        return buildLevels(asks, depth);
+    }
+
+    private List<PriceLevel> buildLevels(TreeMap<Long, Deque<Order>> book, int depth) {
+        List<PriceLevel> result = new ArrayList<>();
+        int count = 0;
+
+        for (Map.Entry<Long, Deque<Order>> entry : book.entrySet()) {
+            if (count >= depth) {
+                break;
+            }
+
+            double volume = entry.getValue().stream()
+                    .mapToDouble(Order::getRemainingQuantity)
+                    .sum();
+
+            result.add(new PriceLevel(
+                    entry.getKey(),
+                    volume,
+                    entry.getValue().size()
+            ));
+
+            count++;
+        }
+
+        return result;
+    }
+
 }

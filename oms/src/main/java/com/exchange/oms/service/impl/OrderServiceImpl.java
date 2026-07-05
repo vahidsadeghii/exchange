@@ -5,6 +5,7 @@ import com.exchange.oms.client.matchingengine.CreateUpdateOrderRequestClient;
 import com.exchange.oms.client.wallet.WalletClient;
 import com.exchange.oms.config.exception.NotFoundException;
 import com.exchange.oms.domain.*;
+import com.exchange.oms.exception.order.ExpiredOrderException;
 import com.exchange.oms.exception.order.InsufficientBalanceException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -29,13 +30,21 @@ public class OrderServiceImpl implements OrderService {
     @Override
     public Order createUpdateOrder(Long oldOrderId, Long onlineUser, AssetType assetType,
                                    TradePair tradePair, TradeSide tradeSide,
-                                   MarketType marketType, OrderType orderType, BigDecimal quantity, BigDecimal price) {
+                                   MarketType marketType, OrderType orderType, BigDecimal quantity,
+                                   BigDecimal price, Long expireDays) {
 
 
         if (oldOrderId != null) {
             Order oldOrder = orderRepository
                     .findByIdAndStatus(oldOrderId, OrderStatus.NEW)
                     .orElseThrow(NotFoundException::new);
+            if (expireDays != null) {
+                LocalDateTime createdAt = oldOrder.getCreatedAt();
+
+                if (createdAt.plusDays(expireDays).isBefore(LocalDateTime.now())) {
+                    throw new ExpiredOrderException();
+                }
+            }
 
             oldOrder.setStatus(OrderStatus.CANCELED);
             orderRepository.save(oldOrder);
@@ -52,6 +61,7 @@ public class OrderServiceImpl implements OrderService {
                 .status(OrderStatus.NEW)
                 .quantity(quantity)
                 .price(price)
+                .expireDays(expireDays)
                 .createdAt(LocalDateTime.now())
                 .build());
 
@@ -67,7 +77,7 @@ public class OrderServiceImpl implements OrderService {
                         order.getQuantity().doubleValue(),
                         order.getPrice().doubleValue()));
 
-      //  order.setMatchEngineStatus(orderMatchingEngine.status());
+        //  order.setMatchEngineStatus(orderMatchingEngine.status());
         return order;
     }
 

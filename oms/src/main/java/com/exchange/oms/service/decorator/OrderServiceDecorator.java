@@ -30,7 +30,7 @@ public class OrderServiceDecorator implements OrderService {
                                    TradeSide tradeSide,
                                    MarketType marketType, OrderType orderType,
                                    BigDecimal quantity,
-                                   BigDecimal price) {
+                                   BigDecimal price, Long expireDays) {
 
         if (onlineUser == null) {
             throw new MissingUserIdException();
@@ -67,7 +67,8 @@ public class OrderServiceDecorator implements OrderService {
                 marketType,
                 orderType,
                 quantity,
-                price);
+                price,
+                expireDays);
     }
 
     @Override

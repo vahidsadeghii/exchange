@@ -32,7 +32,10 @@ public class OrderController {
                 request.tradePair(),
                 request.tradeSide(),
                 request.marketType(),
-                request.orderType(), request.quantity(), request.price());
+                request.orderType(),
+                request.quantity(),
+                request.price(),
+                request.expireDays());
 
         return new CreateUpdateOrderResponse(
                 order.getId(),
@@ -42,6 +45,8 @@ public class OrderController {
                 order.getStatus().name(),
                 order.getQuantity(),
                 order.getPrice(),
+                order.getExpireDays(),
+                order.getMarketType(),
                 order.getCreatedAt()
         );
     }

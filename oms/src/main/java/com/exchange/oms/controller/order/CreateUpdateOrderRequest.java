@@ -12,5 +12,6 @@ public record CreateUpdateOrderRequest(
         TradeSide tradeSide,
         MarketType marketType,
         BigDecimal quantity,
-        BigDecimal price) {
+        BigDecimal price,
+        Long expireDays) {
 }

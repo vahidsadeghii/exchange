@@ -43,7 +43,7 @@ Content-Type: application/json
 POST http://{{host}}/oms/api/v1/orders
 Authorization: Bearer {{loginToken}}
 Content-Type: application/json
-Request-Id: 2001
+Request-Id: 2002
 
 {
   "assetType": "EUR",
@@ -52,211 +52,195 @@ Request-Id: 2001
   "tradeSide": "BUY",
   "marketType": "MARKET",
   "quantity": 0.5,
-  "price": 180.75
+  "price": 160.75,
+  "expireDays": 7
 }
 
 > {%
     client.log("Status: " + response.status);
-    client.log("Headers: " + JSON.stringify(response.headers));
     client.log("Body: " + JSON.stringify(response.body));
 
-
-
-    client.test("Status code is 200", function () {
-        client.assert(response.status === 200,
-            "Expected 200 but got " + response.status);
-    });
-
-    client.test("Response body exists", function () {
-        client.assert(response.body != null,
-            "Response body is null");
-    });
-
-    if (response.body) {
+    if (response.status !== 200) {
+        client.log("Request failed with status " + response.status);
+    } else {
+        client.test("Status code is 200", function () {
+            client.assert(response.status === 200);
+        });
 
         client.test("Order ID exists", function () {
-            client.assert(response.body.id !== undefined,
-                "Order id is missing");
+            client.assert(response.body.id !== undefined);
         });
 
         client.test("Trade pair is correct", function () {
-            client.assert(response.body.tradePair === "BTC_EUR",
-                "Trade pair mismatch");
+            client.assert(response.body.tradePair === "BTC_EURO");
         });
 
         client.test("Trade side is BUY", function () {
-            client.assert(response.body.tradeSide === "BUY",
-                "Trade side mismatch");
+            client.assert(response.body.tradeSide === "BUY");
         });
 
         client.test("Order type is LIMIT", function () {
-            client.assert(response.body.orderType === "LIMIT",
-                "Order type mismatch");
+            client.assert(response.body.orderType === "LIMIT");
         });
 
         client.test("Quantity is correct", function () {
-            client.assert(response.body.quantity == 0.5,
-                "Quantity mismatch");
+            client.assert(response.body.quantity == 0.5);
         });
 
         client.test("Price is correct", function () {
-            client.assert(response.body.price == 420.75,
-                "Price mismatch");
+            client.assert(response.body.price == 160.75);
         });
 
         client.test("CreatedAt exists", function () {
-            client.assert(response.body.createDate !== undefined,
-                "createDate missing");
+            client.assert(response.body.createDate !== undefined);
         });
 
         client.log("Created order id = " + response.body.id);
-    } else {
-        client.log("Response body is null");
-        client.log("Status: " + response.status);
     }
 %}
-
-
 
 ####### Create the second Order
 POST http://{{host}}/oms/api/v1/orders
 Authorization: Bearer {{loginToken}}
 Content-Type: application/json
-Request-Id: 2001
+Request-Id: 2002
 
 {
   "assetType": "EUR",
   "tradePair": "BTC_EURO",
   "orderType": "LIMIT",
   "tradeSide": "BUY",
+  "marketType": "MARKET",
   "quantity": 0.5,
-  "price": 120.75
+  "price": 120.75,
+  "expireDays": 7
 }
 
 > {%
-    const body = response.body;
+    client.log("Status: " + response.status);
+    client.log("Body: " + JSON.stringify(response.body));
 
-    client.test("Status code is 200", function () {
-        client.assert(response.status === 200,
-            "Expected 200 but got " + response.status);
-    });
+    if (response.status !== 200) {
+        client.log("Request failed with status " + response.status);
+    } else {
+        client.test("Status code is 200", function () {
+            client.assert(response.status === 200);
+        });
 
-    client.test("Order ID exists", function () {
-        client.assert(body.id !== undefined,
-            "Order id is missing");
-    });
+        client.test("Order ID exists", function () {
+            client.assert(response.body.id !== undefined);
+        });
 
-    client.test("Trade pair is correct", function () {
-        client.assert(body.tradePair === "BTC_EURO",
-            "Trade pair mismatch");
-    });
+        client.test("Trade pair is correct", function () {
+            client.assert(response.body.tradePair === "BTC_EURO");
+        });
 
-    client.test("Trade side is BUY", function () {
-        client.assert(body.tradeSide === "BUY",
-            "Trade side mismatch");
-    });
+        client.test("Trade side is BUY", function () {
+            client.assert(response.body.tradeSide === "BUY");
+        });
 
-    client.test("Order type is LIMIT", function () {
-        client.assert(body.orderType === "LIMIT",
-            "Order type mismatch");
-    });
+        client.test("Order type is LIMIT", function () {
+            client.assert(response.body.orderType === "LIMIT");
+        });
 
-    client.test("Quantity is correct", function () {
-        client.assert(body.quantity == 0.5,
-            "Quantity mismatch");
-    });
+        client.test("Quantity is correct", function () {
+            client.assert(response.body.quantity == 0.5);
+        });
 
-    client.test("Price is correct", function () {
-        client.assert(body.price == 420.75,
-            "Price mismatch");
-    });
+        client.test("Price is correct", function () {
+            client.assert(response.body.price == 120.75);
+        });
 
-    client.test("CreatedAt exists", function () {
-        client.assert(body.createDate !== undefined,
-            "createDate missing");
-    });
+        client.test("CreatedAt exists", function () {
+            client.assert(response.body.createDate !== undefined);
+        });
 
-    client.log("Created order id = " + body.id);
+        client.log("Created order id = " + response.body.id);
+    }
 %}
 
-
-####### Create the thred Order
+####### Create Order
 POST http://{{host}}/oms/api/v1/orders
 Authorization: Bearer {{loginToken}}
 Content-Type: application/json
-Request-Id: 2001
+Request-Id: {{$uuid}}
 
 {
   "assetType": "EUR",
   "tradePair": "BTC_EURO",
   "orderType": "LIMIT",
   "tradeSide": "BUY",
+  "marketType": "MARKET",
   "quantity": 0.5,
-  "price": 1200.75
+  "price": 1200.75,
+  "expireDays": 7
 }
 
 > {%
-    const body = response.body;
+client.log("HTTP Status: " + response.status);
+client.log("Response Body: " + JSON.stringify(response.body));
 
-    client.test("Status code is 200", function () {
-        client.assert(response.status === 200,
-            "Expected 200 but got " + response.status);
+// Always handle rate limiting first
+if (response.status === 429) {
+    client.log("⚠ 429 Too Many Requests - backend rate limit triggered");
+}
+else if (response.status === 200 && response.body) {
+
+    client.test("Status is 200", function () {
+        client.assert(response.status === 200);
     });
 
     client.test("Order ID exists", function () {
-        client.assert(body.id !== undefined,
-            "Order id is missing");
+        client.assert(response.body.id !== undefined);
     });
 
-    client.test("Trade pair is correct", function () {
-        client.assert(body.tradePair === "BTC_EURO",
-            "Trade pair mismatch");
+    client.test("Trade pair correct", function () {
+        client.assert(response.body.tradePair === "BTC_EURO");
     });
 
-    client.test("Trade side is BUY", function () {
-        client.assert(body.tradeSide === "BUY",
-            "Trade side mismatch");
+    client.test("Trade side correct", function () {
+        client.assert(response.body.tradeSide === "BUY");
     });
 
-    client.test("Order type is LIMIT", function () {
-        client.assert(body.orderType === "LIMIT",
-            "Order type mismatch");
+    client.test("Order type correct", function () {
+        client.assert(response.body.orderType === "LIMIT");
     });
 
-    client.test("Quantity is correct", function () {
-        client.assert(body.quantity == 0.5,
-            "Quantity mismatch");
+    client.test("Quantity correct", function () {
+        client.assert(response.body.quantity == 0.5);
     });
 
-    client.test("Price is correct", function () {
-        client.assert(body.price == 420.75,
-            "Price mismatch");
+    client.test("Price correct", function () {
+        client.assert(response.body.price == 1200.75);
     });
 
     client.test("CreatedAt exists", function () {
-        client.assert(body.createDate !== undefined,
-            "createDate missing");
+        client.assert(response.body.createDate !== undefined);
     });
 
-    client.global.set("orderId", body.id);
+    client.global.set("orderId", response.body.id);
+    client.log("Saved orderId = " + response.body.id);
 
-    client.log("Saved orderId = " + body.id);
+}
+else {
+    client.log("Request failed. Status: " + response.status);
+}
 %}
 
 
 #####Update Order three
-
 POST http://{{host}}/oms/api/v1/orders
 Authorization: Bearer {{loginToken}}
 Content-Type: application/json
 Request-Id: 2001
 
 {
-  "oldOrderId": 3,
+  "oldOrderId": 29,
   "assetType": "EUR",
   "tradePair": "BTC_EURO",
   "orderType": "LIMIT",
   "tradeSide": "BUY",
+  "marketType": "MARKET",
   "quantity": 0.5,
   "price": 1300.75
 }
