@@ -52,7 +52,7 @@ Request-Id: 2002
   "tradeSide": "BUY",
   "marketType": "MARKET",
   "quantity": 0.5,
-  "price": 160.75,
+  "price": 300.05,
   "expireDays": 7
 }
 

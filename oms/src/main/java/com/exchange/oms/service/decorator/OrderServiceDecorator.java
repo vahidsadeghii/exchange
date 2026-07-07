@@ -88,5 +88,10 @@ public class OrderServiceDecorator implements OrderService {
 
     }
 
+    @Override
+    public OrderBookDepth getOrderBookDepth(TradePair pair, int depth) {
+        return orderService.getOrderBookDepth(pair, depth);
+    }
+
 
 }

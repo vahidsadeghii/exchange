@@ -2,8 +2,10 @@ package com.exchange.oms.service.impl;
 
 import com.exchange.oms.client.matchingengine.MatchingInfoClient;
 import com.exchange.oms.client.matchingengine.CreateUpdateOrderRequestClient;
+import com.exchange.oms.client.matchingengine.OrderBookDepthResponseClient;
 import com.exchange.oms.client.wallet.WalletClient;
 import com.exchange.oms.config.exception.NotFoundException;
+import com.exchange.oms.controller.order.orderbookdepth.OrderBookDepthResponse;
 import com.exchange.oms.domain.*;
 import com.exchange.oms.exception.order.ExpiredOrderException;
 import com.exchange.oms.exception.order.InsufficientBalanceException;
@@ -90,6 +92,15 @@ public class OrderServiceImpl implements OrderService {
     public void matchEngineStatus(long orderId, long userId, MatchEventStatus matchEngineStatus) {
         Order order = orderRepository.findById(orderId).orElseThrow(NotFoundException::new);
         order.setMatchEngineStatus(matchEngineStatus);
+    }
+
+    @Override
+    public OrderBookDepth getOrderBookDepth(TradePair pair, int depth) {
+        OrderBookDepthResponseClient orderBookDepth = matchingEngineClient.getOrderBookDepth(pair, depth);
+        return new OrderBookDepth(
+                orderBookDepth.bids(),
+                orderBookDepth.asks()
+        );
     }
 
     private void validateSufficientBalance(Long userId,

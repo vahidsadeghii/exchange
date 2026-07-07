@@ -6,12 +6,14 @@ import java.math.BigDecimal;
 
 public interface OrderService {
 
-     Order createUpdateOrder(
-             Long oldOrderId, Long onlineUser, AssetType assetType,
-             TradePair tradePair, TradeSide tradeSide, MarketType marketType,
-             OrderType orderType, BigDecimal quantity, BigDecimal price, Long expireDays);
+    Order createUpdateOrder(
+            Long oldOrderId, Long onlineUser, AssetType assetType,
+            TradePair tradePair, TradeSide tradeSide, MarketType marketType,
+            OrderType orderType, BigDecimal quantity, BigDecimal price, Long expireDays);
 
-     Order getOrder(long orderId);
+    Order getOrder(long orderId);
 
-     void matchEngineStatus(long orderId, long userId, MatchEventStatus matchEngineStatus);
+    void matchEngineStatus(long orderId, long userId, MatchEventStatus matchEngineStatus);
+
+    OrderBookDepth getOrderBookDepth(TradePair pair, int depth);
 }

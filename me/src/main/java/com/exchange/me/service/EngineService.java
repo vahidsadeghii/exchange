@@ -21,4 +21,6 @@ public interface EngineService {
     OrderBookHandler.MarketDepth getMarketDepth(TradePair pair, int levels);
 
     void resetAll();
+
+    OrderBookHandler getOrderBook(TradePair pair);
 }

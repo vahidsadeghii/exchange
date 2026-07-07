@@ -94,6 +94,11 @@ public class EngineServiceImpl implements EngineService {
         orderBooks.values().forEach(OrderBookHandler::reset);
     }
 
+    @Override
+    public OrderBookHandler getOrderBook(TradePair pair) {
+        return orderBooks.get(pair);
+    }
+
 
     private OrderBookHandler getOrCreateBook(TradePair pair) {
         return orderBooks.computeIfAbsent(pair, p -> new OrderBookHandler(p));

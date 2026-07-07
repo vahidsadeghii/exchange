@@ -6,6 +6,8 @@ import com.exchange.oms.config.exception.FallBackException;
 import com.exchange.oms.config.feign.FeignException;
 import com.exchange.oms.controller.order.findorderbook.OrderBookResponse;
 import com.exchange.oms.domain.MatchEngineResponse;
+import com.exchange.oms.domain.OrderType;
+import com.exchange.oms.domain.TradePair;
 import io.github.resilience4j.circuitbreaker.annotation.CircuitBreaker;
 import io.github.resilience4j.retry.annotation.Retry;
 import org.slf4j.Logger;
@@ -33,6 +35,7 @@ public interface MatchingInfoClient {
             return new FallBackException();
     }
 
+
     @PostMapping("/_api/v1/order")
     @CircuitBreaker(name = "me-instance", fallbackMethod = "createOrderMatchingEngineFallback")
     @Retry(name = "me-instance")
@@ -41,8 +44,7 @@ public interface MatchingInfoClient {
     default MatchEngineResponse createOrderMatchingEngineFallback(@RequestBody CreateUpdateOrderRequestClient request, Throwable t) {
         logger.error(
                 "ME service unavailable, order dropped. orderId={}",
-                request.orderId(),
-                t
+                request.orderId(), t
         );
 
         return null;
@@ -59,5 +61,22 @@ public interface MatchingInfoClient {
         logger.error("ME unavailable, returning empty order book. orderId={}", orderId, t);
 
         return null;
+    }
+
+    @GetMapping("/_api/v1/orders")
+    @CircuitBreaker(name = "me-instance", fallbackMethod = "getOrderBookDepthFallback")
+    @Retry(name = "me-instance")
+    OrderBookDepthResponseClient getOrderBookDepth(@RequestParam TradePair pair, @RequestParam int orderDepth);
+
+    default MatchEngineResponse getOrderBookDepthFallback(@RequestParam  TradePair pair, @RequestParam int orderDepth, Throwable t) {
+        logger.error(
+                "ME service unavailable, order dropped. orderType={}",
+                pair,
+                orderDepth,
+                t
+        );
+
+        return null;
+
     }
 }
