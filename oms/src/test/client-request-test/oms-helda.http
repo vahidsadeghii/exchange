@@ -290,3 +290,34 @@ Request-Id: 2001
 
     client.log("Created order id = " + body.id);
 %}
+
+
+### Get Order Book Depth
+GET http://{{host}}/oms/api/v1/orderdepth?pair=BTC_EURO&depth=2
+Authorization: Bearer {{loginToken}}
+Content-Type: application/json
+Request-Id: 2002
+
+> {%
+client.test("Status is 200", function () {
+    client.assert(response.status === 200, "Expected status 200");
+});
+
+client.test("Response contains bids", function () {
+    client.assert(response.body.bids != null, "bids should not be null");
+});
+
+client.test("Response contains asks", function () {
+    client.assert(response.body.asks != null, "asks should not be null");
+});
+
+client.test("Bids and asks are arrays", function () {
+    client.assert(Array.isArray(response.body.bids), "bids should be an array");
+    client.assert(Array.isArray(response.body.asks), "asks should be an array");
+});
+
+client.test("Depth does not exceed requested value", function () {
+    client.assert(response.body.bids.length <= 10, "Too many bids");
+    client.assert(response.body.asks.length <= 10, "Too many asks");
+});
+%}

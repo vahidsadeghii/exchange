@@ -4,6 +4,7 @@ import com.exchange.oms.domain.OrderBookDepth;
 import com.exchange.oms.domain.TradePair;
 import com.exchange.oms.service.OrderService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
@@ -11,10 +12,11 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 @RequiredArgsConstructor
 public class OrderBookDepthController {
-        private final OrderService orderService;
+    private final OrderService orderService;
 
-    @GetMapping(value = "${api.prefix.internal}/orderdepth")
-    public OrderBookDepthResponse getDepth(
+    @GetMapping("/api/v1/orderdepth")
+    @PreAuthorize("hasRole('CUSTOMER')")
+    public OrderBookDepthResponse handle(
             @RequestParam TradePair pair,
             @RequestParam(defaultValue = "10") int depth) {
 
