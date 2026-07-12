@@ -25,11 +25,7 @@ public class UserWalletInfoController {
                                      @AuthenticationPrincipal OnlineUser onlineUser) {
         Wallet wallet = walletService.userWalletInfo(onlineUser.getInternalUserId(), assetType);
 
-        if (wallet == null) {
-            throw new WalletNotFoundException();
-        }
-
-        Asset asset = wallet.getAsserts().stream()
+        Asset asset = wallet.getAssets().stream()
                 .filter(a -> a.getAssetType() == assetType)
                 .findFirst()
                 .orElseThrow(WalletNotFoundException::new);

@@ -14,7 +14,7 @@ public interface WalletService {
 
     Wallet withdrawWallet(String walletId, AssetType type, BigDecimal amount);
 
-    Wallet depositWallet(String walletId,  AssetType assetType, BigDecimal amount);
+    Wallet depositWallet(String walletId, AssetType assetType, BigDecimal amount);
 
     Wallet userWalletInfo(Long onlineUser, AssetType assetType);
 
@@ -22,7 +22,11 @@ public interface WalletService {
 
     BigDecimal findBalanceByUserId(Long onlineUser, AssetType assetType);
 
+    void blockWalletAmount(Long userId, AssetType assetType, BigDecimal amount);
 
+    void consumeBlockedAmount(Long userId, AssetType assetType, BigDecimal amount);
+
+    void unblockWalletAmount(Long userId, AssetType assetType, BigDecimal amount);
 
 
 }

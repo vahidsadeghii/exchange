@@ -172,7 +172,7 @@ Request-Id: {{$uuid}}
   "tradeSide": "SELL",
   "marketType": "MARKET",
   "quantity": 0.5,
-  "price": 1800.75,
+  "price": 1560.75,
   "expireDays": 7
 }
 

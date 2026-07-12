@@ -50,7 +50,7 @@ public class WalletInitializer implements CommandLineRunner {
             Wallet wallet = Wallet.builder()
                     .walletId(UUID.randomUUID().toString())
                     .userId(111L)
-                    .asserts(assets)
+                    .assets(assets)
                     .createdAt(LocalDateTime.now())
                     .updatedAt(LocalDateTime.now())
                     .build();
