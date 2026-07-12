@@ -1,9 +1,6 @@
 package com.exchange.me.handler;
 
-import com.exchange.me.domain.MatchInfo;
-import com.exchange.me.domain.Order;
-import com.exchange.me.domain.TradePair;
-import com.exchange.me.domain.TradeSide;
+import com.exchange.me.domain.*;
 
 import java.util.ArrayDeque;
 import java.util.ArrayList;
@@ -15,9 +12,12 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.TreeMap;
 
+import com.exchange.me.exception.InvalidTradePairException;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.Setter;
+
+import static com.exchange.me.domain.MarketType.FOK;
 
 @RequiredArgsConstructor
 @Getter
@@ -41,26 +41,71 @@ public class OrderBookHandler {
         orderIndex = new HashMap<>();
     }
 
-    // MATCH ENGINE ENTRY POINT
+    /**
+     * Matches an incoming order against the current order book.
+     *
+     * <p>This method is the main entry point of the matching engine. It validates
+     * that the order belongs to the current trading pair and delegates the matching
+     * process based on the order type and trade side.</p>
+     *
+     * <p>Supported order types:</p>
+     * <ul>
+     *     <li>
+     *         LIMIT:
+     *         Matches against available liquidity at acceptable prices. Any
+     *         remaining quantity may be added to the order book.
+     *     </li>
+     *     <li>
+     *         MARKET:
+     *         Executes immediately against the best available prices without
+     *         considering a limit price.
+     *     </li>
+     *     <li>
+     *         FOK (Fill Or Kill):
+     *         Executes only if the entire order quantity can be filled immediately.
+     *         If full execution is not possible, the order is cancelled and no
+     *         partial execution occurs.
+     *     </li>
+     * </ul>
+     *
+     * @param timestamp     the matching event timestamp
+     * @param incomingOrder the order submitted to the matching engine
+     * @return a list of executed matches generated from this order.
+     * Returns an empty list when the order cannot be executed
+     * (for example, an unfillable FOK order).
+     * @throws InvalidTradePairException if the order trading pair does not
+     *                                   match this order book's trading pair
+     */
     public List<MatchInfo> matchOrder(
-            long timestamp, Order incomingOrder) {
+            long timestamp,
+            Order incomingOrder) {
+
         updateTime = timestamp;
 
+
         if (!incomingOrder.getTradePair().equals(this.tradePair)) {
-            throw new IllegalArgumentException("Order pair " + incomingOrder.getTradePair() +
-                    " does not match handler pair " + this.tradePair);
+            throw new InvalidTradePairException();
         }
 
-        return incomingOrder.getTradeSide() == TradeSide.BUY
-                ? executeBuyOrder(timestamp, incomingOrder)
-                : executeSellOrder(timestamp, incomingOrder);
+
+        return switch (incomingOrder.getOrderType()) {
+
+            case LIMIT, MARKET -> incomingOrder.getTradeSide() == TradeSide.BUY
+                    ? executeBuyOrder(timestamp, incomingOrder)
+                    : executeSellOrder(timestamp, incomingOrder);
+
+            case FOK -> executeFokOrder(timestamp, incomingOrder);
+
+
+            default -> throw new IllegalArgumentException(
+                    "Unsupported order type: "
+                            + incomingOrder.getOrderType()
+            );
+        };
     }
 
     // BUY SIDE
-    public List<MatchInfo> executeBuyOrder(
-            long timestamp,
-            Order buyOrder) {
-
+    public List<MatchInfo> executeBuyOrder(long timestamp, Order buyOrder) {
         List<MatchInfo> matches = new ArrayList<>();
 
         // Only process the best ask levels until order is filled
@@ -130,9 +175,7 @@ public class OrderBookHandler {
     }
 
     // SELL SIDE
-    public List<MatchInfo> executeSellOrder(
-            long timestamp,
-            Order sellOrder) {
+    public List<MatchInfo> executeSellOrder(long timestamp, Order sellOrder) {
         List<MatchInfo> matches = new ArrayList<>();
 
         // Only process the best bid levels until order is filled
@@ -187,6 +230,15 @@ public class OrderBookHandler {
         return matches;
     }
 
+    private List<MatchInfo> executeFokOrder(long timestamp, Order order) {
+        if (!canFullyFill(order)) {
+            return List.of();
+        }
+
+        return order.getTradeSide() == TradeSide.BUY
+                ? executeBuyOrder(timestamp, order)
+                : executeSellOrder(timestamp, order);
+    }
 
     // ADD ORDER TO BOOK(for unfilled orders after matching)
     private void addOrderToBook(Order order) {
@@ -194,8 +246,7 @@ public class OrderBookHandler {
 
         long priceKey = (long) order.getPrice();
         Deque<Order> queue = book.computeIfAbsent(
-                priceKey, k -> new ArrayDeque<>(100)
-        );
+                priceKey, k -> new ArrayDeque<>(100));
         queue.addLast(order);
 
         orderIndex.put(order.getId(),
@@ -308,7 +359,6 @@ public class OrderBookHandler {
     }
 
 
-
     public List<PriceLevel> getBidsList(int depth) {
         return buildLevels(bids, depth);
 
@@ -341,6 +391,49 @@ public class OrderBookHandler {
         }
 
         return result;
+    }
+
+    private boolean canFullyFill(Order order) {
+        double availableQuantity = 0;
+
+        if (order.getTradeSide() == TradeSide.BUY) {
+            for (Map.Entry<Long, Deque<Order>> entry : asks.entrySet()) {
+                long askPrice = entry.getKey();
+
+                // Price is too expensive
+                if (askPrice > order.getPrice()) {
+                    break;
+                }
+
+                for (Order ask : entry.getValue()) {
+
+                    availableQuantity += ask.getRemainingQuantity();
+
+                    if (availableQuantity >= order.getQuantity()) {
+                        return true;
+                    }
+                }
+            }
+        } else {
+            for (Map.Entry<Long, Deque<Order>> entry : bids.entrySet()) {
+                long bidPrice = entry.getKey();
+
+                // Price is too low
+                if (bidPrice < order.getPrice()) {
+                    break;
+                }
+
+                for (Order bid : entry.getValue()) {
+                    availableQuantity += bid.getRemainingQuantity();
+
+                    if (availableQuantity >= order.getQuantity()) {
+                        return true;
+                    }
+                }
+            }
+        }
+
+        return false;
     }
 
 }

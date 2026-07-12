@@ -1,8 +1,11 @@
 package com.exchange.me.domain;
 
+import org.openjdk.jmh.annotations.Fork;
+
 public enum OrderType {
     LIMIT("LINIT"),
-    MARKET("MARKET");
+    MARKET("MARKET"),
+    Fork("FOK");
 
     private String enumValue;
 

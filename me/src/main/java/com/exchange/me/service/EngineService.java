@@ -7,12 +7,9 @@ import com.exchange.me.handler.OrderBookHandler;
 public interface EngineService {
 
     MatchEngine createUpdateOrder(Long oldOrderId, long orderId, long userId,
-                                  TradeSide orderSide,
-                                  TradePair tradePair,
-                                  OrderType orderType,
-                                  MarketType marketType,
-                                  double quantity,
-                                  double price);
+                                  TradeSide orderSide, TradePair tradePair,
+                                  OrderType orderType, MarketType marketType,
+                                  double quantity, double price);
 
     void deleteOrder(long timestamp, Order order);
 
@@ -23,4 +20,6 @@ public interface EngineService {
     void resetAll();
 
     OrderBookHandler getOrderBook(TradePair pair);
+
+    OrderBookDepth getOrderBookDepth(TradePair pair, int depth);
 }

@@ -12,6 +12,7 @@ import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
 import java.time.ZoneId;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
@@ -53,10 +54,10 @@ public class EngineServiceImpl implements EngineService {
                 .build();
 
         handler.matchOrder(LocalDateTime.now()
-                .atZone(ZoneId.systemDefault())
-                .toInstant()
-                .toEpochMilli(),
-                order);
+                        .atZone(ZoneId.systemDefault())
+                        .toInstant()
+                        .toEpochMilli(), order);
+
         order.setMatchEngineStatus(MatchEventStatus.FILLED);
 
         return matchEngineEventService.saveMatchEvent(order);
@@ -97,6 +98,29 @@ public class EngineServiceImpl implements EngineService {
     @Override
     public OrderBookHandler getOrderBook(TradePair pair) {
         return orderBooks.get(pair);
+    }
+
+    @Override
+    public OrderBookDepth getOrderBookDepth(TradePair pair, int depth) {
+        OrderBookHandler book = getOrderBook(pair);
+
+        List<PriceLevel> bids = book.getBidsList(depth)
+                .stream()
+                .map(level -> new PriceLevel(
+                        level.price(),
+                        level.volume(),
+                        level.orderCount()))
+                .toList();
+
+        List<PriceLevel> asks = book.getAsksList(depth)
+                .stream()
+                .map(level -> new PriceLevel(
+                        level.price(),
+                        level.volume(),
+                        level.orderCount()))
+                .toList();
+
+        return new OrderBookDepth(bids, asks);
     }
 
 
