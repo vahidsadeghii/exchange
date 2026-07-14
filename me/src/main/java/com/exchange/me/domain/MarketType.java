@@ -1,7 +1,8 @@
 package com.exchange.me.domain;
 
 public enum MarketType {
-    SPOT("SPOT"), FUTURES("FUTURES");
+    SPOT("SPOT"),
+    FUTURES("FUTURES");
 
     private final String enumValue;
 

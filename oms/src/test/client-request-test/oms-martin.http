@@ -3,7 +3,7 @@ POST http://{{host}}/profile/open/v1/user/signin
 Content-Type: application/json
 
 {
-    "userName": "martin.hoffmann@example.com",
+  "userName": "martin.hoffmann@example.com",
   "password": "hoffmanmartinSecretPass123!"
 }
 > {%
@@ -39,7 +39,7 @@ Content-Type: application/json
 
 
 
-### Create Order
+### Create Order with orderType MARKET
 POST http://{{host}}/oms/api/v1/orders
 Authorization: Bearer {{loginToken}}
 Content-Type: application/json
@@ -48,9 +48,9 @@ Request-Id: 2002
 {
   "assetType": "EUR",
   "tradePair": "BTC_EURO",
-  "orderType": "LIMIT",
+  "orderType": "MARKET",
   "tradeSide": "SELL",
-  "marketType": "MARKET",
+  "marketType": "SPOT",
   "quantity": 0.5,
   "price": 2306.75,
   "expireDays": 3
@@ -79,8 +79,8 @@ Request-Id: 2002
             client.assert(response.body.tradeSide === "SELL");
         });
 
-        client.test("Order type is LIMIT", function () {
-            client.assert(response.body.orderType === "LIMIT");
+        client.test("Order type is MARKET", function () {
+            client.assert(response.body.orderType === "MARKET");
         });
 
         client.test("Quantity is correct", function () {
@@ -99,7 +99,7 @@ Request-Id: 2002
     }
 %}
 
-####### Create the second Order
+### Create second Order with orderType MARKET
 POST http://{{host}}/oms/api/v1/orders
 Authorization: Bearer {{loginToken}}
 Content-Type: application/json
@@ -108,9 +108,69 @@ Request-Id: 2002
 {
   "assetType": "EUR",
   "tradePair": "BTC_EURO",
-  "orderType": "LIMIT",
+  "orderType": "MARKET",
   "tradeSide": "SELL",
-  "marketType": "MARKET",
+  "marketType": "SPOT",
+  "quantity": 0.5,
+  "price": 2306.75,
+  "expireDays": 3
+}
+
+> {%
+    client.log("Status: " + response.status);
+    client.log("Body: " + JSON.stringify(response.body));
+
+    if (response.status !== 200) {
+        client.log("Request failed with status " + response.status);
+    } else {
+        client.test("Status code is 200", function () {
+            client.assert(response.status === 200);
+        });
+
+        client.test("Order ID exists", function () {
+            client.assert(response.body.id !== undefined);
+        });
+
+        client.test("Trade pair is correct", function () {
+            client.assert(response.body.tradePair === "BTC_EURO");
+        });
+
+        client.test("Trade side is SELL", function () {
+            client.assert(response.body.tradeSide === "SELL");
+        });
+
+        client.test("Order type is MARKET", function () {
+            client.assert(response.body.orderType === "MARKET");
+        });
+
+        client.test("Quantity is correct", function () {
+            client.assert(response.body.quantity == 0.5);
+        });
+
+        client.test("Price is correct", function () {
+            client.assert(response.body.price == 2000.75);
+        });
+
+        client.test("CreatedAt exists", function () {
+            client.assert(response.body.createDate !== undefined);
+        });
+
+        client.log("Created order id = " + response.body.id);
+    }
+%}
+
+####### Create the Order with orderType FOK
+POST http://{{host}}/oms/api/v1/orders
+Authorization: Bearer {{loginToken}}
+Content-Type: application/json
+Request-Id: 2002
+
+{
+  "assetType": "EUR",
+  "tradePair": "BTC_EURO",
+  "orderType": "FOK",
+  "tradeSide": "SELL",
+  "marketType": "SPOT",
   "quantity": 0.5,
   "price": 3000.75,
   "expireDays": 7
@@ -139,8 +199,8 @@ Request-Id: 2002
             client.assert(response.body.tradeSide === "SELL");
         });
 
-        client.test("Order type is LIMIT", function () {
-            client.assert(response.body.orderType === "LIMIT");
+        client.test("Order type is FOK", function () {
+            client.assert(response.body.orderType === "FOK");
         });
 
         client.test("Quantity is correct", function () {
@@ -159,7 +219,7 @@ Request-Id: 2002
     }
 %}
 
-####### Create Order
+####### Create Order with orderType LIMIT
 POST http://{{host}}/oms/api/v1/orders
 Authorization: Bearer {{loginToken}}
 Content-Type: application/json
@@ -170,7 +230,7 @@ Request-Id: {{$uuid}}
   "tradePair": "BTC_EURO",
   "orderType": "LIMIT",
   "tradeSide": "SELL",
-  "marketType": "MARKET",
+  "marketType": "SPOT",
   "quantity": 0.5,
   "price": 1560.75,
   "expireDays": 7
@@ -228,21 +288,159 @@ else {
 %}
 
 
-#####Update Order three
+####### Create Order LIMIT
+POST http://{{host}}/oms/api/v1/orders
+Authorization: Bearer {{loginToken}}
+Content-Type: application/json
+Request-Id: {{$uuid}}
+
+{
+  "assetType": "EUR",
+  "tradePair": "BTC_EURO",
+  "orderType": "LIMIT",
+  "tradeSide": "SELL",
+  "marketType": "SPOT",
+  "quantity": 0.5,
+  "price": 1800.75,
+  "expireDays": 7
+}
+
+> {%
+client.log("HTTP Status: " + response.status);
+client.log("Response Body: " + JSON.stringify(response.body));
+
+// Always handle rate limiting first
+if (response.status === 429) {
+    client.log("429 Too Many Requests - backend rate limit triggered");
+}
+else if (response.status === 200 && response.body) {
+
+    client.test("Status is 200", function () {
+        client.assert(response.status === 200);
+    });
+
+    client.test("Order ID exists", function () {
+        client.assert(response.body.id !== undefined);
+    });
+
+    client.test("Trade pair correct", function () {
+        client.assert(response.body.tradePair === "BTC_EURO");
+    });
+
+    client.test("Trade side correct", function () {
+        client.assert(response.body.tradeSide === "SELL");
+    });
+
+    client.test("Order type correct", function () {
+        client.assert(response.body.orderType === "FOK");
+    });
+
+    client.test("Quantity correct", function () {
+        client.assert(response.body.quantity == 0.5);
+    });
+
+    client.test("Price correct", function () {
+        client.assert(response.body.price == 1800.75);
+    });
+
+    client.test("CreatedAt exists", function () {
+        client.assert(response.body.createDate !== undefined);
+    });
+
+    client.global.set("orderId", response.body.id);
+    client.log("Saved orderId = " + response.body.id);
+
+}
+else {
+    client.log("Request failed. Status: " + response.status);
+}
+%}
+
+####### Create Order FOK
+POST http://{{host}}/oms/api/v1/orders
+Authorization: Bearer {{loginToken}}
+Content-Type: application/json
+Request-Id: {{$uuid}}
+
+{
+  "assetType": "EUR",
+  "tradePair": "BTC_EURO",
+  "orderType": "FOK",
+  "tradeSide": "SELL",
+  "marketType": "SPOT",
+  "quantity": 0.5,
+  "price": 1560.75,
+  "expireDays": 7
+}
+
+> {%
+client.log("HTTP Status: " + response.status);
+client.log("Response Body: " + JSON.stringify(response.body));
+
+// Always handle rate limiting first
+if (response.status === 429) {
+    client.log("429 Too Many Requests - backend rate limit triggered");
+}
+else if (response.status === 200 && response.body) {
+
+    client.test("Status is 200", function () {
+        client.assert(response.status === 200);
+    });
+
+    client.test("Order ID exists", function () {
+        client.assert(response.body.id !== undefined);
+    });
+
+    client.test("Trade pair correct", function () {
+        client.assert(response.body.tradePair === "BTC_EURO");
+    });
+
+    client.test("Trade side correct", function () {
+        client.assert(response.body.tradeSide === "SELL");
+    });
+
+    client.test("Order type correct", function () {
+        client.assert(response.body.orderType === "FOK");
+    });
+
+    client.test("Quantity correct", function () {
+        client.assert(response.body.quantity == 0.5);
+    });
+
+    client.test("Price correct", function () {
+        client.assert(response.body.price == 1800.75);
+    });
+
+    client.test("CreatedAt exists", function () {
+        client.assert(response.body.createDate !== undefined);
+    });
+
+    client.global.set("orderId", response.body.id);
+    client.log("Saved orderId = " + response.body.id);
+
+}
+else {
+    client.log("Request failed. Status: " + response.status);
+}
+%}
+
+
+#####Update Order three With FOK
 POST http://{{host}}/oms/api/v1/orders
 Authorization: Bearer {{loginToken}}
 Content-Type: application/json
 Request-Id: 2001
 
 {
-  "oldOrderId": 29,
+  "oldOrderId": {{orderId}},
   "assetType": "EUR",
   "tradePair": "BTC_EURO",
-  "orderType": "LIMIT",
+  "orderType": "FOK",
   "tradeSide": "SELL",
-  "marketType": "MARKET",
+  "marketType": "SPOT",
   "quantity": 0.5,
-  "price": 2300.75
+  "price": 1600.75,
+  "expireDays": 7
 }
 
 > {%
@@ -268,8 +466,8 @@ Request-Id: 2001
             "Trade side mismatch");
     });
 
-    client.test("Order type is LIMIT", function () {
-        client.assert(body.orderType === "LIMIT",
+    client.test("Order type is FOK", function () {
+        client.assert(body.orderType === "FOK",
             "Order type mismatch");
     });
 

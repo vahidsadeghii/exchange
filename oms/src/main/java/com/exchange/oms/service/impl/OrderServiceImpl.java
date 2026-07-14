@@ -5,7 +5,6 @@ import com.exchange.oms.client.matchingengine.CreateUpdateOrderRequestClient;
 import com.exchange.oms.client.matchingengine.OrderBookDepthResponseClient;
 import com.exchange.oms.client.wallet.WalletClient;
 import com.exchange.oms.config.exception.NotFoundException;
-import com.exchange.oms.controller.order.orderbookdepth.OrderBookDepthResponse;
 import com.exchange.oms.domain.*;
 import com.exchange.oms.exception.order.ExpiredOrderException;
 import com.exchange.oms.exception.order.InsufficientBalanceException;
@@ -80,18 +79,25 @@ public class OrderServiceImpl implements OrderService {
                         order.getPrice().doubleValue()));
 
         //  order.setMatchEngineStatus(orderMatchingEngine.status());
+
         return order;
     }
 
     @Override
     public Order getOrder(long orderId) {
-        return null;
+        return orderRepository.findById(orderId)
+                .filter(order -> order.getCreatedAt() != null
+                        && order.getExpireDays() != null
+                        && LocalDateTime.now().isBefore(
+                        order.getCreatedAt().plusDays(order.getExpireDays())))
+                .orElseThrow(ExpiredOrderException::new);
     }
 
     @Override
     public void matchEngineStatus(long orderId, long userId, MatchEventStatus matchEngineStatus) {
-        Order order = orderRepository.findById(orderId).orElseThrow(NotFoundException::new);
+        Order order = getOrder(orderId);
         order.setMatchEngineStatus(matchEngineStatus);
+        orderRepository.save(order);
     }
 
     @Override
