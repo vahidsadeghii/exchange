@@ -17,8 +17,6 @@ import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.Setter;
 
-import static com.exchange.me.domain.MarketType.FOK;
-
 @RequiredArgsConstructor
 @Getter
 @Setter
@@ -87,6 +85,20 @@ public class OrderBookHandler {
             throw new InvalidTradePairException();
         }
 
+        /**
+         * FOK (Fill Or Kill) orders require a limit price because
+         * the engine must verify that the entire order quantity can
+         * be filled within the acceptable price range before execution.
+         *
+         * <p>A FOK order without a valid price cannot determine whether
+         * full execution is possible.</p>
+         */
+        if (incomingOrder.getOrderType() == OrderType.FOK
+                && incomingOrder.getPrice() <= 0) {
+            throw new IllegalArgumentException(
+                    "FOK order requires a valid limit price"
+            );
+        }
 
         return switch (incomingOrder.getOrderType()) {
 
@@ -119,9 +131,19 @@ public class OrderBookHandler {
 
             long askPrice = bestAsk.getKey();
 
-            if (askPrice > buyOrder.getPrice()) {
-                break; // No more matching possible
+            /**
+             * Stops matching when the best available ask price is higher than
+             * the maximum price accepted by a LIMIT BUY order.
+             *
+             * <p>MARKET orders ignore price limits and continue matching against
+             * available liquidity. LIMIT orders only execute trades at prices
+             * equal to or better than their specified limit price.</p>
+             */
+            if (buyOrder.getOrderType() == OrderType.LIMIT &&
+                    askPrice > buyOrder.getPrice()) {
+                break;
             }
+
 
             Deque<Order> askList = bestAsk.getValue();
 
@@ -166,8 +188,15 @@ public class OrderBookHandler {
             }
         }
 
-        // Add unfilled buy order to book
-        if (buyOrder.getRemainingQuantity() > 0) {
+        /**
+         * Adds the remaining quantity of a LIMIT BUY order to the order book.
+         *
+         * <p>If the order could not be fully matched and still has remaining
+         * quantity, it is stored in the bid side of the book. MARKET orders
+         * are never added because they must execute immediately or expire.</p>
+         */
+        if (buyOrder.getOrderType() == OrderType.LIMIT &&
+                buyOrder.getRemainingQuantity() > 0) {
             addOrderToBook(buyOrder);
         }
 
@@ -185,6 +214,18 @@ public class OrderBookHandler {
             Map.Entry<Long, Deque<Order>> bestBid = bids.firstEntry();
             long bidPrice = bestBid.getKey();
             Deque<Order> bidList = bestBid.getValue();
+
+            /**
+             * Stops matching when the best available bid price is lower than
+             * the minimum price accepted by a LIMIT SELL order.
+             *
+             * <p>A LIMIT SELL order can only match with buyers offering a price
+             * equal to or higher than the seller's limit price.</p>
+             */
+            if (sellOrder.getOrderType() == OrderType.LIMIT &&
+                    bidPrice < sellOrder.getPrice()) {
+                break;
+            }
 
             while (!bidList.isEmpty() && sellOrder.getRemainingQuantity() > 0) {
                 Order bidOrder = bidList.peek();
@@ -222,8 +263,14 @@ public class OrderBookHandler {
             }
         }
 
-        // Add unfilled sell order to book
-        if (sellOrder.getRemainingQuantity() > 0) {
+        /**
+         * Adds the remaining quantity of a LIMIT SELL order to the order book.
+         *
+         * <p>If the order is partially filled and still has remaining quantity,
+         * it is placed on the ask side of the order book for future matching.</p>
+         */
+        if (sellOrder.getOrderType() == OrderType.LIMIT &&
+                sellOrder.getRemainingQuantity() > 0) {
             addOrderToBook(sellOrder);
         }
 
@@ -394,6 +441,13 @@ public class OrderBookHandler {
     }
 
     private boolean canFullyFill(Order order) {
+
+        if (order.getOrderType() == OrderType.FOK
+                && order.getPrice() <= 0) {
+            throw new IllegalArgumentException(
+                    "FOK order requires a valid limit price"
+            );
+        }
         double availableQuantity = 0;
 
         if (order.getTradeSide() == TradeSide.BUY) {
@@ -409,7 +463,7 @@ public class OrderBookHandler {
 
                     availableQuantity += ask.getRemainingQuantity();
 
-                    if (availableQuantity >= order.getQuantity()) {
+                    if (availableQuantity >= order.getRemainingQuantity()) {
                         return true;
                     }
                 }
@@ -426,7 +480,7 @@ public class OrderBookHandler {
                 for (Order bid : entry.getValue()) {
                     availableQuantity += bid.getRemainingQuantity();
 
-                    if (availableQuantity >= order.getQuantity()) {
+                    if (availableQuantity >= order.getRemainingQuantity()) {
                         return true;
                     }
                 }

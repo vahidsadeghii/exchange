@@ -1,13 +1,12 @@
 package com.exchange.me.domain;
 
-import org.openjdk.jmh.annotations.Fork;
 
 public enum OrderType {
-    LIMIT("LINIT"),
+    LIMIT("LIMIT"),
     MARKET("MARKET"),
-    Fork("FOK");
+    FOK("FOK");
 
-    private String enumValue;
+    private final String enumValue;
 
     OrderType(String enumValue) {
         this.enumValue = enumValue;
