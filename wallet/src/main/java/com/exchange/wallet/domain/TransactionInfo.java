@@ -25,8 +25,18 @@ public class TransactionInfo {
     private BigDecimal amount;
     private TransactionType type;
 
+    // Total balance before transaction
     private BigDecimal balanceBefore;
+
+    // Total balance after transaction
     private BigDecimal balanceAfter;
+
+
+    // Blocked balance before transaction
+    private BigDecimal blockedBalanceBefore;
+
+    // Blocked balance after transaction
+    private BigDecimal blockedBalanceAfter;
 
     private LocalDateTime createdAt;
 }

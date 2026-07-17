@@ -1,18 +1,24 @@
 package com.exchange.profile.domain;
 
-import com.netflix.discovery.provider.Serializer;
+
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import lombok.*;
+
+import java.time.LocalDateTime;
+
 
 @Getter
 @Setter
 @Builder
-@Serializer
 @AllArgsConstructor
 @NoArgsConstructor
-public class EventInfoMessage {
+@JsonDeserialize
+public class EventInfoMessage<T> {
     private String tag;
     private String title;
     private String serviceName;
+    private boolean routingEnabled;
     private boolean persistent;
-    private Object event;
+    private LocalDateTime createDate;
+    private T event;
 }

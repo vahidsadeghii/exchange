@@ -19,8 +19,13 @@ public class JWTAuthenticationConverter implements Converter<Jwt, AbstractAuthen
     @Override
     public AbstractAuthenticationToken convert(Jwt jwt) {
         Collection<GrantedAuthority> authorities = extractAuthorities(jwt);
+
+        Long internalUserId =
+                Long.valueOf(jwt.getClaimAsString("internalUserId"));
+
         OnlineUser principal = new OnlineUser(
                 jwt.getSubject(),
+                internalUserId,
                 extractRoles(jwt));
 
         return new UsernamePasswordAuthenticationToken(

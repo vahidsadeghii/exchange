@@ -1,0 +1,290 @@
+###User Signin
+POST http://{{host}}/profile/open/v1/user/signin
+Content-Type: application/json
+
+{
+  "userName": "martin.hoffmann@example.com",
+  "password": "hoffmanmartinSecretPass123!"
+}
+> {%
+    client.test("Status code is 200", function () {
+        client.assert(response.status === 200, "Expected status 200");
+    });
+
+    client.test("Access token exists", function () {
+        client.assert(response.body.accessToken !== undefined, "Missing accessToken object");
+        client.assert(response.body.accessToken.accessToken !== "", "accessToken is empty");
+    });
+
+    client.test("Access token expiration exists", function () {
+        client.assert(response.body.accessToken.expirationDate !== "", "accessToken expiration missing");
+    });
+
+    client.test("Refresh token exists", function () {
+        client.assert(response.body.refreshToken !== undefined, "Missing refreshToken object");
+        client.assert(response.body.refreshToken.refreshToken !== "", "refreshToken is empty");
+    });
+
+    client.test("Refresh token expiration exists", function () {
+        client.assert(response.body.refreshToken.expirationDate !== "", "refreshToken expiration missing");
+    });
+
+    client.test("User type is returned", function () {
+        client.assert(response.body.userType !== undefined, "userType missing");
+    });
+
+    client.global.set("loginToken", response.body.accessToken.accessToken);
+
+%}
+
+
+
+###update Wallet
+POST http://{{host}}/wallet/api/v1/user/wallet
+Authorization: Bearer {{loginToken}}
+Request-Id:  1004
+Content-Type: application/json
+
+{
+  "assets": [
+    {
+      "balance": 0,
+      "blockedBalance": 0,
+      "assetType": "BTC"
+    },
+    {
+      "balance": 0,
+      "blockedBalance": 0,
+      "assetType": "ETH"
+    },
+    {
+      "balance": 1000,
+      "blockedBalance": 0,
+      "assetType": "USDT"
+    },
+    {
+      "balance": 15000000,
+      "blockedBalance": 0,
+      "assetType": "EUR"
+    },
+    {
+      "balance": 250,
+      "blockedBalance": 0,
+      "assetType": "USD"
+    }
+  ]
+}
+
+> {%
+    let jsonData = response.body;
+
+    if (typeof jsonData === "string") {
+        jsonData = JSON.parse(jsonData);
+    }
+
+    const wallet = jsonData;
+
+    client.log("STATUS = " + response.status);
+
+    client.log("STATUS = " + response.status);
+    client.log("BODY = " + JSON.stringify(response.body));
+    if (response.status === 200 && response.body && response.body.assets) {
+
+        client.test("Assets exist", function () {
+            client.assert(response.body.assets.length > 0, "assets empty");
+        });
+
+        client.test("BTC exists", function () {
+            client.assert(
+                response.body.assets.some(a => a.assetType === "BTC"),
+                "BTC missing"
+            );
+        });
+        client.log("WalletId: " + wallet.walletId);
+    }
+%}
+
+### User Wallet Info by assetType
+GET http://{{host}}/wallet/api/v1/wallet-info?assetType=EUR
+Authorization: Bearer {{loginToken}}
+Request-Id: 1001
+Accept: application/json
+
+> {%
+    client.log("BODY = " + JSON.stringify(response.body));
+
+    if (response.status === 200 && response.body.walletId) {
+        client.global.set("wallet-id", response.body.walletId);
+
+        // Verify immediately
+        client.log("Stored wallet-id = " + client.global.get("wallet-id"));
+    }
+%}
+
+####find wallet by id
+GET http://localhost:8070/wallet/api/v1/wallet-by-id?walletId={{wallet-id}}
+Authorization: Bearer {{loginToken}}
+Request-Id: 1009
+Content-Type: application/json
+
+> {%
+    let jsonData = response.body;
+
+    if (typeof jsonData === "string") {
+        jsonData = JSON.parse(jsonData);
+    }
+
+    const wallet = jsonData;
+
+    client.test("Status code is 200", function () {
+        client.assert(response.status === 200, "Expected 200 but got " + response.status);
+    });
+
+    client.test("Wallet ID exists", function () {
+        client.assert(wallet.walletId !== undefined, "Missing walletId");
+    });
+    const expectedWalletId = "00990396-d562-43dc-a88a-334f51a6a741";
+    client.test("Wallet ID matches", function () {
+        client.assert(
+            wallet.walletId === expectedWalletId,
+            `Expected ${expectedWalletId} but got ${wallet.walletId}`
+        );
+    });
+
+    client.test("Assets exist", function () {
+        client.assert(Array.isArray(wallet.asserts), "Missing asserts array");
+    });
+
+    client.test("Asset balances valid", function () {
+        wallet.asserts.forEach(a => {
+            client.assert(a.balance >= 0, "Negative balance in " + a.assetType);
+        });
+    });
+
+    client.test("At least one positive balance", function () {
+        const ok = wallet.asserts.some(a => a.balance > 0);
+        client.assert(ok, "No asset has positive balance");
+    });
+
+    client.log("Wallet ID: " + wallet.walletId);
+%}
+
+
+
+
+### Deposit Wallet
+POST http://{{host}}/wallet/api/v1/deposit
+Authorization: Bearer {{loginToken}}
+Request-Id: 1001
+Content-Type: application/json
+
+{
+  "walletId": "{{wallet-id}}",
+  "assetType": "EUR",
+  "amount": 60000
+}
+
+> {%
+
+    client.log("STATUS = " + response.status);
+
+    client.test("Request executed", function () {
+        client.assert(response.status !== null);
+    });
+
+    // Handle rate limit explicitly
+    if (response.status === 429) {
+
+        client.test("Rate limit is active (expected behavior)", function () {
+            client.assert(true, "429 received - rate limiter is working");
+        });
+
+        client.log("Rate limited - skipping business validations");
+    } else {
+
+        client.test("Success response", function () {
+            client.assert(response.status >= 200 && response.status < 300);
+        });
+
+        const wallet = response.body;
+
+        client.test("Wallet updated", function () {
+            const eur = wallet?.assets?.find(a => a.assetType === "EUR");
+            client.assert(eur != null, "EUR asset missing");
+        });
+    }
+%}
+
+### Withdraw Wallet
+POST http://{{host}}/wallet/api/v1/withdraw
+Authorization: Bearer {{loginToken}}
+Request-Id: 1441
+Content-Type: application/json
+
+{
+  "walletId": "{{wallet-id}}",
+  "assetType": "EUR",
+  "amount": 1000
+}
+
+> {%
+
+    client.log("STATUS = " + response.status);
+
+    client.test("Request executed", function () {
+        client.assert(response.status !== null);
+    });
+
+    // Handle rate limit explicitly
+    if (response.status === 429) {
+
+        client.test("Rate limit is active (expected behavior)", function () {
+            client.assert(true, "429 received - rate limiter is working");
+        });
+
+        client.log("Rate limited - skipping business validations");
+    } else {
+
+        client.test("Success response", function () {
+            client.assert(response.status >= 200 && response.status < 300);
+        });
+
+        const wallet = response.body;
+
+        client.test("Wallet updated", function () {
+            const eur = wallet?.assets?.find(a => a.assetType === "EUR");
+            client.assert(eur != null, "EUR asset missing");
+        });
+    }
+%}
+
+### Find transactions by wallet-id
+POST http://localhost:8070/wallet/api/v1/transactions?walletId={{wallet-id}}
+Authorization: Bearer {{loginToken}}
+Request-Id: 1009
+Content-Type: application/json
+
+{}
+
+> {%
+    if (response.status === 429) {
+
+        client.test("Rate limit is active", function () {
+            client.assert(true, "429 received - rate limiter is working");
+        });
+
+        client.log("Skipping body assertions due to 429");
+
+    } else {
+
+        client.test("Success response", function () {
+            client.assert(response.status >= 200 && response.status < 300);
+        });
+
+        client.test("Response is array", function () {
+            client.assert(Array.isArray(response.body),
+                "Expected array response");
+        });
+    }
+%}
+

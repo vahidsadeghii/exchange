@@ -3,11 +3,14 @@ Spring:
     bootstrap-servers: localhost:9092
 
 
+
+
+
 custom-config:
   kafka:
-    updatematchingEngine-output-message:
-      topic: updatematchingEngine-message
-    savematchingEngine-output-message:
-      topic: savematchingEngine-message
-
-
+    sendmessage-output-message:
+      topic: send-message
+    event-output-message:
+      topic: event-topic
+    me-create-update-output-message:
+      topic: me-create-update-topic

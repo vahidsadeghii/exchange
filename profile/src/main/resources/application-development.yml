@@ -10,6 +10,10 @@ spring:
     console:
       enabled: true
   cloud:
+    discovery:
+      client:
+        composite-indicator:
+          enabled: false
     config:
       enabled: false
 
@@ -39,3 +43,8 @@ spring:
 verify:
   send-email:
     expired-date: 10
+
+eureka:
+  client:
+    enabled: false
+

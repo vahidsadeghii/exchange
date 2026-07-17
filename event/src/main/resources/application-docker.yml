@@ -1,0 +1,19 @@
+spring:
+  cloud:
+    config:
+      enabled: false
+    stream:
+      kafka:
+        binder:
+          brokers: kafkahost:9092
+
+
+  instance:
+    prefer-ip-address: true
+    ip-address: 192.168.0.150
+    metadata-map:
+      versions: ${version}
+      metrics.path: /eventmanager/actuator/prometheus
+      health.path: /eventmanager/actuator/health
+      context-path: /eventmanager
+      management.context-path: /eventmanager

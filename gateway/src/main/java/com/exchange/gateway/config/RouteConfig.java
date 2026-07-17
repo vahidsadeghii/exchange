@@ -50,6 +50,20 @@ public class RouteConfig {
                                 )
                                 .uri("http://localhost:8092")
                 )
+
+                .route(
+                        "oms",
+                        r -> r.path("/oms/**")
+                                .filters(f -> f
+                                        .filter(jwtRelayGatewayFilter)
+                                        .filter(securityGatewayFilter)
+                                        .requestRateLimiter(rate -> {
+                                            rate.setKeyResolver(gatewayConfig.keyResolver());
+                                            rate.setRateLimiter(redisRateLimiter);
+                                        })
+                                )
+                                .uri("http://localhost:8090")
+                )
                 .build();
     }
 

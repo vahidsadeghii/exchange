@@ -30,7 +30,7 @@ dependencies {
     implementation 'io.micrometer:micrometer-registry-prometheus'
     implementation 'org.springframework.cloud:spring-cloud-starter-netflix-eureka-client'
     implementation 'org.springframework.cloud:spring-cloud-starter-openfeign'
-    implementation 'org.springframework.cloud:spring-cloud-config-client'
+    //implementation 'org.springframework.cloud:spring-cloud-config-client'
     runtimeOnly 'com.h2database:h2'
 
     // ---- Resilience4j (Spring Boot 3) ----

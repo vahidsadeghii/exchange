@@ -22,7 +22,7 @@ public class DepositController {
     @PreAuthorize("hasRole('CUSTOMER')")
     public Wallet handle(@AuthenticationPrincipal OnlineUser onlineUser,
                           @RequestBody DepositRequest request) {
-        Wallet wallet = walletService.depositWallet(request.walletId(), onlineUser.getKeycloakUserId(),
+        Wallet wallet = walletService.depositWallet(request.walletId(),
                 request.assetType(), request.amount());
         return wallet;
     }

@@ -2,7 +2,8 @@ package com.exchange.oms.domain;
 
 public enum OrderType {
     LIMIT("LINIT"),
-    MARKET("MARKET");
+    MARKET("MARKET"),
+    FOK("FOK");
 
     private String enumValue;
 

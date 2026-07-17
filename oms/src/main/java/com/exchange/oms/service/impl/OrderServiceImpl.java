@@ -1,10 +1,14 @@
 package com.exchange.oms.service.impl;
 
 import com.exchange.oms.client.matchingengine.MatchingInfoClient;
-import com.exchange.oms.client.matchingengine.createOrderRequest;
-import com.exchange.oms.controller.order.findorderbook.OrderBookResponse;
+import com.exchange.oms.client.matchingengine.CreateUpdateOrderRequestClient;
+import com.exchange.oms.client.matchingengine.OrderBookDepthResponseClient;
+import com.exchange.oms.client.wallet.WalletClient;
+import com.exchange.oms.config.exception.NotFoundException;
+import com.exchange.oms.controller.order.orderbookdepth.OrderBookDepthResponse;
 import com.exchange.oms.domain.*;
-import jakarta.persistence.EntityNotFoundException;
+import com.exchange.oms.exception.order.ExpiredOrderException;
+import com.exchange.oms.exception.order.InsufficientBalanceException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -12,8 +16,8 @@ import com.exchange.oms.repository.OrderRepository;
 import com.exchange.oms.service.OrderService;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
-import java.time.ZoneId;
 
 @Service
 @Transactional
@@ -22,51 +26,97 @@ import java.time.ZoneId;
 public class OrderServiceImpl implements OrderService {
     private final OrderRepository orderRepository;
     private final MatchingInfoClient matchingEngineClient;
+    private final WalletClient walletClient;
+
 
     @Override
-    public Order createOrder(long userId, TradePair tradePair, TradeSide tradeSide, OrderType orderType, double quantity, double price) {
-        //TODO: check the order properties
-        //Property validation is handled in OrderServiceDecorator
+    public Order createUpdateOrder(Long oldOrderId, Long onlineUser, AssetType assetType,
+                                   TradePair tradePair, TradeSide tradeSide,
+                                   MarketType marketType, OrderType orderType, BigDecimal quantity,
+                                   BigDecimal price, Long expireDays) {
+
+
+        if (oldOrderId != null) {
+            Order oldOrder = orderRepository
+                    .findByIdAndStatus(oldOrderId, OrderStatus.NEW)
+                    .orElseThrow(NotFoundException::new);
+            if (expireDays != null) {
+                LocalDateTime createdAt = oldOrder.getCreatedAt();
+
+                if (createdAt.plusDays(expireDays).isBefore(LocalDateTime.now())) {
+                    throw new ExpiredOrderException();
+                }
+            }
+
+            oldOrder.setStatus(OrderStatus.CANCELED);
+            orderRepository.save(oldOrder);
+        }
+
+        validateSufficientBalance(onlineUser, assetType, quantity, price);
+
         Order order = orderRepository.save(Order.builder()
-                .userId(1L)
+                .userId(onlineUser)
                 .tradePair(tradePair)
                 .orderType(orderType)
                 .tradeSide(tradeSide)
+                .marketType(marketType)
                 .status(OrderStatus.NEW)
                 .quantity(quantity)
                 .price(price)
+                .expireDays(expireDays)
                 .createdAt(LocalDateTime.now())
                 .build());
 
-        matchingEngineClient.createOrderMatchingEngine(
-                new createOrderRequest(
+        MatchEngineResponse orderMatchingEngine = matchingEngineClient.createOrderMatchingEngine(
+                new CreateUpdateOrderRequestClient(
+                        oldOrderId,
                         order.getId(),
                         order.getUserId(),
                         order.getTradePair(),
                         order.getOrderType(),
                         order.getTradeSide(),
-                        order.getQuantity(),
-                        order.getPrice()));
+                        order.getMarketType(),
+                        order.getQuantity().doubleValue(),
+                        order.getPrice().doubleValue()));
 
+        //  order.setMatchEngineStatus(orderMatchingEngine.status());
         return order;
     }
 
-    //TODO: find by orderId oder userId
-    // Currently, findById uses orderId.
-    // Consider whether userId is a better practice for locating an order.
     @Override
-    public Order updateOrder(long orderId, long userId, MatchEventStatus orderStatus) {
-        return orderRepository.findByUserId(userId)
-                .map(order -> {
-                    order.setMatchEngineStatus(orderStatus);
-                    return orderRepository.save(order);
-                })
-                .orElseThrow(() -> new EntityNotFoundException("Order not found with userId: " + userId));
+    public Order getOrder(long orderId) {
+        return null;
     }
 
     @Override
-    public OrderBookResponse getOrder(long orderId) {
-        return null;
+    public void matchEngineStatus(long orderId, long userId, MatchEventStatus matchEngineStatus) {
+        Order order = orderRepository.findById(orderId).orElseThrow(NotFoundException::new);
+        order.setMatchEngineStatus(matchEngineStatus);
+    }
+
+    @Override
+    public OrderBookDepth getOrderBookDepth(TradePair pair, int depth) {
+        OrderBookDepthResponseClient orderBookDepth = matchingEngineClient.getOrderBookDepth(pair, depth);
+        return new OrderBookDepth(
+                orderBookDepth.bids(),
+                orderBookDepth.asks()
+        );
+    }
+
+    private void validateSufficientBalance(Long userId,
+                                           AssetType assetType,
+                                           BigDecimal quantity,
+                                           BigDecimal price) {
+
+        BigDecimal userWalletBalance = walletClient.findUserWalletBalance(userId, assetType);
+
+        BigDecimal orderValue = quantity.multiply(price);
+
+        if (userWalletBalance == null ||
+                userWalletBalance.compareTo(orderValue) < 0) {
+
+            throw new InsufficientBalanceException();
+        }
     }
 
 

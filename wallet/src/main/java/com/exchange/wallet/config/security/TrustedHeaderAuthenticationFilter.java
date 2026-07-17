@@ -46,6 +46,7 @@ public class TrustedHeaderAuthenticationFilter extends OncePerRequestFilter {
 
             OnlineUser principal = new OnlineUser(
                     tokenInfo.keycloakUserId(),
+                    tokenInfo.internalUserId(),
                     cleanRoles);
 
             Authentication authentication =

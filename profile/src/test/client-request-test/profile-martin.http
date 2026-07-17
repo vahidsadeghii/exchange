@@ -1,0 +1,208 @@
+
+### Step 1 - Register email
+POST http://{{host}}/profile/open/v1/verify-email
+Content-Type: application/json
+
+
+{
+  "email": "martin.hoffmann@example.com"
+}
+
+> {%
+    client.log("Status: " + response.status);
+    client.log("Body: " + JSON.stringify(response.body));
+
+    client.test("Status code is 200", function () {
+        client.assert(response.status === 200, "Expected status 200");
+    });
+
+    if (response.status === 200) {
+
+        client.global.set(
+            "verifySentEmailHistoryId",
+            response.body.verifySentEmailHistoryId
+        );
+
+        client.global.set(
+            "verifyCode",
+            response.body.verifyCode
+        );
+
+        client.global.set(
+            "expiredDate",
+            response.body.expiredDate
+        );
+
+        client.log("verifySentEmailHistoryId saved");
+        client.log("verifyCode saved");
+        client.log("expiredDate saved");
+    }
+%}
+
+### Step 2 - Verify email code
+POST http://{{host}}/profile/open/v1/verify-code
+Content-Type: application/json
+
+{
+  "verifySentEmailHistoryId": "{{verifySentEmailHistoryId}}",
+  "verifyCode": "{{verifyCode}}",
+  "expiredDate": "{{expiredDate}}"
+}
+
+> {%
+    client.log("BODY = " + JSON.stringify(response.body));
+
+    client.test("Status 200", function () {
+        client.assert(response.status === 200, "Expected 200");
+    });
+
+    if (response.status === 200 && response.body) {
+
+        const accessToken =
+            response.body?.accessTokenResponse?.accessToken;
+
+        const refreshToken =
+            response.body?.refreshTokenResponse?.refreshToken;
+
+        client.log("ACCESS TOKEN = " + accessToken);
+        client.log("REFRESH TOKEN = " + refreshToken);
+
+        client.test("Access token exists", function () {
+            client.assert(accessToken, "accessToken missing");
+        });
+
+        client.test("Refresh token exists", function () {
+            client.assert(refreshToken, "refreshToken missing");
+        });
+
+        client.global.set("accessToken", accessToken);
+        client.global.set("refreshToken", refreshToken);
+    }
+%}
+
+### Step 3 - Set password (upgrade user)
+POST http://{{host}}/profile/api/v1/set-password
+Content-Type: application/json
+Authorization: Bearer {{accessToken}}
+Request-Id: 123
+
+{
+  "username": "martin.hoffmann@example.com",
+  "email": "martin.hoffmann@example.com",
+  "password": "hoffmanmartinSecretPass123!"
+}
+
+> {%
+    client.log("STATUS = " + response.status);
+    client.log("BODY = " + JSON.stringify(response.body));
+
+    client.test("Response is successful", function () {
+        client.assert(
+            response.status === 200 || response.status === 429,
+            "Unexpected status: " + response.status
+        );
+    });
+
+    if (response.status === 200) {
+
+        client.test("Response body exists", function () {
+            client.assert(response.body != null, "Response body is null");
+        });
+
+        client.test("Access token returned", function () {
+            client.assert(
+                response.body.accessToken !== undefined,
+                "accessToken missing"
+            );
+        });
+
+    } else {
+
+        client.test("Rate limit triggered", function () {
+            client.assert(response.status === 429);
+        });
+    }
+%}
+
+###User Signin
+POST http://{{host}}/profile/open/v1/user/signin
+Content-Type: application/json
+
+
+{
+  "userName": "martin.hoffmann@example.com",
+  "password": "hoffmanmartinSecretPass123!"
+}
+> {%
+    client.log("SIGNIN RESPONSE STATUS = " + response.status);
+    client.log("SIGNIN BODY = " + JSON.stringify(response.body));
+
+    if (response.status !== 200) {
+        throw "Signin failed → check backend logs";
+    }
+
+    const accessToken = response.body?.accessToken?.accessToken;
+
+    const refreshToken = response.body?.refreshToken?.refreshToken;
+
+    client.log("ACCESS TOKEN = " + accessToken);
+    client.log("REFRESH TOKEN = " + refreshToken);
+
+    client.test("Access token exists", function () {
+        client.assert(accessToken !== undefined && accessToken !== "",
+            "Missing accessToken");
+    });
+
+    client.test("Refresh token exists", function () {
+        client.assert(refreshToken !== undefined && refreshToken !== "",
+            "Missing refreshToken");
+    });
+
+    client.global.set("loginToken", accessToken);
+%}
+
+
+###Set user Profile
+POST http://{{host}}/profile/api/v1/set-profile
+Authorization: Bearer {{loginToken}}
+Request-Id: 123
+Content-Type: application/json
+
+{
+  "firstName": "martin",
+  "lastName": "hoffmann",
+  "phoneNumber": "0699558841",
+  "genderType": "MALE",
+  "birthday": "1996-01-01",
+  "address": "Wien 1190"
+}
+
+> {%
+    client.log("STATUS = " + response.status);
+
+    client.test("Request succeeded or was rate limited", function () {
+        client.assert(
+            response.status === 200 || response.status === 429,
+            "Expected status 200 or 429, got " + response.status
+        );
+    });
+
+    if (response.status === 200 && response.body) {
+
+        client.test("First name matches", function () {
+            client.assert(response.body.firstName === "martin");
+        });
+
+        client.test("Last name matches", function () {
+            client.assert(response.body.lastName === "hoffmann");
+        });
+
+    } else if (response.status === 429) {
+
+        client.test("Rate limit detected", function () {
+            client.assert(true);
+        });
+
+        client.log("Request was rate limited");
+    }
+%}
