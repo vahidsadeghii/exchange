@@ -182,7 +182,7 @@ client.log("Response Body: " + JSON.stringify(response.body));
 
 // Always handle rate limiting first
 if (response.status === 429) {
-    client.log("⚠ 429 Too Many Requests - backend rate limit triggered");
+    client.log("429 Too Many Requests - backend rate limit triggered");
 }
 else if (response.status === 200 && response.body) {
 

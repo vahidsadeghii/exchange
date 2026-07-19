@@ -100,7 +100,6 @@ Content-Type: application/json
                 "BTC missing"
             );
         });
-        client.log("WalletId: " + wallet.walletId);
     }
 %}
 
@@ -114,15 +113,16 @@ Accept: application/json
     client.log("BODY = " + JSON.stringify(response.body));
 
     if (response.status === 200 && response.body.walletId) {
-        client.global.set("wallet-id", response.body.walletId);
-
-        // Verify immediately
-        client.log("Stored wallet-id = " + client.global.get("wallet-id"));
+        client.global.set("walletId", response.body.walletId);
+        client.log("Stored walletId = " + client.global.get("walletId"));
+    } else {
+        client.log("walletId not found in response");
     }
 %}
 
-####find wallet by id
-GET http://localhost:8070/wallet/api/v1/wallet-by-id?walletId={{wallet-id}}
+
+### Find wallet by id
+GET http://{{host}}/wallet/api/v1/wallet-by-id?walletId={{walletId}}
 Authorization: Bearer {{loginToken}}
 Request-Id: 1009
 Content-Type: application/json
@@ -140,10 +140,14 @@ Content-Type: application/json
         client.assert(response.status === 200, "Expected 200 but got " + response.status);
     });
 
+
     client.test("Wallet ID exists", function () {
         client.assert(wallet.walletId !== undefined, "Missing walletId");
     });
-    const expectedWalletId = "00990396-d562-43dc-a88a-334f51a6a741";
+
+
+    const expectedWalletId = client.global.get("walletId");
+
     client.test("Wallet ID matches", function () {
         client.assert(
             wallet.walletId === expectedWalletId,
@@ -151,20 +155,36 @@ Content-Type: application/json
         );
     });
 
+
     client.test("Assets exist", function () {
-        client.assert(Array.isArray(wallet.asserts), "Missing asserts array");
+        client.assert(
+            Array.isArray(wallet.assets),
+            "Missing assets array"
+        );
     });
 
-    client.test("Asset balances valid", function () {
-        wallet.asserts.forEach(a => {
-            client.assert(a.balance >= 0, "Negative balance in " + a.assetType);
+
+    if (Array.isArray(wallet.assets)) {
+
+        client.test("Asset balances valid", function () {
+            wallet.assets.forEach(a => {
+                client.assert(
+                    a.balance >= 0,
+                    "Negative balance in " + a.assetType
+                );
+            });
         });
-    });
 
-    client.test("At least one positive balance", function () {
-        const ok = wallet.asserts.some(a => a.balance > 0);
-        client.assert(ok, "No asset has positive balance");
-    });
+
+        client.test("At least one positive balance", function () {
+            const ok = wallet.assets.some(a => a.balance > 0);
+            client.assert(
+                ok,
+                "No asset has positive balance"
+            );
+        });
+    }
+
 
     client.log("Wallet ID: " + wallet.walletId);
 %}

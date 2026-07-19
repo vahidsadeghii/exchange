@@ -12,20 +12,27 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.TreeMap;
 
+import com.exchange.me.exception.FokOrderPriceCanNotBeNullException;
 import com.exchange.me.exception.InvalidTradePairException;
+import com.exchange.me.exception.OrderCanNotBeNullException;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.Setter;
+import lombok.extern.slf4j.Slf4j;
 
 @RequiredArgsConstructor
 @Getter
 @Setter
+@Slf4j
 public class OrderBookHandler {
     private TradePair tradePair;
     private final TreeMap<Long, Deque<Order>> bids; // Descending for BUY side
     private final TreeMap<Long, Deque<Order>> asks; // Ascending for SELL side
     private final Map<Long, OrderLocation> orderIndex; // Fast lookup by order ID
     private long updateTime;
+
+    private static final int QUEUE_INITIAL_CAPACITY = 100;
+    private static final double ZERO_PRICE = 0.0;
 
 
     public OrderBookHandler(TradePair tradePair) {
@@ -80,25 +87,15 @@ public class OrderBookHandler {
 
         updateTime = timestamp;
 
+        if (incomingOrder == null) {
+            throw new OrderCanNotBeNullException();
+        }
 
         if (!incomingOrder.getTradePair().equals(this.tradePair)) {
             throw new InvalidTradePairException();
         }
 
-        /**
-         * FOK (Fill Or Kill) orders require a limit price because
-         * the engine must verify that the entire order quantity can
-         * be filled within the acceptable price range before execution.
-         *
-         * <p>A FOK order without a valid price cannot determine whether
-         * full execution is possible.</p>
-         */
-        if (incomingOrder.getOrderType() == OrderType.FOK
-                && incomingOrder.getPrice() <= 0) {
-            throw new IllegalArgumentException(
-                    "FOK order requires a valid limit price"
-            );
-        }
+        validateFokOrder(incomingOrder);
 
         return switch (incomingOrder.getOrderType()) {
 
@@ -116,7 +113,13 @@ public class OrderBookHandler {
         };
     }
 
-    // BUY SIDE
+    /**
+     * Executes a BUY order by matching it against available sell orders.
+     *
+     * @param timestamp the event timestamp
+     * @param buyOrder  the incoming buy order
+     * @return list of executed matches
+     */
     public List<MatchInfo> executeBuyOrder(long timestamp, Order buyOrder) {
         List<MatchInfo> matches = new ArrayList<>();
 
@@ -144,43 +147,9 @@ public class OrderBookHandler {
                 break;
             }
 
-
             Deque<Order> askList = bestAsk.getValue();
 
-            while (!askList.isEmpty() && buyOrder.getRemainingQuantity() > 0) {
-                Order askOrder = askList.peek();
-                if (askOrder == null)
-                    break;
-
-                double tradedQuantity = Math.min(
-                        buyOrder.getRemainingQuantity(),
-                        askOrder.getRemainingQuantity()
-                );
-
-                buyOrder.setFilled(buyOrder.getFilled() + tradedQuantity);
-                askOrder.setFilled(askOrder.getFilled() + tradedQuantity);
-
-                matches.add(
-                        new MatchInfo(
-                                timestamp,
-                                System.currentTimeMillis(),
-                                TradeSide.SELL,
-                                buyOrder.getId(),
-                                askOrder.getId(),
-                                buyOrder.getUserId(),
-                                askOrder.getUserId(),
-                                tradedQuantity,
-                                askPrice,
-                                buyOrder.getQuantity(),
-                                buyOrder.getRemainingQuantity(),
-                                askOrder.getQuantity(),
-                                askOrder.getRemainingQuantity()));
-
-                if (askOrder.getRemainingQuantity() == 0) {
-                    askList.poll();
-                    orderIndex.remove(askOrder.getId()); // Remove from index
-                }
-            }
+            matchOrdersAtLevel(timestamp, buyOrder, askList, askPrice, matches);
 
             // Remove empty price levels
             if (askList.isEmpty()) {
@@ -203,7 +172,14 @@ public class OrderBookHandler {
         return matches;
     }
 
-    // SELL SIDE
+
+    /**
+     * Executes a SELL order by matching it against available buy orders.
+     *
+     * @param timestamp the event timestamp
+     * @param sellOrder the incoming sell order
+     * @return list of executed matches
+     */
     public List<MatchInfo> executeSellOrder(long timestamp, Order sellOrder) {
         List<MatchInfo> matches = new ArrayList<>();
 
@@ -212,50 +188,19 @@ public class OrderBookHandler {
 
             // Get the best (highest) bid price level
             Map.Entry<Long, Deque<Order>> bestBid = bids.firstEntry();
-            long bidPrice = bestBid.getKey();
-            Deque<Order> bidList = bestBid.getValue();
-
-            /**
-             * Stops matching when the best available bid price is lower than
-             * the minimum price accepted by a LIMIT SELL order.
-             *
-             * <p>A LIMIT SELL order can only match with buyers offering a price
-             * equal to or higher than the seller's limit price.</p>
-             */
-            if (sellOrder.getOrderType() == OrderType.LIMIT &&
-                    bidPrice < sellOrder.getPrice()) {
+            if (bestBid == null) {
                 break;
             }
 
-            while (!bidList.isEmpty() && sellOrder.getRemainingQuantity() > 0) {
-                Order bidOrder = bidList.peek();
-                if (bidOrder == null)
-                    break;
+            long bidPrice = bestBid.getKey();
 
-                double tradedQuantity = Math.min(sellOrder.getRemainingQuantity(), bidOrder.getRemainingQuantity());
-                sellOrder.setFilled(sellOrder.getFilled() + tradedQuantity);
-                bidOrder.setFilled(bidOrder.getFilled() + tradedQuantity);
-
-                matches.add(
-                        new MatchInfo(timestamp,
-                                System.currentTimeMillis(),
-                                TradeSide.BUY,
-                                sellOrder.getId(),
-                                bidOrder.getId(),
-                                sellOrder.getUserId(),
-                                bidOrder.getUserId(),
-                                tradedQuantity,
-                                bidPrice,
-                                sellOrder.getQuantity(),
-                                sellOrder.getRemainingQuantity(),
-                                bidOrder.getQuantity(),
-                                bidOrder.getRemainingQuantity()));
-
-                if (bidOrder.getRemainingQuantity() == 0) {
-                    bidList.poll();
-                    orderIndex.remove(bidOrder.getId()); // Remove from index
-                }
+            if (sellOrder.getOrderType() == OrderType.LIMIT && bidPrice < sellOrder.getPrice()) {
+                break;
             }
+
+            Deque<Order> bidList = bestBid.getValue();
+
+            matchOrdersAtLevel(timestamp, sellOrder, bidList, bidPrice, matches);
 
             // Remove empty price levels
             if (bidList.isEmpty()) {
@@ -277,8 +222,60 @@ public class OrderBookHandler {
         return matches;
     }
 
+    //Matches orders at a specific price level
+    private void matchOrdersAtLevel(long timestamp, Order incomingOrder, Deque<Order> levelOrders,
+                                    long priceLevel, List<MatchInfo> matches) {
+        while (!levelOrders.isEmpty() && incomingOrder.getRemainingQuantity() > 0) {
+            Order levelOrder = levelOrders.peek();
+            if (levelOrder == null) {
+
+                break;
+
+            }
+            double tradedQuantity = Math.min(
+
+                    incomingOrder.getRemainingQuantity(),
+
+                    levelOrder.getRemainingQuantity()
+
+            );
+
+            // Update filled quantities
+            incomingOrder.setFilled(incomingOrder.getFilled() + tradedQuantity);
+            levelOrder.setFilled(levelOrder.getFilled() + tradedQuantity);
+
+            // Create match record
+            createMatch(timestamp, incomingOrder, levelOrder, tradedQuantity, priceLevel, matches);
+
+            // Remove fully filled orders
+            if (levelOrder.getRemainingQuantity() == 0) {
+                levelOrders.poll();
+                orderIndex.remove(levelOrder.getId());
+            }
+        }
+
+    }
+
+    /**
+     * FOK (Fill Or Kill) orders require a limit price because
+     * the engine must verify that the entire order quantity can
+     * be filled within the acceptable price range before execution.
+     *
+     * <p>A FOK order without a valid price cannot determine whether
+     * full execution is possible.</p>
+     */
+    private void validateFokOrder(Order order) {
+        if (order.getOrderType() == OrderType.FOK && order.getPrice() <= ZERO_PRICE) {
+            throw new FokOrderPriceCanNotBeNullException();
+        }
+
+    }
+
+    //Executes a FOK(Fill Or Kill) order
     private List<MatchInfo> executeFokOrder(long timestamp, Order order) {
         if (!canFullyFill(order)) {
+            log.debug("FOK order {} cannot be fully filled, cancelling", order.getId());
+
             return List.of();
         }
 
@@ -286,6 +283,34 @@ public class OrderBookHandler {
                 ? executeBuyOrder(timestamp, order)
                 : executeSellOrder(timestamp, order);
     }
+
+    //Creates a match record between two orders
+    private void createMatch(long timestamp, Order incomingOrder, Order levelOrder,
+                             double tradedQuantity, long priceLevel, List<MatchInfo> matches) {
+        TradeSide incomingSide = incomingOrder.getTradeSide();
+        matches.add(
+                new MatchInfo(
+                        timestamp,
+                        System.currentTimeMillis(),
+                        incomingSide,
+                        incomingOrder.getId(),
+                        levelOrder.getId(),
+                        incomingOrder.getUserId(),
+                        levelOrder.getUserId(),
+                        tradedQuantity,
+                        priceLevel,
+                        incomingOrder.getQuantity(),
+                        incomingOrder.getRemainingQuantity(),
+                        levelOrder.getQuantity(),
+                        levelOrder.getRemainingQuantity()
+                ));
+
+        log.debug("Match created: {} order {} ({}) matched with {} order {} ({}) at price {} qty {}",
+                incomingSide, incomingOrder.getId(), incomingOrder.getUserId(),
+                levelOrder.getTradeSide(), levelOrder.getId(), levelOrder.getUserId(),
+                priceLevel, tradedQuantity);
+    }
+
 
     // ADD ORDER TO BOOK(for unfilled orders after matching)
     private void addOrderToBook(Order order) {
@@ -298,6 +323,8 @@ public class OrderBookHandler {
 
         orderIndex.put(order.getId(),
                 new OrderLocation(order.getPrice(), order.getTradeSide(), order));
+
+        log.debug("Order {} added to {} book at price {}", order.getId(), order.getTradeSide(), priceKey);
     }
 
     /**
@@ -317,7 +344,11 @@ public class OrderBookHandler {
                 if (queue.isEmpty()) {
                     book.remove(priceKey);
                 }
+
+                log.debug("Order {} deleted from {} book at price {}", order.getId(), location.side, priceKey);
             }
+        } else {
+            log.warn("Attempted to delete non-existent order:{}", order.getId());
         }
     }
 
@@ -369,10 +400,12 @@ public class OrderBookHandler {
      * Get market depth snapshot
      */
     public MarketDepth getMarketDepth(int levels) {
-        List<PriceLevel> bidLevels;
-        List<PriceLevel> askLevels;
-        bidLevels = queueDepth(levels, bids);
-        askLevels = queueDepth(levels, asks);
+        if (levels <= 0) {
+            throw new IllegalArgumentException("Market depth levels must be positive");
+
+        }
+        List<PriceLevel> bidLevels = buildLevels(bids, levels);
+        List<PriceLevel> askLevels = buildLevels(asks, levels);
 
         return new MarketDepth(bidLevels, askLevels);
     }
@@ -406,11 +439,13 @@ public class OrderBookHandler {
     }
 
 
+    //Gets bid levels up to specified depth
     public List<PriceLevel> getBidsList(int depth) {
         return buildLevels(bids, depth);
 
     }
 
+    //Gets aks levels up to specified depth
     public List<PriceLevel> getAsksList(int depth) {
         return buildLevels(asks, depth);
     }
@@ -423,7 +458,6 @@ public class OrderBookHandler {
             if (count >= depth) {
                 break;
             }
-
             double volume = entry.getValue().stream()
                     .mapToDouble(Order::getRemainingQuantity)
                     .sum();
@@ -433,20 +467,14 @@ public class OrderBookHandler {
                     volume,
                     entry.getValue().size()
             ));
-
             count++;
         }
-
         return result;
     }
 
     private boolean canFullyFill(Order order) {
-
-        if (order.getOrderType() == OrderType.FOK
-                && order.getPrice() <= 0) {
-            throw new IllegalArgumentException(
-                    "FOK order requires a valid limit price"
-            );
+        if (order.getOrderType() == OrderType.FOK && order.getPrice() <= ZERO_PRICE) {
+            throw new FokOrderPriceCanNotBeNullException();
         }
         double availableQuantity = 0;
 
