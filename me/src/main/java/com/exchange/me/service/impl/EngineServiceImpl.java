@@ -4,6 +4,7 @@ import com.exchange.me.domain.*;
 import com.exchange.me.exception.InvalidTradPairException;
 import com.exchange.me.exception.NotFoundOrderBookHandlerException;
 import com.exchange.me.handler.OrderBookHandler;
+import com.exchange.me.handler.OrderMatchingUtility;
 import com.exchange.me.service.EngineService;
 import com.exchange.me.service.MatchEventService;
 import lombok.RequiredArgsConstructor;
@@ -23,6 +24,7 @@ import java.util.concurrent.ConcurrentHashMap;
 @Slf4j
 public class EngineServiceImpl implements EngineService {
     private final MatchEventService matchEngineEventService;
+     private final OrderMatchingUtility orderMatchingUtility;
 
 
     private final Map<TradePair, OrderBookHandler> orderBooks = new ConcurrentHashMap<>();
@@ -125,6 +127,6 @@ public class EngineServiceImpl implements EngineService {
 
 
     private OrderBookHandler getOrCreateBook(TradePair pair) {
-        return orderBooks.computeIfAbsent(pair, p -> new OrderBookHandler(p));
+        return orderBooks.computeIfAbsent(pair, p -> new OrderBookHandler(p, orderMatchingUtility));
     }
 }
