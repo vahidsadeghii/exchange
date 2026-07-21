@@ -186,7 +186,7 @@ Content-Type: application/json
     }
 
 
-    client.log("Wallet ID: " + wallet.walletId);
+    client.log("walletId: " + wallet.walletId);
 %}
 
 
@@ -199,7 +199,7 @@ Request-Id: 1001
 Content-Type: application/json
 
 {
-  "walletId": "{{wallet-id}}",
+  "walletId": "{{walletId}}",
   "assetType": "EUR",
   "amount": 1000
 }
@@ -242,7 +242,7 @@ Request-Id: 1441
 Content-Type: application/json
 
 {
-  "walletId": "{{wallet-id}}",
+  "walletId": "{{walletId}}",
   "assetType": "EUR",
   "amount": 1000
 }
@@ -279,7 +279,7 @@ Content-Type: application/json
 %}
 
 ### Find transactions by wallet-id
-POST http://localhost:8070/wallet/api/v1/transactions?walletId={{wallet-id}}
+POST http://localhost:8070/wallet/api/v1/transactions?walletId={{walletId}}
 Authorization: Bearer {{loginToken}}
 Request-Id: 1009
 Content-Type: application/json

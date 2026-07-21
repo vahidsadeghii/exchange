@@ -1,6 +1,7 @@
 package com.exchange.gateway.config;
 
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.cloud.gateway.filter.GatewayFilter;
 import org.springframework.cloud.gateway.filter.GatewayFilterChain;
 import org.springframework.http.HttpHeaders;
@@ -14,9 +15,8 @@ import reactor.core.publisher.Mono;
 import java.util.Set;
 
 
-
-@Component
 @RequiredArgsConstructor
+@Slf4j
 public class SecurityGatewayFilter implements GatewayFilter {
     private final GatewayConfig gatewayConfig;
 
@@ -29,6 +29,20 @@ public class SecurityGatewayFilter implements GatewayFilter {
     @Override
     public Mono<Void> filter(ServerWebExchange exchange,
                              GatewayFilterChain chain) {
+
+        log.info("SECURITY FILTER URI = {}, headers={}",
+                exchange.getRequest().getURI(),
+                exchange.getRequest().getHeaders());
+
+        log.info("REMOTE ADDRESS = {}",
+                exchange.getRequest()
+                        .getRemoteAddress());
+
+        log.info("HEADERS HOST = {}",
+                exchange.getRequest()
+                        .getHeaders()
+                        .getHost());
+
         String path = exchange.getRequest().getURI().getPath();
 
         if (isPublic(path)) {
@@ -55,27 +69,21 @@ public class SecurityGatewayFilter implements GatewayFilter {
         if (requestId == null || requestId.isBlank()) {
             return badRequest(exchange, "Missing request-id");
         }
-        return gatewayConfig.validateRequest(requestId)
+        return gatewayConfig.checkIdempotency(requestId)
+                .doOnNext(valid ->
+                        log.info("IDEMPOTENCY RESULT = {}", valid)
+                )
                 .flatMap(valid -> {
-
                     if (!valid) {
                         return tooManyRequests(exchange);
                     }
 
-                    ServerHttpRequest mutatedRequest = exchange.getRequest()
-                            .mutate()
-                            .header("Request-Id", requestId)
-                            .build();
-
-                    return chain.filter(
-                            exchange.mutate()
-                                    .request(mutatedRequest)
-                                    .build()
-                    );
+                    return chain.filter(exchange);
                 });
     }
 
     private Mono<Void> unauthorized(ServerWebExchange exchange) {
+        log.error("SETTING HTTP 429");
         exchange.getResponse()
                 .setStatusCode(HttpStatus.UNAUTHORIZED);
 

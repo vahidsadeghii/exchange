@@ -49,6 +49,10 @@ public class OrderServiceImpl implements OrderService {
                 }
             }
 
+            oldOrder.setQuantity(quantity);
+            oldOrder.setPrice(price);
+            oldOrder.setExpireDays(expireDays);
+
             //oldOrder.setStatus(OrderStatus.CANCELED);
            // orderRepository.save(oldOrder);
         }
