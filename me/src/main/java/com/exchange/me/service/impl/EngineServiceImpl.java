@@ -2,7 +2,9 @@ package com.exchange.me.service.impl;
 
 import com.exchange.me.domain.*;
 import com.exchange.me.exception.InvalidTradPairException;
+import com.exchange.me.exception.InvalidTradePairException;
 import com.exchange.me.exception.NotFoundOrderBookHandlerException;
+import com.exchange.me.exception.OrderCanNotBeNullException;
 import com.exchange.me.handler.OrderBookHandler;
 import com.exchange.me.handler.OrderMatchingUtility;
 import com.exchange.me.service.EngineService;
@@ -24,7 +26,7 @@ import java.util.concurrent.ConcurrentHashMap;
 @Slf4j
 public class EngineServiceImpl implements EngineService {
     private final MatchEventService matchEngineEventService;
-     private final OrderMatchingUtility orderMatchingUtility;
+    private final OrderMatchingUtility orderMatchingUtility;
 
 
     private final Map<TradePair, OrderBookHandler> orderBooks = new ConcurrentHashMap<>();
@@ -33,14 +35,27 @@ public class EngineServiceImpl implements EngineService {
     public MatchEngine createUpdateOrder(Long oldOrderId, long orderId, long userId, TradeSide tradeSide,
                                          TradePair tradePair, OrderType orderType, MarketType marketType,
                                          double quantity, double price) {
+        if (tradePair == null) {
+            throw new InvalidTradPairException();
+        }
 
         OrderBookHandler handler = getOrCreateBook(tradePair);
 
         //Cancel old order
         if (oldOrderId != null) {
-            Optional<Order> oldOrder = handler.getOrder(oldOrderId);
-            handler.deleteOrder(System.currentTimeMillis(), oldOrder.get());
-
+            try {
+                Optional<Order> oldOrder = handler.getOrder(oldOrderId);
+                oldOrder.ifPresentOrElse(
+                        order -> {
+                            handler.deleteOrder(System.currentTimeMillis(), order);
+                            log.info("Old order cancelled: {}", oldOrderId);
+                        },
+                        () -> log.warn("Old order not found for cancellation: {}", oldOrderId)
+                );
+            } catch (Exception e) {
+                log.warn("Failed to delete old order {}: {}", oldOrderId, e.getMessage(), e);
+                // Continue with new order creation despite cancellation failure
+            }
         }
 
         //create new order
@@ -56,20 +71,34 @@ public class EngineServiceImpl implements EngineService {
                 .build();
 
         handler.matchOrder(LocalDateTime.now()
-                        .atZone(ZoneId.systemDefault())
-                        .toInstant()
-                        .toEpochMilli(), order);
+                .atZone(ZoneId.systemDefault())
+                .toInstant()
+                .toEpochMilli(), order);
 
         order.setMatchEngineStatus(MatchEventStatus.FILLED);
+
+        log.debug("Order matched and persisting: {}", orderId);
 
         return matchEngineEventService.saveMatchEvent(order);
     }
 
     @Override
     public void deleteOrder(long timestamp, Order order) {
+        if (order == null) {
+            throw new OrderCanNotBeNullException();
+        }
+
+        TradePair tradePair = order.getTradePair();
+        if (tradePair == null) {
+            throw new InvalidTradePairException();
+        }
+
         OrderBookHandler handler = orderBooks.get(order.getTradePair());
         if (handler != null) {
             handler.deleteOrder(timestamp, order);
+            log.debug("Order deleted: id={}, pair={}", order.getId(), tradePair);
+        } else {
+            log.warn("OrderBookHandler not found for pair: {}, order: {}", tradePair, order.getId());
         }
     }
 
@@ -78,23 +107,34 @@ public class EngineServiceImpl implements EngineService {
         if (pair == null) {
             throw new InvalidTradPairException();
         }
+
         OrderBookHandler handler = orderBooks.get(pair);
         if (handler == null) {
             throw new NotFoundOrderBookHandlerException();
         }
 
-        return handler.getOrder(orderId).orElseThrow();
+        return handler.getOrder(orderId).orElseThrow(OrderCanNotBeNullException::new);
     }
 
     @Override
     public OrderBookHandler.MarketDepth getMarketDepth(TradePair pair, int levels) {
+        if (levels <= 0) {
+            throw new IllegalArgumentException("Market depth levels must be positive: " + levels);
+        }
+
         OrderBookHandler handler = orderBooks.get(pair);
-        return handler != null ? handler.getMarketDepth(levels) : null;
+        if (handler == null) {
+            log.debug("No market depth available - order book not found for pair: {}", pair);
+            return null;
+        }
+
+        return handler.getMarketDepth(levels);
     }
 
     @Override
     public void resetAll() {
         orderBooks.values().forEach(OrderBookHandler::reset);
+        log.info("All order books reset - {} pairs cleared", orderBooks.size());
     }
 
     @Override
@@ -104,7 +144,19 @@ public class EngineServiceImpl implements EngineService {
 
     @Override
     public OrderBookDepth getOrderBookDepth(TradePair pair, int depth) {
+        if (pair == null) {
+            throw new InvalidTradPairException();
+        }
+
+        if (depth <= 0) {
+            throw new IllegalArgumentException("Depth must be positive: " + depth);
+        }
+
         OrderBookHandler book = getOrderBook(pair);
+
+        if (book == null) {
+            throw new NotFoundOrderBookHandlerException();
+        }
 
         List<PriceLevel> bids = book.getBidsList(depth)
                 .stream()
@@ -125,8 +177,10 @@ public class EngineServiceImpl implements EngineService {
         return new OrderBookDepth(bids, asks);
     }
 
-
-    private OrderBookHandler getOrCreateBook(TradePair pair) {
-        return orderBooks.computeIfAbsent(pair, p -> new OrderBookHandler(p, orderMatchingUtility));
+   private OrderBookHandler getOrCreateBook(TradePair pair) {
+        return orderBooks.computeIfAbsent(pair, p -> {
+            log.info("Creating new OrderBookHandler for pair: {}", p);
+            return new OrderBookHandler(p, orderMatchingUtility);
+        });
     }
 }

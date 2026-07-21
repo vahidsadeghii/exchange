@@ -15,39 +15,41 @@ import org.springframework.stereotype.Component;
 
 
 
-@Component
-@Getter
-@Setter
+
 @Slf4j
 public class OrderBookHandler {
-    private TradePair tradePair;
-    private  TreeMap<Long, Deque<Order>> bids;
-    private  TreeMap<Long, Deque<Order>> asks;
-    private  Map<Long, OrderLocation> orderIndex;
-    private long updateTime;
-
+  private final TradePair tradePair;
+    private final TreeMap<Long, Deque<Order>> bids;
+    private final TreeMap<Long, Deque<Order>> asks;
+    private final Map<Long, OrderLocation> orderIndex;
     private final LimitOrderService limitOrderService;
     private final MarketOrderService marketOrderService;
     private final FokOrderService fokOrderService;
 
+    private long updateTime;
+
     private static final int QUEUE_INITIAL_CAPACITY = 100;
 
 
-    @Autowired
-    public OrderBookHandler(OrderMatchingUtility orderMatchingUtility) {
-        this.bids = new TreeMap<>(Collections.reverseOrder());
-        this.asks = new TreeMap<>();
+    public OrderBookHandler(TradePair tradePair, OrderMatchingUtility orderMatchingUtility) {
+        if (tradePair == null) {
+            throw new IllegalArgumentException("TradePair cannot be null");
+        }
+        if (orderMatchingUtility == null) {
+            throw new IllegalArgumentException("OrderMatchingUtility cannot be null");
+        }
+
+        this.tradePair = tradePair;
+        this.bids = new TreeMap<>(Collections.reverseOrder());  // Higher prices first
+        this.asks = new TreeMap<>();                             // Lower prices first
         this.orderIndex = new HashMap<>();
 
         // Initialize services with OrderMatchingUtility
         this.limitOrderService = new LimitOrderService(orderMatchingUtility);
         this.marketOrderService = new MarketOrderService(orderMatchingUtility);
         this.fokOrderService = new FokOrderService(orderMatchingUtility);
-    }
 
-    public OrderBookHandler(TradePair tradePair , OrderMatchingUtility orderMatchingUtility) {
-          this(orderMatchingUtility);
-        this.tradePair = tradePair;
+        log.debug("OrderBookHandler created for pair: {}", tradePair);
     }
 
     /**
