@@ -41,14 +41,11 @@ public class OrderServiceImpl implements OrderService {
                     .orElseThrow(NotFoundException::new);
             if (expireDays != null) {
                 LocalDateTime createdAt = oldOrder.getCreatedAt();
-
-                // TODO: On expiration, cancel the existing order and either throw an
-                //TODO: ExpiredOrderException or continue by creating a new order.
                 if (createdAt.plusDays(expireDays).isBefore(LocalDateTime.now())) {
                     throw new ExpiredOrderException();
                 }
             }
-
+            //TODO: check here
             oldOrder.setQuantity(quantity);
             oldOrder.setPrice(price);
             oldOrder.setExpireDays(expireDays);

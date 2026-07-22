@@ -36,7 +36,7 @@ public class MatchEventServiceImpl implements MatchEventService {
 
         try {
             sendMatchEvent(order, EventInfoMessage.builder()
-                    .tag(eventMessage)
+                    .tag(createUpdateMeMessage)
                     .title("save-update-order")
                     .serviceName("matchingengine")
                     .persistent(true)

@@ -168,7 +168,7 @@ Request-Id: test-order-{{$timestamp}}
 {
   "assetType": "EUR",
   "tradePair": "BTC_EURO",
-  "orderType": "MARKET",
+  "orderType": "FOK",
   "tradeSide": "SELL",
   "marketType": "SPOT",
   "quantity": 0.5,
@@ -203,7 +203,7 @@ else if (response.status === 200 && response.body) {
     });
 
     client.test("Order type correct", function () {
-        client.assert(response.body.orderType === "LIMIT");
+        client.assert(response.body.orderType === "FOK");
     });
 
     client.test("Quantity correct", function () {

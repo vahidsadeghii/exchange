@@ -69,7 +69,7 @@ public class EventManagerRouter extends RouteBuilder {
                         throw new RuntimeException(e.getMessage());
                     }
                 }).choice();
-        if (tags.size() > 0) {
+        if (!tags.isEmpty()) {
             Map<String, List<TagRouter>> topics = tags.stream().collect(Collectors.groupingBy(TagRouter::getTag));
             topics.forEach((k, v) ->
                     choice.when()
@@ -77,8 +77,8 @@ public class EventManagerRouter extends RouteBuilder {
                             .transform(ExpressionBuilder.languageExpression("jsonpath", "$.event")).marshal().json(JsonLibrary.Jackson)
                             .multicast()
                             .to(v.stream().map(tagRout -> "kafka:" + tagRout.getTitleTopic() + "?brokers=kafka-service:9092")
-                                    .collect(Collectors.toList()).toArray(String[]::new))
-                            .log("Send message to topic:  " + v.get(0).getTitleTopic()));
+                                    .toList().toArray(String[]::new))
+                            .log("Send message to topic:  " + v.getFirst().getTitleTopic()));
             choice.endChoice();
         }
     }
