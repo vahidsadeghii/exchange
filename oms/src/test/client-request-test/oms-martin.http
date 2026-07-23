@@ -52,7 +52,7 @@ Request-Id: 2002
   "tradeSide": "SELL",
   "marketType": "SPOT",
   "quantity": 0.5,
-  "price": 2306.75,
+  "price": 2300.75,
   "expireDays": 3
 }
 
@@ -113,7 +113,7 @@ Request-Id: 2002
   "marketType": "SPOT",
   "quantity": 0.5,
   "price": 3000.75,
-  "expireDays": 7
+  "expireDays": 4
 }
 
 > {%
@@ -242,7 +242,8 @@ Request-Id: 2001
   "tradeSide": "SELL",
   "marketType": "SPOT",
   "quantity": 0.5,
-  "price": 1300.75
+  "price": 1303.75,
+  "expireDays": 8
 }
 
 > {%
@@ -268,8 +269,8 @@ Request-Id: 2001
             "Trade side mismatch");
     });
 
-    client.test("Order type is LIMIT", function () {
-        client.assert(body.orderType === "LIMIT",
+    client.test("Order type is MARKET", function () {
+        client.assert(body.orderType === "MARKET",
             "Order type mismatch");
     });
 

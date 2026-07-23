@@ -30,9 +30,13 @@ public class EventManagerRouter extends RouteBuilder {
     private final TagRouterService tagRouterService;
 
     public EventManagerRouter(CamelContext camelContext, EventInfoService eventInfoService, TagRouterService tagRouterService) {
+
+        log.info("******** NEW EventManagerRouter CREATED ********");
         this.camelContext = camelContext;
         this.eventInfoService = eventInfoService;
         this.tagRouterService = tagRouterService;
+
+        log.info("******** NEW EventManagerRouter CREATED ********");
     }
 
     @Override
@@ -41,7 +45,18 @@ public class EventManagerRouter extends RouteBuilder {
     }
 
     public void createSourceRoute() {
+        log.info("Creating source route");
+
         List<TagRouter> tags = tagRouterService.findAll();
+        log.info("========== CREATE ROUTE ==========");
+        log.info("Tags size = {}", tags.size());
+
+        for (TagRouter tag : tags) {
+            log.info("TAG FROM DB = [{}]", tag.getTag());
+        }
+
+        log.info("Tags size = {}", tags.size());
+        log.info("Tags = {}", tags);
         ChoiceDefinition choice = from("kafka:event-topic?brokers=kafka-service:9092&groupId=event")
                 .id("sourceKafka")
                 .process(p -> {
@@ -63,24 +78,38 @@ public class EventManagerRouter extends RouteBuilder {
                                     eventInfoMessage.getTitle(),
                                     eventInfoMessage.getServiceName(),
                                     eventInfoMessage.getEvent().toString(), LocalDateTime.now());
+                            log.info("Before choice");
 
                         }
                     } catch (Exception e) {
+                        log.error("Error processing message", e);
                         throw new RuntimeException(e.getMessage());
                     }
-                }).choice();
+                })
+                .log("BODY = ${body}")
+                .choice();
         if (!tags.isEmpty()) {
             Map<String, List<TagRouter>> topics = tags.stream().collect(Collectors.groupingBy(TagRouter::getTag));
-            topics.forEach((k, v) ->
-                    choice.when()
-                            .jsonpath("$.[?(@.tag == '" + k + "' )]")
-                            .transform(ExpressionBuilder.languageExpression("jsonpath", "$.event")).marshal().json(JsonLibrary.Jackson)
-                            .multicast()
-                            .to(v.stream().map(tagRout -> "kafka:" + tagRout.getTitleTopic() + "?brokers=kafka-service:9092")
-                                    .toList().toArray(String[]::new))
-                            .log("Send message to topic:  " + v.getFirst().getTitleTopic()));
-            choice.endChoice();
+            log.info("Topics: {}", topics.keySet());
+            topics.forEach((k, v) -> {
+                log.info("Checking route tag = [{}]", k);
+
+                choice.when()
+                        .jsonpath("$.tag")
+                        .log("MATCHED " + k)
+//                        .transform(ExpressionBuilder.languageExpression("jsonpath", "$.event"))
+//                        .marshal().json(JsonLibrary.Jackson)
+//                        .multicast()
+//                        .to(v.stream()
+//                                .map(tagRout -> "kafka:" + tagRout.getTitleTopic() + "?brokers=kafka-service:9092")
+//                                .toArray(String[]::new))
+                        .log("Send message to topic: " + v.getFirst().getTitleTopic());
+            });
+
         }
+        choice.otherwise()
+                .log("No route matched");
+        choice.end();
     }
 
 }//@.routingEnabled == true &&

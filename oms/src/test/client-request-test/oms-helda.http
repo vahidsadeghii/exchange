@@ -48,7 +48,7 @@ Request-Id: 2002
 {
   "assetType": "EUR",
   "tradePair": "BTC_EURO",
-  "orderType": "MARKET",
+  "orderType": "LIMIT",
   "tradeSide": "BUY",
   "marketType": "SPOT",
   "quantity": 0.5,
@@ -140,7 +140,7 @@ Request-Id: 2002
         });
 
         client.test("Order type is LIMIT", function () {
-            client.assert(response.body.orderType === "LIMIT");
+            client.assert(response.body.orderType === "MARKET");
         });
 
         client.test("Quantity is correct", function () {
@@ -168,7 +168,7 @@ Request-Id: {{$uuid}}
 {
   "assetType": "EUR",
   "tradePair": "BTC_EURO",
-  "orderType": "MARKET",
+  "orderType": "LIMIT",
   "tradeSide": "BUY",
   "marketType": "SPOT",
   "quantity": 0.5,
@@ -235,7 +235,7 @@ Content-Type: application/json
 Request-Id: 10001-test
 
 {
-  "oldOrderId": 29,
+  "oldOrderId": {{orderId}},
   "assetType": "EUR",
   "tradePair": "BTC_EURO",
   "orderType": "MARKET",
@@ -268,8 +268,8 @@ Request-Id: 10001-test
             "Trade side mismatch");
     });
 
-    client.test("Order type is LIMIT", function () {
-        client.assert(body.orderType === "LIMIT",
+    client.test("Order type is MARKET", function () {
+        client.assert(body.orderType === "MARKET",
             "Order type mismatch");
     });
 
