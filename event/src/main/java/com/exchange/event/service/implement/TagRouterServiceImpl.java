@@ -21,7 +21,7 @@ import java.util.List;
 @RequiredArgsConstructor
 @Slf4j
 public class TagRouterServiceImpl implements TagRouterService {
-    private final TagRouterRepository tagRouterRepository;
+ private final TagRouterRepository tagRouterRepository;
 
     private final CamelContext camelContext;
     private final EventInfoService eventInfoService;
@@ -48,56 +48,20 @@ public class TagRouterServiceImpl implements TagRouterService {
     @PostConstruct
     public void initRoutes() {
         try {
-            log.info("INIT ROUTES");
-
-            List<TagRouter> tags = tagRouterRepository.findAll();
-            log.info("Initial tags = {}", tags);
-
             camelContext.addRoutes(new EventManagerRouter(camelContext, eventInfoService, this));
-
         } catch (Exception e) {
-            log.error("Init route failed", e);
+            e.printStackTrace();
         }
     }
 
     public void refreshRout() {
         try {
-            log.info("Stopping route...");
-
-            if (camelContext.getRoute("sourceKafka") != null) {
-                camelContext.getRouteController().stopRoute("sourceKafka");
-            }
-
-            log.info("Removing route...");
+            camelContext.getRouteController().stopRoute("sourceKafka");
             camelContext.removeRoute("sourceKafka");
-
-            log.info("Routes after remove:");
-            camelContext.getRoutes()
-                    .forEach(r -> log.info("Current route: {}", r.getRouteId()));
-
-            log.info("Adding new route...");
-            camelContext.addRoutes(
-                    new EventManagerRouter(camelContext, eventInfoService, this)
-            );
-
-            log.info("Route definitions after add:");
-
-            log.info("sourceKafka exists = {}",
-                    camelContext.getRoute("sourceKafka") != null);
-
-            log.info("Routes after add:");
-
-            camelContext.getRoutes()
-                    .forEach(route ->
-                            log.info("Route id = {}", route.getRouteId())
-                    );
-
-            camelContext.getRouteController().startRoute("sourceKafka");
-
-            log.info("Route restarted successfully at {}", LocalDateTime.now());
-
+            camelContext.addRoutes(new EventManagerRouter(camelContext, eventInfoService, this));
+            log.info("Add new Router and refresh router at this time: " + LocalDateTime.now());
         } catch (Exception e) {
-            log.error("Refresh route failed", e);
+            e.printStackTrace();
         }
     }
 
