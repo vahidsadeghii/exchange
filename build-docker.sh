@@ -18,15 +18,16 @@ VALID_MODULES=("ce" "gateway" "oms" "me" "wallet" "dp" "emailmanager" "profile" 
 
 # Function to print usage
 print_usage() {
-    echo "Usage: $0 <module-name> [image-tag]"
+    echo "Usage: $0 <module-name> [port] [image-tag]"
     echo ""
     echo "Valid modules:"
     printf '%s\n' "${VALID_MODULES[@]}" | sed 's/^/  - /'
     echo ""
     echo "Examples:"
-    echo "  $0 ce latest"
-    echo "  $0 gateway v1.0"
-    echo "  $0 oms"
+    echo "  $0 ce 8080 latest"
+    echo "  $0 gateway 8080 v1.0"
+    echo "  $0 oms 8080"
+    echo "  $0 oms //default port 8080"
 }
 
 # Function to print colored messages
@@ -51,7 +52,8 @@ if [ $# -lt 1 ]; then
 fi
 
 MODULE=$1
-TAG=${2:-latest}
+PORT=${2:-8080}
+TAG=${3:-latest}
 
 # Validate module
 if [[ ! " ${VALID_MODULES[@]} " =~ " ${MODULE} " ]]; then
@@ -84,25 +86,26 @@ if docker build \
     -f "$SCRIPT_DIR/$MODULE/Dockerfile" \
     -t "$IMAGE_NAME" \
     "$SCRIPT_DIR"; then
-    
+
     print_info "Docker image built successfully!"
     print_info "Image name: $IMAGE_NAME"
     echo ""
-    
+
     # Display image info
     echo "Image details:"
-    docker images "$IMAGE_NAME" --format "table {{.Repository}}\t{{.Tag}}\t{{.Size}}\t{{.Created}}"
+    docker images "$IMAGE_NAME"
     echo ""
-    
-    print_info "To run the container:"
-    echo "  docker run -p 8080:8080 $IMAGE_NAME"
-    
+
+    print_info "Running container:"
+    docker-compose rm -f $MODULE
+    docker-compose up -d $MODULE
+
 else
     print_error "Failed to build Docker image"
     exit 1
 fi
 
 # List all built exchange images
-echo ""
-print_info "All exchange images:"
-docker images 'exchange-*' --format "table {{.Repository}}\t{{.Tag}}\t{{.Size}}\t{{.Created}}"
+# echo ""
+# print_info "All exchange images:"
+# docker images 'exchange-*' --format "table {{.Repository}}\t{{.Tag}}\t{{.Size}}\t{{.Created}}"
