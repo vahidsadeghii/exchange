@@ -18,15 +18,16 @@ VALID_MODULES=("ce" "gateway" "oms" "me" "wallet" "dp" "emailmanager" "profile" 
 
 # Function to print usage
 print_usage() {
-    echo "Usage: $0 <module-name> [image-tag]"
+    echo "Usage: $0 <module-name> [port] [image-tag]"
     echo ""
     echo "Valid modules:"
     printf '%s\n' "${VALID_MODULES[@]}" | sed 's/^/  - /'
     echo ""
     echo "Examples:"
-    echo "  $0 ce latest"
-    echo "  $0 gateway v1.0"
-    echo "  $0 oms"
+    echo "  $0 ce 8080 latest"
+    echo "  $0 gateway 8080 v1.0"
+    echo "  $0 oms 8080"
+    echo "  $0 oms //default port 8080"
 }
 
 # Function to print colored messages
@@ -51,7 +52,8 @@ if [ $# -lt 1 ]; then
 fi
 
 MODULE=$1
-TAG=${2:-latest}
+PORT=${2:-8080}
+TAG=${3:-latest}
 
 # Validate module
 if [[ ! " ${VALID_MODULES[@]} " =~ " ${MODULE} " ]]; then
@@ -95,7 +97,7 @@ if docker build \
     echo ""
     
     print_info "To run the container:"
-    echo "  docker run -p 8080:8080 $IMAGE_NAME"
+    echo "  docker run -p $PORT:$PORT $IMAGE_NAME"
     
 else
     print_error "Failed to build Docker image"

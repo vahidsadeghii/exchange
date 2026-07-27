@@ -1,5 +1,5 @@
 {
     "java.compile.nullAnalysis.mode": "disabled",
     "java.configuration.updateBuildConfiguration": "automatic",
-    "java.jdt.ls.vmargs": "-Xms2g -Xmx8g"
+    "java.jdt.ls.vmargs": "-Xms2g -Xmx16g"
 }
