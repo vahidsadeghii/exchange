@@ -56,7 +56,10 @@ dependencies {
 
     // Kafka
     implementation 'org.springframework.kafka:spring-kafka'
-    implementation 'org.apache.camel.springboot:camel-kafka-starter:4.20.0'
+    implementation('org.apache.camel.springboot:camel-kafka-starter:4.20.0') {
+        exclude group: 'at.yawk.lz4', module: 'lz4-java'
+    }
+
 
     // OAuth2
     implementation 'org.springframework.boot:spring-boot-starter-oauth2-resource-server'
@@ -89,4 +92,10 @@ dependencies {
 
 tasks.named('test') {
     useJUnitPlatform()
+}
+
+dependencies {
+    implementation('org.apache.camel.springboot:camel-kafka-starter:4.20.0') {
+        exclude group: 'at.yawk.lz4', module: 'lz4-java'
+    }
 }

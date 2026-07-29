@@ -1,4 +1,43 @@
 
+spring:
+  datasource:
+    username: user_oms
+    password: secretpassoms
+    url: jdbc:postgresql://localhost:5432/exchange_oms
+    driver-class-name: org.postgresql.Driver
+
+  flyway:
+    enabled: true
+
+  jpa:
+    show-sql: true
+  h2:
+    console:
+      enabled: true
+  cloud:
+    discovery:
+      client:
+        composite-indicator:
+          enabled: false
+    config:
+      enabled: false
 
 
 
+  kafka:
+    bootstrap-servers: localhost:9092
+    consumer:
+      group-id: oms-group
+      auto-offset-reset: earliest
+      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      value-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+
+
+
+custom-config:
+  kafka:
+    event-output-message:
+      topic: event-topic
+
+    me-create-update-input-message:
+      topic: me-create-update-topic

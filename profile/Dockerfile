@@ -34,6 +34,6 @@ USER appuser
 HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
     CMD java -cp app.jar org.springframework.boot.loader.JarLauncher || exit 1
 
-EXPOSE 8080
+EXPOSE 8091
 
 ENTRYPOINT ["java", "-jar", "app.jar"]

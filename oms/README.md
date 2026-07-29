@@ -35,4 +35,4 @@ The Order Management System (OMS) is responsible for managing the lifecycle of t
 
 ## Configuration
 
-The service can be configured through `application.properties` or `application.yml` in the resources directory.
+The service can be configured through `application.yml` or `application.yml` in the resources directory.

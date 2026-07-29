@@ -1,11 +1,9 @@
 spring:
-  cloud:
-    config:
-      enabled: false
-    stream:
-      kafka:
-        binder:
-          brokers: kafkahost:9092
+  data:
+    mongodb:
+      uri: mongodb://eventmanager_user:eventmanager@localhost:27017/eventmanager?authSource=eventmanager
+  kafka:
+    bootstrap-servers: localhost:9092
 
 
   instance:

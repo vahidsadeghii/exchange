@@ -7,13 +7,13 @@ COPY gradle/ gradle/
 COPY gradlew gradlew.bat gradle.properties settings.gradle ./
 
 # Copy module-specific files
-COPY emailmanager/build.gradle emailmanager/
+COPY discovery/build.gradle discovery/
 
 # Copy source code
-COPY emailmanager/src emailmanager/src/
+COPY discovery/src discovery/src/
 
 # Build the application
-RUN ./gradlew clean :emailmanager:bootJar -x test
+RUN ./gradlew clean :discovery:bootJar -x test
 
 # Final stage
 FROM eclipse-temurin:21-jre-alpine
@@ -23,7 +23,7 @@ WORKDIR /app
 RUN addgroup -S appgroup && adduser -S appuser -G appgroup
 
 # Copy built jar from builder
-COPY --from=builder /build/emailmanager/build/libs/*.jar app.jar
+COPY --from=builder /build/discovery/build/libs/*.jar app.jar
 
 # Change ownership to appuser
 RUN chown appuser:appgroup /app/app.jar
@@ -34,6 +34,6 @@ USER appuser
 HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
     CMD java -cp app.jar org.springframework.boot.loader.JarLauncher || exit 1
 
-EXPOSE 8092
+EXPOSE 8761
 
 ENTRYPOINT ["java", "-jar", "app.jar"]

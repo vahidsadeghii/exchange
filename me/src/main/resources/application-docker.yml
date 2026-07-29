@@ -1,4 +1,18 @@
+Spring:
+  kafka:
+    bootstrap-servers: localhost:9092
 
 
+
+
+
+custom-config:
+  kafka:
+    sendmessage-output-message:
+      topic: send-message
+    event-output-message:
+      topic: event-topic
+    me-create-update-output-message:
+      topic: me-create-update-topic
 
 

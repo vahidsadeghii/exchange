@@ -2,7 +2,24 @@ version: '3.8'
 services:
 
 
-# ---------------- Eureka Discovery ----------------
+  # ---------------- Microservices ----------------
+  gateway:
+    image: gateway:latest
+    container_name: gateway
+    restart: always
+    ports:
+      - "8070:8070"
+    environment:
+      SPRING.PROFILES.ACTIVE: development
+      eureka.client.serviceUrl.defaultZone: http://discovery:8761/eureka
+      spring.data.redis.host: redis
+      eureka.instance.hostname: gateway
+      eureka.instance.prefer.ip.address: "false"
+      eureka.instance.metadata-map.prometheus.path: gateway/actuator/prometheus
+    networks:
+      - exchange-network
+
+  # ---------------- Eureka Discovery ----------------
   discovery:
     image: discovery:latest
     container_name: discovery
@@ -13,21 +30,21 @@ services:
     ports:
       - "8761:8761"
     #network_mode: "host"
-# ----------------Keyclok ----------------user: admin pass: admin
-  keycloak:
-    image: quay.io/keycloak/keycloak:21.1.1
-    container_name: keycloak
-    environment:
-      KEYCLOAK_ADMIN: admin
-      KEYCLOAK_ADMIN_PASSWORD: admin
-    command: start-dev
-    restart: unless-stopped
-    ports:
-      - "8080:8080"
-    networks:
-      - exchange-network
+  # ----------------Keyclok ----------------user: admin pass: admin
+  #  keycloak:
+  #    image: quay.io/keycloak/keycloak:21.1.1
+  #    container_name: keycloak
+  #    environment:
+  #      KEYCLOAK_ADMIN: admin
+  #      KEYCLOAK_ADMIN_PASSWORD: admin
+  #    command: start-dev
+  #    restart: unless-stopped
+  #    ports:
+  #      - "8080:8080"
+  #    networks:
+  #      - exchange-network
 
-  # ---------------- MongoDB ---------------- 
+  # ---------------- MongoDB ----------------
   mongodb:
     container_name: mongodb
     image: mongo:latest
@@ -47,17 +64,17 @@ services:
     networks:
       - exchange-network
     #network_mode: "host"
-    
-# ----------------postgres ----------------
-  postgresql:
-    container_name: postgres
-    image: postgres
-    restart: always
-    network_mode: "host"
-    environment:
-      POSTGRES_PASSWORD: postgress
-    volumes:
-      - pgdata:/var/lib/postgresql/data
+
+  # ----------------postgres ----------------
+  #  postgresql:
+  #    container_name: postgres
+  #    image: postgres
+  #    restart: always
+  #    network_mode: "host"
+  #    environment:
+  #      POSTGRES_PASSWORD: postgress
+  #    volumes:
+  #      - pgdata:/var/lib/postgresql/data
 
 
   # ---------------- Prometheus ----------------
@@ -72,7 +89,7 @@ services:
       - exchange-network
     restart: unless-stopped
 
-# ---------------- Grafana ----------------
+  # ---------------- Grafana ----------------
   grafana:
     image: grafana/grafana
     container_name: grafana
@@ -111,7 +128,7 @@ services:
 
 
 
- # ---------------- Kafka ----------------
+  # ---------------- Kafka ----------------
   kafka:
     image: bitnami/kafka:latest
     container_name: kafka
@@ -137,7 +154,7 @@ services:
     volumes:
       - kafka_data:/bitnami/kafka
 
-# ---------------- Redpanda Console:Kafka ----------------
+  # ---------------- Redpanda Console:Kafka ----------------
   console:
     image: vectorized/console:latest
     container_name: kafka-console
@@ -151,7 +168,7 @@ services:
     ports:
       - "7080:8080"
 
-# ---------------- Microservices ----------------
+  # ---------------- Microservices ----------------
 
 
   profile:
@@ -162,8 +179,12 @@ services:
       - "8091:8091"
     environment:
       SPRING.PROFILES.ACTIVE: docker
-     # eureka.client.serviceUrl.defaultZone: http://discovery:8761/eureka
-      spring.data.mongodb.uri:   jdbc:postgresql://localhost:5432/exchange_user_profile
+
+      # PostgreSql
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/exchange_user_profile
+      SPRING_DATASOURCE_USERNAME: user_profile
+      SPRING_DATASOURCE_PASSWORD: secretpassuserprofile
+      # eureka.client.serviceUrl.defaultZone: http://discovery:8761/eureka
       spring.kafka.bootstrap-servers: "kafka:9092"
       eureka.instance.hostname: profile
       eureka.instance.prefer.ip.address: "false"
@@ -177,7 +198,7 @@ services:
     restart: always
     depends_on:
       - kafka
-     # - discovery
+      # - discovery
     ports:
       - "8092:8092"
     environment:
@@ -190,6 +211,71 @@ services:
     networks:
       - exchange-network
 
+  wallet:
+    image: exchange-wallet:latest
+    container_name: wallet
+    restart: always
+    ports:
+      - "8082:8082"
+    environment:
+      SPRING_PROFILES_ACTIVE: docker
+      SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+      EUREKA_INSTANCE_HOSTNAME: wallet
+      EUREKA_INSTANCE_PREFER_IP_ADDRESS: "false"
+      EUREKA_INSTANCE_METADATA_MAP_PROMETHEUS_PATH: wallet/actuator/prometheus
+    networks:
+      - exchange-network
+
+  oms:
+    image: exchange-oms:latest
+    container_name: oms
+    restart: always
+    ports:
+      - "8090:8090"
+    environment:
+      SPRING_PROFILES_ACTIVE: docker
+
+      # PostgreSql
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/exchange_oms
+      SPRING_DATASOURCE_USERNAME: user_oms
+      SPRING_DATASOURCE_PASSWORD: secretpassoms
+
+      SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+      EUREKA_INSTANCE_HOSTNAME: oms
+      EUREKA_INSTANCE_PREFER_IP_ADDRESS: "false"
+      EUREKA_INSTANCE_METADATA_MAP_PROMETHEUS_PATH: oms/actuator/prometheus
+    networks:
+      - exchange-network
+
+  me:
+    image: exchange-me:latest
+    container_name: me
+    restart: always
+    ports:
+      - "8094:8094"
+    environment:
+      SPRING_PROFILES_ACTIVE: docker
+      SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+      EUREKA_INSTANCE_HOSTNAME: me
+      EUREKA_INSTANCE_PREFER_IP_ADDRESS: "false"
+      EUREKA_INSTANCE_METADATA_MAP_PROMETHEUS_PATH: me/actuator/prometheus
+    networks:
+      - exchange-network
+
+  event:
+    image: exchange-event:latest
+    container_name: event
+    restart: always
+    ports:
+      - "8085:8085"
+    environment:
+      SPRING_PROFILES_ACTIVE: docker
+      SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+      EUREKA_INSTANCE_HOSTNAME: event
+      EUREKA_INSTANCE_PREFER_IP_ADDRESS: "false"
+      EUREKA_INSTANCE_METADATA_MAP_PROMETHEUS_PATH: event/actuator/prometheus
+    networks:
+      - exchange-network
 
 volumes:
   cache:
@@ -199,9 +285,8 @@ volumes:
   grafana-data:
   pgdata:
   metabase-data:
-   driver: local
+    driver: local
 
 networks:
   exchange-network:
     external: true
-

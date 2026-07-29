@@ -6,6 +6,32 @@ server:
 
 
 spring:
+  datasource:
+    username: user_profile
+    password: secretpassuserprofile
+    url: jdbc:postgresql://localhost:5432/exchange_user_profile
+    driver-class-name: org.postgresql.Driver
+  jpa:
+    show-sql: true
+  h2:
+    console:
+      enabled: true
+  cloud:
+    discovery:
+      client:
+        composite-indicator:
+          enabled: false
+    config:
+      enabled: false
+
+  flyway:
+    enabled: true
+
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          jwk-set-uri: http://localhost:8080/realms/admin-exchange/protocol/openid-connect/certs
   data:
     redis:
       host: redis

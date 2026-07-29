@@ -14,7 +14,7 @@ YELLOW='\033[1;33m'
 NC='\033[0m' # No Color
 
 # Valid modules
-VALID_MODULES=("ce" "gateway" "oms" "me" "wallet" "dp" "emailmanager" "profile" "mm")
+VALID_MODULES=("ce" "gateway" "oms" "me" "wallet" "dp" "emailmanager" "profile" "mm"  "event" "discovery")
 
 # Function to print usage
 print_usage() {
@@ -27,6 +27,9 @@ print_usage() {
     echo "  $0 ce 8080 latest"
     echo "  $0 gateway 8080 v1.0"
     echo "  $0 oms 8080"
+    echo "  $0 event 8085"
+    echo "  $0 discovery 8761"
+    echo "  $0 profile 8091"
     echo "  $0 oms //default port 8080"
 }
 
@@ -86,25 +89,26 @@ if docker build \
     -f "$SCRIPT_DIR/$MODULE/Dockerfile" \
     -t "$IMAGE_NAME" \
     "$SCRIPT_DIR"; then
-    
+
     print_info "Docker image built successfully!"
     print_info "Image name: $IMAGE_NAME"
     echo ""
-    
+
     # Display image info
     echo "Image details:"
-    docker images "$IMAGE_NAME" --format "table {{.Repository}}\t{{.Tag}}\t{{.Size}}\t{{.Created}}"
+    docker images "$IMAGE_NAME"
     echo ""
-    
-    print_info "To run the container:"
-    echo "  docker run -p $PORT:$PORT $IMAGE_NAME"
-    
+
+    print_info "Running container:"
+    docker-compose rm -f $MODULE
+    docker-compose up -d $MODULE
+
 else
     print_error "Failed to build Docker image"
     exit 1
 fi
 
 # List all built exchange images
-echo ""
-print_info "All exchange images:"
-docker images 'exchange-*' --format "table {{.Repository}}\t{{.Tag}}\t{{.Size}}\t{{.Created}}"
+# echo ""
+# print_info "All exchange images:"
+# docker images 'exchange-*' --format "table {{.Repository}}\t{{.Tag}}\t{{.Size}}\t{{.Created}}"

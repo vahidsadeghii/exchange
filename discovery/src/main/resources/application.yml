@@ -1,0 +1,14 @@
+server:
+  port: 8761
+eureka:
+  client:
+    register-with-eureka: false
+    enabled: true
+    fetch-registry: true
+  instance:
+    prefer-ip-address: false
+
+ribbon:
+  eureka:
+    enabled: true
+
