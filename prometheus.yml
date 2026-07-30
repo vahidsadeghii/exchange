@@ -1,0 +1,14 @@
+scrape_configs:
+    - job_name: 'eureka-discovery'
+      scrape_interval: 15s
+      scrape_timeout: 15s
+      eureka_sd_configs:
+      - server: 'http://192.168.0.227:8761/eureka'
+#	refresh_interval: 30s
+      relabel_configs:
+      - source_labels: [__meta_eureka_app_name]
+        target_label: application
+      - source_labels: [__meta_eureka_app_instance_metadata_metrics_path]
+        target_label: __metrics_path__
+      - source_labels: [__address__]
+        target_label: instance
