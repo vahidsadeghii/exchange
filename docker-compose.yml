@@ -27,7 +27,27 @@ services:
     networks:
       - exchange-network
 
-
+  # ---------------- MongoDB ---------------- 
+  mongodb:
+    container_name: mongodb
+    image: mongo:latest
+    volumes:
+      - /media/homa/home2/docker/mongodb:/data/db
+      - /mongo-init.js:/docker-entrypoint-initdb.d/mongo-init.js
+    ports:
+      - "27017:27017"
+    restart: always
+    #entrypoint: ["/usr/bin/mongod", "--bind_ip_all", "--replSet", "dbrs"]
+    cpus: 2
+    mem_limit: 2048m
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: admin
+      MONGO_INITDB_ROOT_PASSWORD: kJ745U659
+      MONGO_INITDB_DATABASE: test
+    networks:
+      - exchange-network
+    #network_mode: "host"
+    
 # ----------------postgres ----------------
   postgresql:
     container_name: postgres

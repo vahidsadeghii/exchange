@@ -21,3 +21,6 @@ include('mm')
 include('ce')
 include('gateway')
 include('core')
+include('event')
+include('admin')
+

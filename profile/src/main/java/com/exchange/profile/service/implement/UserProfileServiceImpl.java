@@ -27,7 +27,7 @@ import java.util.*;
 @RequiredArgsConstructor
 @Slf4j
 public class UserProfileServiceImpl implements UserProfileService {
-    private final Keycloak keycloakAdmin;
+
     private final UserProfileRepository userProfileRepository;
     private final TokenService tokenService;
     private final WalletClient walletClient;

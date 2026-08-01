@@ -93,11 +93,12 @@ if docker build \
     
     # Display image info
     echo "Image details:"
-    docker images "$IMAGE_NAME" --format "table {{.Repository}}\t{{.Tag}}\t{{.Size}}\t{{.Created}}"
+    docker images "$IMAGE_NAME" 
     echo ""
     
-    print_info "To run the container:"
-    echo "  docker run -p $PORT:$PORT $IMAGE_NAME"
+    print_info "Running container:"
+    docker-compose rm -f $MODULE
+    docker-compose up -d $MODULE
     
 else
     print_error "Failed to build Docker image"
@@ -105,6 +106,6 @@ else
 fi
 
 # List all built exchange images
-echo ""
-print_info "All exchange images:"
-docker images 'exchange-*' --format "table {{.Repository}}\t{{.Tag}}\t{{.Size}}\t{{.Created}}"
+# echo ""
+# print_info "All exchange images:"
+# docker images 'exchange-*' --format "table {{.Repository}}\t{{.Tag}}\t{{.Size}}\t{{.Created}}"

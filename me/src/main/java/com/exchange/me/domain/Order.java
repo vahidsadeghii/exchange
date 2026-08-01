@@ -15,9 +15,13 @@ public class Order {
     private TradeSide tradeSide;
     private OrderType orderType;
     private TradePair tradePair;
+    private MarketType  marketType;
+    private MatchEventStatus matchEngineStatus;
     private double quantity;
     private double price;
     private double filled;
+    private Long expireDays;
+
 
     public double getRemainingQuantity() {
         return quantity - filled;

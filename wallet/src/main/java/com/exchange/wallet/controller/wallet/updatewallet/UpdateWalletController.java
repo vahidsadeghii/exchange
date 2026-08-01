@@ -24,7 +24,7 @@ public class UpdateWalletController {
     public Wallet handle(@AuthenticationPrincipal OnlineUser onlineUser,
                                       @RequestBody UpdateWalletRequest request) {
 
-        return walletService.save(null, onlineUser.getKeycloakUserId(), request.assets());
+        return walletService.save(onlineUser.getInternalUserId(), request.assets());
     }
 
 

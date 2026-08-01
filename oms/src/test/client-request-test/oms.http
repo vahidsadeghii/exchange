@@ -1,0 +1,83 @@
+###User Signin
+POST http://{{host}}/profile/open/v1/user/signin
+Content-Type: application/json
+
+{
+  "userName": "helda.musterman11@example.com",
+  "password": "HeldaPass123!"
+}
+> {%
+    client.test("Status code is 200", function () {
+        client.assert(response.status === 200, "Expected status 200");
+    });
+
+    client.test("Access token exists", function () {
+        client.assert(response.body.accessToken !== undefined, "Missing accessToken object");
+        client.assert(response.body.accessToken.accessToken !== "", "accessToken is empty");
+    });
+
+    client.test("Access token expiration exists", function () {
+        client.assert(response.body.accessToken.expirationDate !== "", "accessToken expiration missing");
+    });
+
+    client.test("Refresh token exists", function () {
+        client.assert(response.body.refreshToken !== undefined, "Missing refreshToken object");
+        client.assert(response.body.refreshToken.refreshToken !== "", "refreshToken is empty");
+    });
+
+    client.test("Refresh token expiration exists", function () {
+        client.assert(response.body.refreshToken.expirationDate !== "", "refreshToken expiration missing");
+    });
+
+    client.test("User type is returned", function () {
+        client.assert(response.body.userType !== undefined, "userType missing");
+    });
+
+    client.global.set("loginToken", response.body.accessToken.accessToken);
+
+%}
+
+
+### Get Order Book Depth
+GET http://{{host}}/oms/api/v1/orderdepth?pair=BTC_EURO&depth=2
+Authorization: Bearer {{loginToken}}
+Content-Type: application/json
+Request-Id: 2002
+
+> {%
+client.test("Status is 200", function () {
+    client.assert(response.status === 200, "Expected status 200");
+});
+
+client.test("Response contains bids", function () {
+    client.assert(response.body.bids != null, "bids should not be null");
+});
+
+client.test("Response contains asks", function () {
+    client.assert(response.body.asks != null, "asks should not be null");
+});
+
+client.test("Bids and asks are arrays", function () {
+    client.assert(Array.isArray(response.body.bids), "bids should be an array");
+    client.assert(Array.isArray(response.body.asks), "asks should be an array");
+});
+
+client.test("Depth does not exceed requested value", function () {
+    client.assert(response.body.bids.length <= 10, "Too many bids");
+    client.assert(response.body.asks.length <= 10, "Too many asks");
+});
+%}
+
+
+
+### Get order book by ID
+GET http://localhost:8070/oms/api/v1/orderbook?orderId=1
+Authorization: Bearer {{loginToken}}
+Content-Type: application/json
+Request-Id: 2008
+
+> {%
+client.test("Status is 200", function () {
+    client.assert(response.status === 200, "Expected status 200");
+});
+%}

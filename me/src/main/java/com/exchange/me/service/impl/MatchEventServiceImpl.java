@@ -1,23 +1,52 @@
 package com.exchange.me.service.impl;
 
-import com.exchange.me.domain.MatchEvent;
+import com.exchange.me.domain.*;
 import com.exchange.me.service.MatchEventService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
+
+import java.time.LocalDateTime;
 
 
 @Service
-@Transactional
 @RequiredArgsConstructor
 @Slf4j
 public class MatchEventServiceImpl implements MatchEventService {
-    private final KafkaTemplate<String, String> kafkaTemplateSendMessage;
+    private final KafkaTemplate<String, Object> kafkaTemplateSendMessage;
+
+    @Value("${custom-config.kafka.event-output-message.topic}")
+    private String eventMessage;
+
+    @Value("${custom-config.kafka.me-create-update-output-message.topic}")
+    String createUpdateMeMessage;
+
 
     @Override
-    public void saveMatchEvent(MatchEvent matchEvent) {
-        kafkaTemplateSendMessage.send(matchEvent.getTopic(), matchEvent.getStatus().name());
+    public MatchEngine saveMatchEvent(Order order) {
+        MatchEngineUpdate matchEngineUpdate = new MatchEngineUpdate(order.getId(), order.getUserId(), order.getMatchEngineStatus());
+
+        //eventMessage
+        EventInfoMessage eventInfoMessage = EventInfoMessage.builder()
+                .tag(createUpdateMeMessage)
+                .title("save-update-order")
+                .serviceName("matchingengine")
+                .persistent(true)
+                .routingEnabled(false)
+                .createDate(LocalDateTime.now())
+                .event(matchEngineUpdate)
+                .build();
+        kafkaTemplateSendMessage.send(eventMessage, eventInfoMessage)
+                .whenComplete((r, e) -> {
+                    if (e != null)
+                        log.error("send error", e);
+                    else
+                        log.info("message sent");
+                });
+
+        return new MatchEngine(order.getId(), order.getUserId(), MatchEventStatus.FILLED);
     }
+
 }

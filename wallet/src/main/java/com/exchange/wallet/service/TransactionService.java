@@ -10,12 +10,14 @@ import java.util.List;
 
 public interface TransactionService {
 
-    void createTransaction(String walletId,
-                                      long userId,
-                                      AssetType assetType,
-                                      BigDecimal balanceBefore,
-                                      BigDecimal balanceAfter,
-                                      TransactionType type);
+    void createTransaction(  Long userId,
+            String walletId,
+            AssetType assetType,
+            TransactionType type,
+            BigDecimal balanceBefore,
+            BigDecimal balanceAfter,
+            BigDecimal blockedBalanceBefore,
+            BigDecimal blockedBalanceAfter);
 
     List<TransactionInfo> findTransactions(String walletId);
 }

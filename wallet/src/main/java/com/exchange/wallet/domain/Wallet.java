@@ -14,7 +14,7 @@ import java.util.List;
 public class Wallet {
     private String walletId;
     private Long userId;
-    private List<Asset> asserts;
+    private List<Asset> assets;
 
     @Enumerated(EnumType.STRING)
     private WalletStatus status;

@@ -56,13 +56,18 @@ dependencies {
     implementation "org.flywaydb:flyway-database-postgresql:10.20.0"
 
     // Spring Cloud
-    implementation 'org.springframework.cloud:spring-cloud-starter-netflix-eureka-client'
+   // implementation 'org.springframework.cloud:spring-cloud-starter-netflix-eureka-client'
     implementation 'org.springframework.cloud:spring-cloud-starter-openfeign'
     implementation 'org.springframework.cloud:spring-cloud-config-client'
 
     // Resilience4j
     implementation "io.github.resilience4j:resilience4j-spring-boot3:${resilience4jVersion}"
 
+    // logs
+    implementation 'de.siegmar:logback-gelf:4.0.0'
+    implementation("org.zalando:logbook-spring-boot-starter:3.12.0")
+    implementation("org.zalando:logbook-json:3.12.0")
+    implementation("org.zalando:logbook-core:3.12.0")
 
     // Jackson
     implementation 'com.fasterxml.jackson.datatype:jackson-datatype-jsr310'

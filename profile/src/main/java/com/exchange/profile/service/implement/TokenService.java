@@ -52,6 +52,14 @@ public class TokenService {
     public JwtToken upgradeUser(long internalUserId, String email, String password) {
         String keycloakUserId = findKeycloakUserIdByInternalId(internalUserId);
 
+
+    UserRepresentation user =
+            realm().users().get(keycloakUserId).toRepresentation();
+
+    System.out.println("############################:  "+ user.getAttributes());
+
+        updateInternalUserId(keycloakUserId, internalUserId);
+
         removeRealmRoles(keycloakUserId, List.of("ROLE_USER"));
         assignRealmRoles(keycloakUserId, List.of("ROLE_CUSTOMER"));
 
@@ -79,6 +87,22 @@ public class TokenService {
         return keycloakTokenClient.refreshToken(refreshToken);
     }
 
+    public Long getInternalUserId(JwtToken token) {
+    try {
+        JWTClaimsSet claims =
+                SignedJWT.parse(token.accessToken())
+                        .getJWTClaimsSet();
+
+        return Long.valueOf(
+                claims.getStringClaim("internalUserId")
+        );
+
+    } catch (Exception e) {
+        throw new RuntimeException(
+                "Cannot extract internalUserId from token", e);
+    }
+}
+
 
     // Create Keycloak user (email = username)
     private String createKeycloakUser(String email, long internalUserId) {
@@ -100,7 +124,7 @@ public class TokenService {
         ));
         Response response = realm().users().create(kcUser);
         if (response.getStatus() == 201) {
-            return CreatedResponseUtil.getCreatedId(response); // ✅ UUID
+            return CreatedResponseUtil.getCreatedId(response);
         }
 
         if (response.getStatus() == 409) {
@@ -212,26 +236,26 @@ public class TokenService {
     }
 
     public void deleteKeycloakUserByEmail(String email) {
-    if (email == null || email.isBlank()) {
-        return;
-    }
-
-    try {
-        List<UserRepresentation> users =
-                realm().users().searchByEmail(email, true);
-
-        if (users.isEmpty()) {
-            log.warn("User with email {} not found", email);
+        if (email == null || email.isBlank()) {
             return;
         }
 
-        String userId = users.get(0).getId();
-        realm().users().get(userId).remove();
+        try {
+            List<UserRepresentation> users =
+                    realm().users().searchByEmail(email, true);
 
-    } catch (Exception e) {
-        log.error("Failed to delete Keycloak user by email {}", email, e);
+            if (users.isEmpty()) {
+                log.warn("User with email {} not found", email);
+                return;
+            }
+
+            String userId = users.get(0).getId();
+            realm().users().get(userId).remove();
+
+        } catch (Exception e) {
+            log.error("Failed to delete Keycloak user by email {}", email, e);
+        }
     }
-}
 
     public void deleteKeycloakUser(String userId) {
         if (userId == null || userId.isBlank()) {
@@ -263,6 +287,23 @@ public class TokenService {
 
         //THIS is the real Keycloak ID
         return users.get(0).getId();
+    }
+
+    private void updateInternalUserId(String userId, Long internalUserId) {
+
+        UserResource userResource = realm().users().get(userId);
+        UserRepresentation user = userResource.toRepresentation();
+
+        Map<String, List<String>> attrs =
+                Optional.ofNullable(user.getAttributes())
+                        .orElse(new HashMap<>());
+
+        attrs.put("internalUserId",
+                List.of(String.valueOf(internalUserId)));
+
+        user.setAttributes(attrs);
+
+        userResource.update(user);
     }
 
 }

@@ -1,21 +1,31 @@
 package com.exchange.oms.client.matchingengine;
 
 
+import com.exchange.oms.client.wallet.WalletClient;
 import com.exchange.oms.config.exception.FallBackException;
 import com.exchange.oms.config.feign.FeignException;
+import com.exchange.oms.controller.order.findorderbook.OrderBookResponse;
+import com.exchange.oms.domain.MatchEngineResponse;
+import com.exchange.oms.domain.OrderType;
+import com.exchange.oms.domain.TradePair;
 import io.github.resilience4j.circuitbreaker.annotation.CircuitBreaker;
+import io.github.resilience4j.retry.annotation.Retry;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.cloud.openfeign.FeignClient;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestParam;
 
-import java.time.LocalDateTime;
 
-@FeignClient(name = "em")
+@FeignClient(
+        name = "matchingengine",
+        url = "http://localhost:8094/matchingengine"
+)
 public interface MatchingInfoClient {
-    Logger logger = LoggerFactory.getLogger(MatchingInfoClient.class);
+
+    Logger logger = LoggerFactory.getLogger(WalletClient.class);
 
     private Throwable parseThrowable(Throwable t) {
         logger.error("Error Server: " + t.getMessage());
@@ -25,21 +35,48 @@ public interface MatchingInfoClient {
             return new FallBackException();
     }
 
-    @CircuitBreaker(name="oms-instance", fallbackMethod = "createOrderMatchingEngineFallBack")
-    @PostMapping(value = "/api/${api.prefix.internal}/order")
-    void createOrderMatchingEngine(@RequestBody createOrderRequest updateOrderRequest);
 
-    default void createOrderMatchingEngineFallBack(@RequestBody createOrderRequest request, Throwable t) throws Throwable{
-        throw parseThrowable(t);
+    @PostMapping("/_api/v1/order")
+    @CircuitBreaker(name = "me-instance", fallbackMethod = "createOrderMatchingEngineFallback")
+    @Retry(name = "me-instance")
+    MatchEngineResponse createOrderMatchingEngine(@RequestBody CreateUpdateOrderRequestClient request);
+
+    default MatchEngineResponse createOrderMatchingEngineFallback(@RequestBody CreateUpdateOrderRequestClient request, Throwable t) {
+        logger.error(
+                "ME service unavailable, order dropped. orderId={}",
+                request.orderId(), t
+        );
+
+        return null;
+
     }
 
-    @CircuitBreaker(name="oms-instance", fallbackMethod = "getOrderBook")
-    @PostMapping(value = "/api/${api.prefix.internal}/order")
-    void getOrderBook(@RequestParam long orderId);
 
-    default void getOrderBook(@RequestParam long orderId, Throwable t) throws Throwable{
-        throw parseThrowable(t);
+    @GetMapping("/_api/v1/order-book")
+    @CircuitBreaker(name = "me-instance", fallbackMethod = "getOrderBookFallback")
+    @Retry(name = "me-instance")
+    OrderBookResponse getOrderBook(@RequestParam long orderId);
+
+    default OrderBookResponse getOrderBookFallback(long orderId, Throwable t) {
+        logger.error("ME unavailable, returning empty order book. orderId={}", orderId, t);
+
+        return null;
     }
 
+    @GetMapping("/_api/v1/orders")
+    @CircuitBreaker(name = "me-instance", fallbackMethod = "getOrderBookDepthFallback")
+    @Retry(name = "me-instance")
+    OrderBookDepthResponseClient getOrderBookDepth(@RequestParam TradePair pair, @RequestParam int orderDepth);
 
+    default MatchEngineResponse getOrderBookDepthFallback(@RequestParam  TradePair pair, @RequestParam int orderDepth, Throwable t) {
+        logger.error(
+                "ME service unavailable, order dropped. orderType={}",
+                pair,
+                orderDepth,
+                t
+        );
+
+        return null;
+
+    }
 }

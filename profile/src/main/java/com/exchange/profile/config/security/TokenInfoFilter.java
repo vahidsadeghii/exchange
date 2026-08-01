@@ -40,6 +40,7 @@ public class TokenInfoFilter extends OncePerRequestFilter {
 
             OnlineUser principal = new OnlineUser(
                     info.keycloakUserId(),
+                    info.internalUserId(),
                     info.roles());
 
             UsernamePasswordAuthenticationToken auth =

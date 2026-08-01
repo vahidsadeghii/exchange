@@ -33,8 +33,13 @@ public class JwtRelayGatewayFilter implements GatewayFilter {
                 .flatMap(auth -> {
                     Jwt jwt = auth.getToken();
                     List<String> roles = extractRoles(jwt);
+
+                    Long internalUserId =
+                            Long.valueOf(jwt.getClaimAsString("internalUserId"));
+
                     TokenInfo tokenInfo = new TokenInfo(
                             roles,
+                            internalUserId,
                             jwt.getSubject(),
                             jwt.getId()
                     );

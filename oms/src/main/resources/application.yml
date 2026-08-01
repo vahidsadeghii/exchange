@@ -27,11 +27,11 @@ api:
     open: /open/${api.version}
     internal: /_api/${api.version}
 
-
 logging:
   level:
-    org.springframework.data.mongodb.core.MongoTemplate: DEBUG
-    org.springframework.data.mongodb.core.ReactiveMongoTemplate: DEBUG
+    org.springframework.web.servlet.mvc.method.annotation.RequestMappingHandlerMapping: TRACE
+    feign: DEBUG
+    com.exchange: DEBUG
 
 management:
   endpoints:
@@ -42,3 +42,34 @@ management:
     prometheus:
       enabled: true
 
+
+resilience4j:
+  circuitbreaker:
+    configs:
+      default:
+        sliding-window-type: COUNT_BASED
+        sliding-window-size: 20
+        minimum-number-of-calls: 10
+        failure-rate-threshold: 50
+        wait-duration-in-open-state: 5s
+
+
+    instances:
+      me-instance:
+        base-config: default
+      wallet-instance:
+        base-config: default
+
+  retry:
+    configs:
+      default:
+        max-attempts: 2
+        wait-duration: 500ms
+        exponential-backoff-multiplier: 2
+
+
+    instances:
+      me-instance:
+        base-config: default
+      wallet-instance:
+        base-config: default

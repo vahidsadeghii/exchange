@@ -1,4 +1,6 @@
 package com.exchange.oms.config.exception;
 
-public class NotFoundException extends BusinessException {
+import jakarta.persistence.EntityNotFoundException;
+
+public class NotFoundException extends EntityNotFoundException {
 }

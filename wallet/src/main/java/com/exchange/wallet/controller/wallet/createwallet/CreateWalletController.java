@@ -21,6 +21,6 @@ public class CreateWalletController {
 
     @PostMapping(value = "${api.prefix.internal}/user/wallet")
     public Wallet handle(@RequestParam("userId") Long userId) {
-        return walletService.save(userId, null, List.of(new AssetDTO(BigDecimal.ZERO, BigDecimal.ZERO, AssetType.EUR)));
+        return walletService.save(userId, List.of(new AssetDTO(BigDecimal.ZERO, BigDecimal.ZERO, AssetType.EUR)));
     }
 }

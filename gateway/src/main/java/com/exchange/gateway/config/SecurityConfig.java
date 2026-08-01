@@ -32,6 +32,8 @@ public class SecurityConfig {
 
                         .pathMatchers("/wallet/open/**")
                         .permitAll()
+                             .pathMatchers("/oms/open/**")
+                        .permitAll()
 
                         .anyExchange()
                         .authenticated()

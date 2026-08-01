@@ -1,5 +1,6 @@
 package com.exchange.oms.service.impl;
 
+
 import com.exchange.oms.domain.MatchEngineUpdate;
 import com.exchange.oms.service.OrderService;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -16,15 +17,16 @@ public class ConsumerService {
     private final ObjectMapper objectMapper;
 
 
-    @KafkaListener(
-            topics = "${custom-config.kafka.updatematchingEngineInputMessage.topic}",
-            groupId = "oms-consumer-group"
-    )
-    public void updateMatchEngineEvent(String message) {
+    @KafkaListener(topics = "${custom-config.kafka.me-create-update-input-message.topic}",
+            groupId = "oms-group")
+    public void saveUpdateMatchEngineEvent(String message) {
         try {
+            log.info("EMAIL CONSUMER RECEIVED: {}", message);
+
             MatchEngineUpdate matchEngineEvent =
                     objectMapper.readValue(message, MatchEngineUpdate.class);
-            orderService.updateOrder(
+
+            orderService.matchEngineStatus(
                     matchEngineEvent.orderId(),
                     matchEngineEvent.userId(),
                     matchEngineEvent.status()

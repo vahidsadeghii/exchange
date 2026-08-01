@@ -1,14 +1,19 @@
 package com.exchange.oms.service;
 
-import com.exchange.oms.controller.order.findorderbook.OrderBookResponse;
 import com.exchange.oms.domain.*;
+
+import java.math.BigDecimal;
 
 public interface OrderService {
 
-     Order createOrder(long userId, TradePair tradePair,TradeSide tradeSide,
-                       OrderType orderType, double quantity, double price);
+    Order createUpdateOrder(
+            Long oldOrderId, Long onlineUser, AssetType assetType,
+            TradePair tradePair, TradeSide tradeSide, MarketType marketType,
+            OrderType orderType, BigDecimal quantity, BigDecimal price, Long expireDays);
 
-     Order updateOrder(long orderId, long userId, MatchEventStatus orderStatus);
+    Order getOrder(long orderId);
 
-     OrderBookResponse getOrder(long orderId);
+    void matchEngineStatus(long orderId, long userId, MatchEventStatus matchEngineStatus);
+
+    OrderBookDepth getOrderBookDepth(TradePair pair, int depth);
 }

@@ -24,34 +24,45 @@ public class TransactionServiceImpl implements TransactionService {
 
 
     @Override
-    public void createTransaction(String walletId, long userId, AssetType assetType,
+    public void createTransaction(Long userId, String walletId, AssetType assetType,
+                                  TransactionType type,
                                   BigDecimal balanceBefore, BigDecimal balanceAfter,
-                                  TransactionType type) {
-        var amount = switch (type) {
+                                  BigDecimal blockedBalanceBefore, BigDecimal blockedBalanceAfter) {
+
+        BigDecimal amount = switch (type) {
+
             case DEPOSIT,
-                 UNBLOCK,
-                 REFUND -> balanceAfter.subtract(balanceBefore);
+                 REFUND,
+                 ADJUSTMENT -> balanceAfter.subtract(balanceBefore).abs();
 
             case WITHDRAW,
-                 BLOCK -> balanceBefore.subtract(balanceAfter);
+                 TRANSFER -> balanceBefore.subtract(balanceAfter).abs();
 
-            case TRANSFER -> balanceBefore.subtract(balanceAfter);
+            case BLOCK -> blockedBalanceAfter.subtract(blockedBalanceBefore).abs();
 
-            case ADJUSTMENT -> balanceAfter.subtract(balanceBefore);
+            case UNBLOCK -> blockedBalanceBefore.subtract(blockedBalanceAfter).abs();
         };
 
-        inMemoryTransactionInfoRepository.save(TransactionInfo.builder()
+        TransactionInfo transaction = TransactionInfo.builder()
                 .id(UUID.randomUUID().toString())
                 .walletId(walletId)
                 .userId(userId)
                 .assetType(assetType)
-                .type(type)
                 .status(TransactionStatus.SUCCESS)
+                .amount(amount)
+                .type(type)
+
                 .balanceBefore(balanceBefore)
                 .balanceAfter(balanceAfter)
-                .amount(amount)
+
+                .blockedBalanceBefore(blockedBalanceBefore)
+                .blockedBalanceAfter(blockedBalanceAfter)
+
                 .createdAt(LocalDateTime.now())
-                .build());
+                .build();
+
+
+        inMemoryTransactionInfoRepository.save(transaction);
 
     }
 
