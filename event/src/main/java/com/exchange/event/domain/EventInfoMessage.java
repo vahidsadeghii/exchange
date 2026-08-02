@@ -2,7 +2,6 @@ package com.exchange.event.domain;
 
 
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
-import com.netflix.discovery.provider.Serializer;
 import lombok.*;
 
 import java.time.LocalDateTime;
@@ -13,7 +12,6 @@ import java.time.LocalDateTime;
 @Builder
 @AllArgsConstructor
 @NoArgsConstructor
-@Serializer
 @JsonDeserialize
 public class EventInfoMessage<T> {
     private String tag;

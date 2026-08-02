@@ -19,10 +19,10 @@ import java.time.LocalDateTime;
 @RequiredArgsConstructor
 @Slf4j
 public class MatchEventServiceImpl implements MatchEventService {
-    private final KafkaTemplate<String, Object> kafkaTemplateSendMessage;
+    private final KafkaTemplate<String, Object> kafkaTemplate;
 
     @Value("${custom-config.kafka.event-output-message.topic}")
-    private String eventMessage;
+    private String eventTopic;
 
     @Value("${custom-config.kafka.me-create-update-output-message.topic}")
     String createUpdateMeMessage;
@@ -31,39 +31,39 @@ public class MatchEventServiceImpl implements MatchEventService {
     @Override
     public MatchEngine saveMatchEvent(Order order) {
         validateOrder(order);
+        MatchEngineUpdate update =
+                new MatchEngineUpdate(
+                        order.getId(),
+                        order.getUserId(),
+                        order.getMatchEngineStatus());
 
-        MatchEngineUpdate matchEngineUpdate = new MatchEngineUpdate(order.getId(), order.getUserId(), order.getMatchEngineStatus());
+        EventInfoMessage<MatchEngineUpdate> message =
+                EventInfoMessage.<MatchEngineUpdate>builder()
+                        .tag(createUpdateMeMessage)
+                        .title("save-update-order")
+                        .serviceName("matchingengine")
+                        .persistent(true)
+                        .routingEnabled(true)
+                        .createDate(LocalDateTime.now())
+                        .event(update)
+                        .build();
+        kafkaTemplate.send(eventTopic, message);
 
-        try {
-            sendMatchEvent(order, EventInfoMessage.builder()
-                    .tag(createUpdateMeMessage)
-                    .title("save-update-order")
-                    .serviceName("matchingengine")
-                    .persistent(true)
-                    .routingEnabled(false)
-                    .createDate(LocalDateTime.now())
-                    .event(matchEngineUpdate)
-                    .build());
-
-            log.info("Match event saved successfully for order: {} user: {}", order.getId(), order.getUserId());
-            return new MatchEngine(order.getId(), order.getUserId(), MatchEventStatus.FILLED);
-
-        } catch (Exception e) {
-            log.error("Unexpected error while saving match event for order: {} user: {}", order.getId(), order.getUserId(), e);
-
-            throw new MatchEventFailedToSaveException();
-        }
+        return new MatchEngine(
+                order.getId(),
+                order.getUserId(),
+                order.getMatchEngineStatus());
     }
 
 
     private void sendMatchEvent(Order order, EventInfoMessage eventInfoMessage) {
-        kafkaTemplateSendMessage.send(eventMessage, eventInfoMessage)
+        kafkaTemplate.send(eventTopic, eventInfoMessage)
                 .whenComplete((result, exception) -> {
                     if (exception != null) {
                         log.error("Failed to send match event message for order: {} user: {}. Topic: {}",
                                 order.getId(),
                                 order.getUserId(),
-                                eventMessage,
+                                eventTopic,
                                 exception);
                     } else {
                         log.debug("Match event message sent successfully for order: {} user: {}. Partition: {} Offset: {}",

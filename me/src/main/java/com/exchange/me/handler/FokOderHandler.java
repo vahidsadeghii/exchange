@@ -6,51 +6,52 @@ import com.exchange.me.domain.Order;
 import com.exchange.me.domain.OrderType;
 import com.exchange.me.domain.TradeSide;
 import com.exchange.me.exception.FokOrderPriceCanNotBeNullException;
-
+import com.exchange.me.matching.MatchingContext;
+import com.exchange.me.matching.MatchingEngine;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.stereotype.Service;
+import org.springframework.stereotype.Component;
 
-import java.util.*;
+import java.util.Deque;
+import java.util.List;
+import java.util.Map;
+import java.util.TreeMap;
 
-@Service
+@Component
 @RequiredArgsConstructor
 @Slf4j
-public class FokOrderService {
+public class FokOderHandler implements OrderHandler {
+    private final MatchingEngine matchingEngine;
 
     private static final double ZERO_PRICE = 0.0;
-    private final OrderMatchingUtility orderMatchingUtility;
 
+    @Override
+    public OrderType supports() {
+        return OrderType.FOK;
+    }
 
-    /**
-     * Executes a FOK (Fill Or Kill) order.
-     * Order is filled only if entire quantity can be matched immediately.
-     * If full execution is not possible, order is cancelled (killed).
-     */
-    public List<MatchInfo> execute(
-            long timestamp,
-            Order fokOrder,
-            TreeMap<Long, Deque<Order>> bids,
-            TreeMap<Long, Deque<Order>> asks,
-            Map<Long, OrderBookHandler.OrderLocation> orderIndex) {
+    @Override
+    public List<MatchInfo> execute(long timestamp,
+                                   Order order,
+                                   MatchingContext context) {
 
-        validateFokOrder(fokOrder);
+        validateFokOrder(order);
 
         // Check if order can be fully filled
-        if (!canFullyFill(fokOrder, bids, asks)) {
+        if (!canFullyFill(order, context.getBids(), context.getAsks())) {
             log.debug("FOK order {} cannot be fully filled, killing order. Required: {}, Available: {}",
-                    fokOrder.getId(),
-                    fokOrder.getQuantity(),
-                    calculateAvailableQuantity(fokOrder, bids, asks));
+                    order.getId(),
+                    order.getQuantity(),
+                    calculateAvailableQuantity(order, context.getBids(), context.getAsks()));
             return List.of();
         }
 
-        // Execute matching
-        log.debug("FOK order {} can be fully filled, executing", fokOrder.getId());
-        if (fokOrder.getTradeSide() == TradeSide.BUY) {
-            return orderMatchingUtility.executeBuyOrder(timestamp, fokOrder, asks, orderIndex);
+        // Execute matchingfff
+        log.debug("FOK order {} can be fully filled, executing", order.getId());
+        if (order.getTradeSide() == TradeSide.BUY) {
+            return matchingEngine.executeBuyOrder(timestamp, order, context.getAsks(), context.getOrderIndex());
         } else {
-            return orderMatchingUtility.executeSellOrder(timestamp, fokOrder, bids, orderIndex);
+            return matchingEngine.executeSellOrder(timestamp, order, context.getBids(), context.getOrderIndex());
         }
     }
 

@@ -62,7 +62,8 @@ public class EventManagerRouter extends RouteBuilder {
                             eventInfoService.save(eventInfoMessage.getTag(),
                                     eventInfoMessage.getTitle(),
                                     eventInfoMessage.getServiceName(),
-                                    eventInfoMessage.getEvent().toString(), LocalDateTime.now());
+                                    objectMapper.writeValueAsString(eventInfoMessage.getEvent()),
+                                    LocalDateTime.now());
 
                         }
                     } catch (Exception e) {

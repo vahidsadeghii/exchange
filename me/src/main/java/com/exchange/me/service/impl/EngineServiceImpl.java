@@ -6,15 +6,13 @@ import com.exchange.me.exception.InvalidTradePairException;
 import com.exchange.me.exception.NotFoundOrderBookHandlerException;
 import com.exchange.me.exception.OrderCanNotBeNullException;
 import com.exchange.me.handler.OrderBookHandler;
-import com.exchange.me.handler.OrderMatchingUtility;
+import com.exchange.me.handler.OrderHandlerFactory;
 import com.exchange.me.service.EngineService;
 import com.exchange.me.service.MatchEventService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
-import java.time.LocalDateTime;
-import java.time.ZoneId;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -25,8 +23,8 @@ import java.util.concurrent.ConcurrentHashMap;
 @RequiredArgsConstructor
 @Slf4j
 public class EngineServiceImpl implements EngineService {
-    private final MatchEventService matchEngineEventService;
-    private final OrderMatchingUtility orderMatchingUtility;
+    private final MatchEventService matchEventService;
+    private final OrderHandlerFactory orderHandlerFactory;
 
 
     private final Map<TradePair, OrderBookHandler> orderBooks = new ConcurrentHashMap<>();
@@ -70,16 +68,20 @@ public class EngineServiceImpl implements EngineService {
                 .price(price)
                 .build();
 
-        handler.matchOrder(LocalDateTime.now()
-                .atZone(ZoneId.systemDefault())
-                .toInstant()
-                .toEpochMilli(), order);
+        long timestamp = System.currentTimeMillis();
+        List<MatchInfo> matches = handler.matchOrder(timestamp, order);
 
-        order.setMatchEngineStatus(MatchEventStatus.FILLED);
+        if (order.getRemainingQuantity() == 0) {
+            order.setMatchEngineStatus(MatchEventStatus.FILLED);
+        } else if (order.getOrderType() == OrderType.FOK && matches.isEmpty()) {
+            order.setMatchEngineStatus(MatchEventStatus.REJECTED);
+        } else {
+            order.setMatchEngineStatus(MatchEventStatus.PARTIALLY_FILLED);
+        }
 
         log.debug("Order matched and persisting: {}", orderId);
 
-        return matchEngineEventService.saveMatchEvent(order);
+        return matchEventService.saveMatchEvent(order);
     }
 
     @Override
@@ -177,10 +179,15 @@ public class EngineServiceImpl implements EngineService {
         return new OrderBookDepth(bids, asks);
     }
 
-   private OrderBookHandler getOrCreateBook(TradePair pair) {
+    private OrderBookHandler getOrCreateBook(TradePair pair) {
+
         return orderBooks.computeIfAbsent(pair, p -> {
-            log.info("Creating new OrderBookHandler for pair: {}", p);
-            return new OrderBookHandler(p, orderMatchingUtility);
+
+            log.info("Creating OrderBookHandler for {}", p);
+
+            return new OrderBookHandler(
+                    p,
+                    orderHandlerFactory);
         });
     }
 }

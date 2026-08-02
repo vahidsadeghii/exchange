@@ -1,21 +1,36 @@
-package com.exchange.me.handler;
-
+package com.exchange.me.matching;
 
 import com.exchange.me.domain.MatchInfo;
 import com.exchange.me.domain.Order;
 import com.exchange.me.domain.OrderType;
 import com.exchange.me.domain.TradeSide;
-import lombok.RequiredArgsConstructor;
+import com.exchange.me.handler.OrderBookHandler;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
 import java.util.*;
 
-@Component
-@RequiredArgsConstructor
-@Slf4j
-public class OrderMatchingUtility {
 
+/**
+ * Core matching component responsible for executing order matching logic
+ * against the order book.
+ *
+ * <p>
+ * The engine processes incoming {@link Order} objects and uses
+ * {@link MatchingContext} to access the current order book state,
+ * including bids, asks, and active order indexes.
+ *
+ * <p>
+ * Each successful execution produces {@link MatchInfo} records
+ * representing completed trades.
+ *
+ * @see MatchingContext
+ * @see Order
+ * @see MatchInfo
+ */
+@Component
+@Slf4j
+public class MatchingEngine {
 
     //Generic matching logic Limit and Market
     public List<MatchInfo> executeBuyOrder(
@@ -153,3 +168,4 @@ public class OrderMatchingUtility {
     }
 
 }
+
