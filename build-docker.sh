@@ -86,20 +86,20 @@ if docker build \
     -f "$SCRIPT_DIR/$MODULE/Dockerfile" \
     -t "$IMAGE_NAME" \
     "$SCRIPT_DIR"; then
-
+    
     print_info "Docker image built successfully!"
     print_info "Image name: $IMAGE_NAME"
     echo ""
-
+    
     # Display image info
     echo "Image details:"
     docker images "$IMAGE_NAME"
     echo ""
-
+    
     print_info "Running container:"
     docker-compose rm -f $MODULE
     docker-compose up -d $MODULE
-
+    
 else
     print_error "Failed to build Docker image"
     exit 1
