@@ -25,6 +25,7 @@ import java.util.concurrent.ConcurrentHashMap;
 public class EngineServiceImpl implements EngineService {
     private final MatchEventService matchEventService;
     private final OrderHandlerFactory orderHandlerFactory;
+    private final MatchPersistenceService matchPersistenceService;
 
 
     private final Map<TradePair, OrderBookHandler> orderBooks = new ConcurrentHashMap<>();
@@ -70,6 +71,10 @@ public class EngineServiceImpl implements EngineService {
 
         long timestamp = System.currentTimeMillis();
         List<MatchInfo> matches = handler.matchOrder(timestamp, order);
+
+        if (!matches.isEmpty()) {
+            matchPersistenceService.saveAll(matches);
+        }
 
         if (order.getRemainingQuantity() == 0) {
             order.setMatchEngineStatus(MatchEventStatus.FILLED);

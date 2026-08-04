@@ -37,7 +37,7 @@ public class MatchingEngine {
             long timestamp,
             Order buyOrder,
             TreeMap<Long, Deque<Order>> asks,
-             Map<Long, OrderBookHandler.OrderLocation> orderIndex) {
+            Map<Long, OrderBookHandler.OrderLocation> orderIndex) {
 
         List<MatchInfo> matches = new ArrayList<>();
 
@@ -71,7 +71,7 @@ public class MatchingEngine {
             long timestamp,
             Order sellOrder,
             TreeMap<Long, Deque<Order>> bids,
-             Map<Long, OrderBookHandler.OrderLocation> orderIndex) {
+            Map<Long, OrderBookHandler.OrderLocation> orderIndex) {
 
         List<MatchInfo> matches = new ArrayList<>();
 
@@ -146,6 +146,7 @@ public class MatchingEngine {
         TradeSide incomingSide = incomingOrder.getTradeSide();
         matches.add(
                 new MatchInfo(
+                        UUID.randomUUID().toString(),
                         timestamp,
                         System.currentTimeMillis(),
                         incomingSide,
@@ -160,6 +161,14 @@ public class MatchingEngine {
                         levelOrder.getQuantity(),
                         levelOrder.getRemainingQuantity()
                 ));
+
+        log.info(
+                "MATCH: taker={}, maker={}, qty={}, price={}",
+                incomingOrder.getId(),
+                levelOrder.getId(),
+                tradedQuantity,
+                priceLevel
+        );
 
         log.debug("Match created: {} order {} ({}) matched with {} order {} ({}) at price {} qty {}",
                 incomingSide, incomingOrder.getId(), incomingOrder.getUserId(),

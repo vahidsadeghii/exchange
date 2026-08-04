@@ -47,8 +47,9 @@ public class MatchEventServiceImpl implements MatchEventService {
                         .createDate(LocalDateTime.now())
                         .event(update)
                         .build();
+        log.info("Sending message to event-topic {}", message);
         kafkaTemplate.send(eventTopic, message);
-
+        log.info("Sending message to event-topic {}", message);
         return new MatchEngine(
                 order.getId(),
                 order.getUserId(),

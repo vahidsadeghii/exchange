@@ -1,4 +1,135 @@
 @startuml
 
+skinparam classAttributeIconSize 0
+skinparam linetype ortho
+
+package "Service Layer" {
+
+interface EngineService
+interface MatchEventService
+
+class EngineServiceImpl {
+  - MatchEventService matchEventService
+  - OrderHandlerFactory orderHandlerFactory
+  - Map<TradePair, OrderBookHandler> orderBooks
+
+  + createUpdateOrder(...)
+  + deleteOrder(...)
+  + getOrder(...)
+  + getMarketDepth(...)
+  + getOrderBookDepth(...)
+  + resetAll()
+}
+
+class MatchEventServiceImpl {
+  - KafkaTemplate kafkaTemplate
+  - String eventTopic
+  - String createUpdateMeMessage
+
+  + saveMatchEvent(Order)
+  - validateOrder(Order)
+  - sendMatchEvent(...)
+}
+
+EngineServiceImpl ..|> EngineService
+MatchEventServiceImpl ..|> MatchEventService
+
+EngineServiceImpl --> MatchEventService
+EngineServiceImpl --> OrderHandlerFactory
+EngineServiceImpl --> OrderBookHandler
+
+MatchEventServiceImpl --> KafkaTemplate
+MatchEventServiceImpl --> Order
+MatchEventServiceImpl --> MatchEngine
+}
+
+package "Handler Layer" {
+
+interface OrderHandler {
+    + supports()
+    + execute(...)
+}
+
+class OrderHandlerFactory {
+    - Map<OrderType, OrderHandler> handlers
+    + get(OrderType)
+}
+
+class OrderBookHandler {
+    - TradePair tradePair
+    - TreeMap bids
+    - TreeMap asks
+    - Map orderIndex
+    - MatchingContext matchingContext
+    - OrderHandlerFactory handlerFactory
+
+    + matchOrder(...)
+    + deleteOrder(...)
+    + getOrder(...)
+    + reset()
+    + getMarketDepth(...)
+}
+
+class LimitOrderHandler
+class MarketOrderHandler
+class FokOderHandler
+
+OrderHandlerFactory --> OrderHandler
+
+LimitOrderHandler ..|> OrderHandler
+MarketOrderHandler ..|> OrderHandler
+FokOderHandler ..|> OrderHandler
+
+OrderBookHandler --> MatchingContext
+OrderBookHandler --> OrderHandlerFactory
+OrderBookHandler --> Order
+
+}
+
+package "Matching Layer" {
+
+class MatchingEngine {
+    + executeBuyOrder(...)
+    + executeSellOrder(...)
+    + matchOrdersAtLevel(...)
+    + createMatch(...)
+}
+
+class MatchingContext {
+    - TreeMap bids
+    - TreeMap asks
+    - Map orderIndex
+
+    + addOrder(...)
+}
+
+MatchingContext --> Order
+MatchingEngine --> MatchingContext
+MatchingEngine --> MatchInfo
+
+LimitOrderHandler --> MatchingEngine
+MarketOrderHandler --> MatchingEngine
+FokOderHandler --> MatchingEngine
+
+}
+
+package "Domain" {
+
+class Order
+class MatchInfo
+class MatchEngine
+class TradePair
+class OrderType
+class TradeSide
+class MatchEventStatus
+
+}
+
+EngineServiceImpl --> Order
+EngineServiceImpl --> MatchEngine
+EngineServiceImpl --> TradePair
+
+MatchingContext --> TradeSide
+OrderBookHandler --> TradePair
 
 @enduml
