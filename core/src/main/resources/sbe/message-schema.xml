@@ -21,6 +21,14 @@
             <type name="length" primitiveType="uint32" maxValue="1073741824"/>
             <type name="varData" primitiveType="uint8" length="0" characterEncoding="UTF-8"/>
         </composite>
+        <enum name="tradeSide" encodingType="uint8">
+            <validValue name="BUY">1</validValue>
+            <validValue name="SELL">2</validValue>
+        </enum>
+        <enum name="orderType" encodingType="uint8">
+            <validValue name="MARKET">1</validValue>
+            <validValue name="LIMIT">2</validValue>
+        </enum>
     </types>
 
     <sbe:message name="Heartbeat" id="1" description="Placeholder message; replace with real domain messages">
@@ -31,5 +39,9 @@
     <sbe:message name="PutOrder" id="2" description="Put an order to order book">
         <field name="correlationId" id="1" type="uint64"/>
         <field name="orderId" id="2" type="uint64"/>
+        <field name="timestamp" id="3" type="uint64"/>
+        <field name="userId" id="4" type="uint64"/>
+        <field name="tradeSide" id="5" type="tradeSide"/>
+        <field name="orderType" id="6" type="orderType"/>
     </sbe:message>
 </sbe:messageSchema>

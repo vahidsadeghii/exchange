@@ -22,6 +22,9 @@ dependencies {
     // ---- Aeron (High-performance messaging) ----
     implementation 'io.aeron:aeron-all:1.52.1'
 
+    // ---- Matching engine domain/services ----
+    implementation project(':me')
+
     // ---- SBE (message codec generator) ----
     sbeTool 'uk.co.real-logic:sbe-tool:1.35.6'
 }
