@@ -15,7 +15,7 @@ import reactor.core.publisher.Mono;
 import java.util.List;
 import java.util.Map;
 
-@Component
+
 @RequiredArgsConstructor
 public class JwtRelayGatewayFilter implements GatewayFilter {
 
@@ -26,11 +26,12 @@ public class JwtRelayGatewayFilter implements GatewayFilter {
             ServerWebExchange exchange,
             GatewayFilterChain chain
     ) {
-
+        System.out.println("JWT RELAY START");
         return exchange.getPrincipal()
                 .cast(JwtAuthenticationToken.class)
 
                 .flatMap(auth -> {
+                    System.out.println("JWT FOUND = " + auth.getToken().getSubject());
                     Jwt jwt = auth.getToken();
                     List<String> roles = extractRoles(jwt);
 
@@ -50,7 +51,10 @@ public class JwtRelayGatewayFilter implements GatewayFilter {
                         ServerHttpRequest mutated =
                                 exchange.getRequest()
                                         .mutate()
-                                        .header("TokenInfo", json)
+                                        .headers(headers -> {
+                                            headers.remove("TokenInfo");
+                                            headers.add("TokenInfo", json);
+                                        })
                                         .build();
 
                         return chain.filter(

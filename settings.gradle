@@ -21,5 +21,5 @@ include('mm')
 include('ce')
 include('gateway')
 include('event')
-include('admin')
+include('Discovery')
 

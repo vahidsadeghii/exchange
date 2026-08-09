@@ -1,0 +1,26 @@
+stages:
+ - build
+ - deploy
+build-dev:
+ before_script:
+  - 'chmod +x gradlew'
+ script:
+  - ./gradlew clean
+  - ./gradlew build -x test
+  - docker build --build-arg JAR_FILE=build/libs/*.jar  -t discovery:latest .
+  - docker push registry.gitlab.com/group-healthycare/discovery:dev-1.0.0
+ only:
+  - develop
+ stage: build
+ tags:
+  - dev
+deploy-dev:
+ script:
+  - docker stop discovery || echo "Container already stopped"
+  - docker rm discovery || echo "Container already removed"
+  - docker run -d --net healthy-network -p 8761:8761 -v /logs:/logs -m 310m  --name discovery  registry.gitlab.com/group-healthycare/discovery:latest
+ only:
+  - develop
+ stage: deploy
+ tags:
+  - dev

@@ -5,7 +5,7 @@ import com.exchange.event.domain.TagRouter;
 import java.util.List;
 
 public interface TagRouterService {
-    TagRouter save(String tag, String titleTopics);
+    TagRouter save(String tag, String titleTopic);
 
     List<TagRouter> findAll();
 

@@ -2,6 +2,23 @@ version: '3.8'
 services:
 
 
+# ---------------- Microservices ----------------
+  gateway:
+    image: gateway:latest
+    container_name: gateway
+    restart: always
+    ports:
+      - "8070:8070"
+    environment:
+      SPRING.PROFILES.ACTIVE: development
+      eureka.client.serviceUrl.defaultZone: http://discovery:8761/eureka
+      spring.data.redis.host: redis
+      eureka.instance.hostname: gateway
+      eureka.instance.prefer.ip.address: "false"
+      eureka.instance.metadata-map.prometheus.path: gateway/actuator/prometheus
+    networks:
+      - exchange-network
+
 # ---------------- Eureka Discovery ----------------
   discovery:
     image: discovery:latest
@@ -14,18 +31,18 @@ services:
       - "8761:8761"
     #network_mode: "host"
 # ----------------Keyclok ----------------user: admin pass: admin
-  keycloak:
-    image: quay.io/keycloak/keycloak:21.1.1
-    container_name: keycloak
-    environment:
-      KEYCLOAK_ADMIN: admin
-      KEYCLOAK_ADMIN_PASSWORD: admin
-    command: start-dev
-    restart: unless-stopped
-    ports:
-      - "8080:8080"
-    networks:
-      - exchange-network
+#  keycloak:
+#    image: quay.io/keycloak/keycloak:21.1.1
+#    container_name: keycloak
+#    environment:
+#      KEYCLOAK_ADMIN: admin
+#      KEYCLOAK_ADMIN_PASSWORD: admin
+#    command: start-dev
+#    restart: unless-stopped
+#    ports:
+#      - "8080:8080"
+#    networks:
+#      - exchange-network
 
   # ---------------- MongoDB ---------------- 
   mongodb:
@@ -49,15 +66,15 @@ services:
     #network_mode: "host"
     
 # ----------------postgres ----------------
-  postgresql:
-    container_name: postgres
-    image: postgres
-    restart: always
-    network_mode: "host"
-    environment:
-      POSTGRES_PASSWORD: postgress
-    volumes:
-      - pgdata:/var/lib/postgresql/data
+#  postgresql:
+#    container_name: postgres
+#    image: postgres
+#    restart: always
+#    network_mode: "host"
+#    environment:
+#      POSTGRES_PASSWORD: postgress
+#    volumes:
+#      - pgdata:/var/lib/postgresql/data
 
 
   # ---------------- Prometheus ----------------

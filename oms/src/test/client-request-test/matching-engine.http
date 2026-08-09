@@ -1,0 +1,389 @@
+###############################################################
+### LOGIN BUYER
+###############################################################
+
+POST http://{{host}}/profile/open/v1/user/signin
+Content-Type: application/json
+
+{
+  "userName":"helda.musterman11@example.com",
+  "password":"HeldaPass123!"
+}
+
+> {%
+client.assert(response.status==200);
+client.global.set("buyerToken",response.body.accessToken.accessToken);
+%}
+
+
+
+###############################################################
+### LOGIN SELLER
+###############################################################
+
+POST http://{{host}}/profile/open/v1/user/signin
+Content-Type: application/json
+
+{
+  "userName":"martin.hoffmann@example.com",
+  "password":"hoffmanmartinSecretPass123!"
+}
+
+> {%
+client.assert(response.status==200);
+client.global.set("sellerToken",response.body.accessToken.accessToken);
+%}
+
+
+
+###############################################################
+### SCENARIO 1
+### FULL MATCH
+###############################################################
+
+### SELL LIMIT
+
+POST http://{{host}}/oms/api/v1/orders
+Authorization: Bearer {{sellerToken}}
+Content-Type: application/json
+Request-Id: {{$uuid}}
+
+{
+ "assetType":"EUR",
+ "tradePair":"BTC_EURO",
+ "orderType":"LIMIT",
+ "tradeSide":"SELL",
+ "marketType":"SPOT",
+ "quantity":1,
+ "price":1000
+}
+
+> {%
+client.global.set("sell1",response.body.id);
+%}
+
+
+
+### BUY LIMIT
+
+POST http://{{host}}/oms/api/v1/orders
+Authorization: Bearer {{buyerToken}}
+Content-Type: application/json
+Request-Id: {{$uuid}}
+
+{
+ "assetType":"EUR",
+ "tradePair":"BTC_EURO",
+ "orderType":"LIMIT",
+ "tradeSide":"BUY",
+ "marketType":"SPOT",
+ "quantity":1,
+ "price":1000
+}
+
+> {%
+
+client.test("Matched",function(){
+client.assert(response.status==200);
+});
+
+client.global.set("buy1",response.body.id);
+
+%}
+
+
+
+###############################################################
+### ORDERBOOK SHOULD BE EMPTY
+###############################################################
+
+GET http://{{host}}/oms/api/v1/orderdepth?pair=BTC_EURO&depth=5
+Authorization: Bearer {{buyerToken}}
+
+> {%
+
+client.test("Book Empty",function(){
+
+client.assert(response.body.bids.length==0);
+
+client.assert(response.body.asks.length==0);
+
+});
+
+%}
+
+
+
+###############################################################
+### SCENARIO 2
+### PARTIAL FILL
+###############################################################
+
+### BUY 2 BTC
+
+POST http://{{host}}/oms/api/v1/orders
+Authorization: Bearer {{buyerToken}}
+Content-Type: application/json
+Request-Id: {{$uuid}}
+
+{
+ "assetType":"EUR",
+ "tradePair":"BTC_EURO",
+ "orderType":"LIMIT",
+ "tradeSide":"BUY",
+ "marketType":"SPOT",
+ "quantity":2,
+ "price":1200
+}
+
+> {%
+
+client.global.set("partialBuy",response.body.id);
+
+%}
+
+
+
+### SELL 1 BTC
+
+POST http://{{host}}/oms/api/v1/orders
+Authorization: Bearer {{sellerToken}}
+Content-Type: application/json
+Request-Id: {{$uuid}}
+
+{
+ "assetType":"EUR",
+ "tradePair":"BTC_EURO",
+ "orderType":"LIMIT",
+ "tradeSide":"SELL",
+ "marketType":"SPOT",
+ "quantity":1,
+ "price":1200
+}
+
+> {%
+
+client.test("Partial Fill",function(){
+
+client.assert(response.status==200);
+
+});
+
+%}
+
+
+
+###############################################################
+### CHECK REMAINING ORDER
+###############################################################
+
+GET http://{{host}}/oms/api/v1/orderdepth?pair=BTC_EURO&depth=5
+Authorization: Bearer {{buyerToken}}
+
+> {%
+
+client.test("Remaining Bid",function(){
+
+client.assert(response.body.bids.length>0);
+
+});
+
+%}
+
+
+
+###############################################################
+### SCENARIO 3
+### PRICE PRIORITY
+###############################################################
+
+### SELL @900
+
+POST http://{{host}}/oms/api/v1/orders
+Authorization: Bearer {{sellerToken}}
+Content-Type: application/json
+Request-Id: {{$uuid}}
+
+{
+"assetType":"EUR",
+"tradePair":"BTC_EURO",
+"orderType":"LIMIT",
+"tradeSide":"SELL",
+"marketType":"SPOT",
+"quantity":1,
+"price":900
+}
+
+### SELL @1000
+
+POST http://{{host}}/oms/api/v1/orders
+Authorization: Bearer {{sellerToken}}
+Content-Type: application/json
+Request-Id: {{$uuid}}
+
+{
+"assetType":"EUR",
+"tradePair":"BTC_EURO",
+"orderType":"LIMIT",
+"tradeSide":"SELL",
+"marketType":"SPOT",
+"quantity":1,
+"price":1000
+}
+
+### MARKET BUY
+
+POST http://{{host}}/oms/api/v1/orders
+Authorization: Bearer {{buyerToken}}
+Content-Type: application/json
+Request-Id: {{$uuid}}
+
+{
+"assetType":"EUR",
+"tradePair":"BTC_EURO",
+"orderType":"MARKET",
+"tradeSide":"BUY",
+"marketType":"SPOT",
+"quantity":1,
+"price":0
+}
+
+> {%
+
+client.test("Price Priority",function(){
+
+client.assert(response.status==200);
+
+});
+
+%}
+
+
+
+###############################################################
+### SCENARIO 4
+### FIFO
+###############################################################
+
+### SELL 1000 FIRST
+
+POST http://{{host}}/oms/api/v1/orders
+Authorization: Bearer {{sellerToken}}
+Content-Type: application/json
+Request-Id: {{$uuid}}
+
+{
+"assetType":"EUR",
+"tradePair":"BTC_EURO",
+"orderType":"LIMIT",
+"tradeSide":"SELL",
+"marketType":"SPOT",
+"quantity":1,
+"price":1000
+}
+
+### SELL 1000 SECOND
+
+POST http://{{host}}/oms/api/v1/orders
+Authorization: Bearer {{sellerToken}}
+Content-Type: application/json
+Request-Id: {{$uuid}}
+
+{
+"assetType":"EUR",
+"tradePair":"BTC_EURO",
+"orderType":"LIMIT",
+"tradeSide":"SELL",
+"marketType":"SPOT",
+"quantity":1,
+"price":1000
+}
+
+### BUY
+
+POST http://{{host}}/oms/api/v1/orders
+Authorization: Bearer {{buyerToken}}
+Content-Type: application/json
+Request-Id: {{$uuid}}
+
+{
+"assetType":"EUR",
+"tradePair":"BTC_EURO",
+"orderType":"LIMIT",
+"tradeSide":"BUY",
+"marketType":"SPOT",
+"quantity":1,
+"price":1000
+}
+
+> {%
+
+client.test("FIFO OK",function(){
+
+client.assert(response.status==200);
+
+});
+
+%}
+
+
+
+###############################################################
+### SCENARIO 5
+### FOK REJECT
+###############################################################
+
+POST http://{{host}}/oms/api/v1/orders
+Authorization: Bearer {{buyerToken}}
+Content-Type: application/json
+Request-Id: {{$uuid}}
+
+{
+"assetType":"EUR",
+"tradePair":"BTC_EURO",
+"orderType":"FOK",
+"tradeSide":"BUY",
+"marketType":"SPOT",
+"quantity":5,
+"price":1000
+}
+
+> {%
+
+client.test("FOK Executed",function(){
+
+client.assert(response.status==200);
+
+});
+
+%}
+
+
+
+###############################################################
+### SCENARIO 6
+### MARKET DEPTH
+###############################################################
+
+GET http://{{host}}/oms/api/v1/orderdepth?pair=BTC_EURO&depth=5
+Authorization: Bearer {{buyerToken}}
+
+> {%
+
+client.test("Depth",function(){
+
+client.assert(response.status==200);
+
+client.assert(Array.isArray(response.body.bids));
+
+client.assert(Array.isArray(response.body.asks));
+
+client.assert(response.body.bids.length<=5);
+
+client.assert(response.body.asks.length<=5);
+
+});
+
+client.log("Matching Engine regression completed.");
+
+%}
