@@ -18,7 +18,7 @@ import java.util.concurrent.ConcurrentHashMap;
 public class EngineService {
   private final Map<TradePair, OrderBookHandler> orderBooks = new ConcurrentHashMap<>();
 
-  public void createUpdateOrder(
+  public Order createUpdateOrder(
       Long oldOrderId,
       long orderId,
       long userId,
@@ -53,7 +53,9 @@ public class EngineService {
     handler.matchOrder(
         LocalDateTime.now().atZone(ZoneId.systemDefault()).toInstant().toEpochMilli(), order);
 
-    order.setMatchEngineStatus(MatchEventStatus.FILLED);
+    order.setMatchEngineStatus(MatchEventStatus.SUBMITED);
+
+    return order;
   }
 
   public void deleteOrder(long timestamp, Order order) {

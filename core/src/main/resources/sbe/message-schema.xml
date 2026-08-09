@@ -30,6 +30,12 @@
             <validValue name="MARKET">2</validValue>
             <validValue name="FOK">3</validValue>
         </enum>
+        <enum name="matchStatus" encodingType="uint8">
+            <validValue name="SUBMITED">1</validValue>
+            <validValue name="FILLED">2</validValue>
+            <validValue name="CANCELED">3</validValue>
+            <validValue name="REJECTED">4</validValue>
+        </enum>
         <enum name="tradePair" encodingType="uint8">
             <validValue name="BTC_USD">1</validValue>
             <validValue name="ETH_USD">2</validValue>
@@ -73,5 +79,14 @@
         <field name="price" id="11" type="double"/>
         <field name="filled" id="12" type="double"/>
         <field name="expireDays" id="13" type="int32" presence="optional" nullValue="-1"/>
+    </sbe:message>
+
+    <sbe:message name="OrderInfo" id="3" description="Order info response">
+        <field name="correlationId" id="1" type="uint64"/>
+        <field name="orderId" id="2" type="uint64"/>
+        <field name="timestamp" id="3" type="uint64"/>
+        <field name="userId" id="4" type="uint64"/>
+        <field name="matchStatus" id="5" type="matchStatus"/>
+        <field name="filledQuantity" id="6" type="uint64"/>
     </sbe:message>
 </sbe:messageSchema>
