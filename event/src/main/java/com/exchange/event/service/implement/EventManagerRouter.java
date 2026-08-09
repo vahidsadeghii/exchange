@@ -43,7 +43,6 @@ public class EventManagerRouter extends RouteBuilder {
     public void createSourceRoute() {
         List<TagRouter> tags = tagRouterService.findAll();
         ChoiceDefinition choice = from("kafka:event-topic?brokers=kafka-service:9092&groupId=event")
-                .log("Message received = ${body}")
                 .id("sourceKafka")
                 .process(p -> {
 
@@ -59,18 +58,19 @@ public class EventManagerRouter extends RouteBuilder {
                                 eventInfoMessage = objectMapper.readValue(
                                 p.getIn().getBody(String.class),
                                 EventInfoMessage.class);
-
-                        log.info("TAG = {}", eventInfoMessage.getTag());
-                        log.info("Routers = {}", tagRouterService.findAll());
-
                         if (eventInfoMessage.isPersistent()) {
                             eventInfoService.save(eventInfoMessage.getTag(),
                                     eventInfoMessage.getTitle(),
                                     eventInfoMessage.getServiceName(),
-                                    objectMapper.writeValueAsString(eventInfoMessage.getEvent()),
-                                    LocalDateTime.now());
+                                    eventInfoMessage.getEvent().toString(), LocalDateTime.now());
 
                         }
+
+                        if (eventInfoMessage.isRoutingEnabled()) {
+
+                            tagRouterService.save(eventInfoMessage.getTag(), eventInfoMessage.getTitle());
+                        }
+
                     } catch (Exception e) {
                         throw new RuntimeException(e.getMessage());
                     }
@@ -90,3 +90,4 @@ public class EventManagerRouter extends RouteBuilder {
     }
 
 }//@.routingEnabled == true &&
+
