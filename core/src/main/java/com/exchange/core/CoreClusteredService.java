@@ -1,7 +1,11 @@
 package com.exchange.core;
 
 import com.exchange.core.sbe.MessageHeaderDecoder;
+import com.exchange.core.sbe.OrderType;
 import com.exchange.core.sbe.PutOrderDecoder;
+import com.exchange.core.sbe.TradePair;
+import com.exchange.me.handler.OrderBookHandler;
+import com.exchange.me.service.EngineService;
 import io.aeron.ExclusivePublication;
 import io.aeron.Image;
 import io.aeron.cluster.codecs.CloseReason;
@@ -20,8 +24,12 @@ public class CoreClusteredService implements ClusteredService {
   private final PutOrderDecoder putOrderDecoder;
 
   private HashMap<Integer, RequestFunction> requestMap;
+
+  private final EngineService engineServiceImpl;
   
   public CoreClusteredService() {
+    this.engineServiceImpl = new EngineService();
+
     this.messageHeaderDecoder = new MessageHeaderDecoder();
     this.putOrderDecoder = new PutOrderDecoder();
 
@@ -39,7 +47,9 @@ public class CoreClusteredService implements ClusteredService {
             respondBuffer) -> {
           putOrderDecoder.wrap(respondBuffer, offset, actingLength, actingVersion);
 
-          long orderId = putOrderDecoder.orderId();
+          engineServiceImpl.createUpdateOrder(null, putOrderDecoder.orderId(), putOrderDecoder.userId(),
+        putOrderDecoder.tradeSide(), putOrderDecoder.tradePair(), putOrderDecoder.orderType(), putOrderDecoder.marketType(),
+      putOrderDecoder.quantity(), putOrderDecoder.price());
           
           
           return 0;
@@ -79,7 +89,8 @@ public class CoreClusteredService implements ClusteredService {
     messageHeaderDecoder.wrap(buffer, offset);
     int templateId = messageHeaderDecoder.templateId();
 
-    requestMap.get(templateId).handleRequest();
+    requestMap.get(templateId).handleRequest(session.id(), timestamp, buffer, offset, length, 
+    length - header.frameLength(), header.);
 
     long result;
     do {

@@ -26,8 +26,31 @@
             <validValue name="SELL">2</validValue>
         </enum>
         <enum name="orderType" encodingType="uint8">
-            <validValue name="MARKET">1</validValue>
-            <validValue name="LIMIT">2</validValue>
+            <validValue name="LIMIT">1</validValue>
+            <validValue name="MARKET">2</validValue>
+            <validValue name="FOK">3</validValue>
+        </enum>
+        <enum name="tradePair" encodingType="uint8">
+            <validValue name="BTC_USD">1</validValue>
+            <validValue name="ETH_USD">2</validValue>
+            <validValue name="LTC_USD">3</validValue>
+            <validValue name="XRP_USD">4</validValue>
+            <validValue name="TTR_USD">5</validValue>
+            <validValue name="BTC_EURO">6</validValue>
+            <validValue name="ETH_EURO">7</validValue>
+            <validValue name="LTC_EURO">8</validValue>
+            <validValue name="XRP_EURO">9</validValue>
+            <validValue name="TTR_EURO">10</validValue>
+        </enum>
+        <enum name="marketType" encodingType="uint8">
+            <validValue name="SPOT">1</validValue>
+            <validValue name="FUTURES">2</validValue>
+        </enum>
+        <enum name="matchEventStatus" encodingType="uint8">
+            <validValue name="SUBMITED">1</validValue>
+            <validValue name="FILLED">2</validValue>
+            <validValue name="CANCELED">3</validValue>
+            <validValue name="REJECTED">4</validValue>
         </enum>
     </types>
 
@@ -36,12 +59,19 @@
     </sbe:message>
 
 
-    <sbe:message name="PutOrder" id="2" description="Put an order to order book">
+    <sbe:message name="PutOrder" id="2" description="Put an order to order book, mirrors com.exchange.me.domain.Order">
         <field name="correlationId" id="1" type="uint64"/>
         <field name="orderId" id="2" type="uint64"/>
         <field name="timestamp" id="3" type="uint64"/>
         <field name="userId" id="4" type="uint64"/>
         <field name="tradeSide" id="5" type="tradeSide"/>
         <field name="orderType" id="6" type="orderType"/>
+        <field name="tradePair" id="7" type="tradePair"/>
+        <field name="marketType" id="8" type="marketType"/>
+        <field name="matchEventStatus" id="9" type="matchEventStatus"/>
+        <field name="quantity" id="10" type="double"/>
+        <field name="price" id="11" type="double"/>
+        <field name="filled" id="12" type="double"/>
+        <field name="expireDays" id="13" type="int32" presence="optional" nullValue="-1"/>
     </sbe:message>
 </sbe:messageSchema>

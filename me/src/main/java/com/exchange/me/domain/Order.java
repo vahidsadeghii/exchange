@@ -1,5 +1,9 @@
 package com.exchange.me.domain;
 
+import com.exchange.core.sbe.MarketType;
+import com.exchange.core.sbe.OrderType;
+import com.exchange.core.sbe.TradePair;
+import com.exchange.core.sbe.TradeSide;
 import lombok.*;
 
 @Setter

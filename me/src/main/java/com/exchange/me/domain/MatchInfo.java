@@ -1,5 +1,6 @@
 package com.exchange.me.domain;
 
+import com.exchange.core.sbe.TradeSide;
 import lombok.*;
 
 @Setter

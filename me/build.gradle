@@ -16,6 +16,9 @@ dependencies {
     implementation 'com.fasterxml.jackson.datatype:jackson-datatype-jsr310:2.18.4'
 
 
+    // ---- Matching engine domain/services ----
+    implementation project(':core')
+
     // Use JUnit Jupiter for testing.
     testImplementation libs.junit.jupiter
     testRuntimeOnly 'org.junit.platform:junit-platform-launcher'

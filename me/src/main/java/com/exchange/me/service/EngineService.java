@@ -1,5 +1,9 @@
-package com.exchange.me.service.impl;
+package com.exchange.me.service;
 
+import com.exchange.core.sbe.MarketType;
+import com.exchange.core.sbe.OrderType;
+import com.exchange.core.sbe.TradePair;
+import com.exchange.core.sbe.TradeSide;
 import com.exchange.me.domain.*;
 import com.exchange.me.exception.InvalidTradPairException;
 import com.exchange.me.exception.NotFoundOrderBookHandlerException;
@@ -11,10 +15,10 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 
-public class EngineServiceImpl {
+public class EngineService {
   private final Map<TradePair, OrderBookHandler> orderBooks = new ConcurrentHashMap<>();
 
-  public MatchEngine createUpdateOrder(
+  public void createUpdateOrder(
       Long oldOrderId,
       long orderId,
       long userId,
@@ -50,8 +54,6 @@ public class EngineServiceImpl {
         LocalDateTime.now().atZone(ZoneId.systemDefault()).toInstant().toEpochMilli(), order);
 
     order.setMatchEngineStatus(MatchEventStatus.FILLED);
-
-    return null;
   }
 
   public void deleteOrder(long timestamp, Order order) {

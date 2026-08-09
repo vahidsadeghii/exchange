@@ -1,5 +1,8 @@
 package com.exchange.me.handler;
 
+import com.exchange.core.sbe.OrderType;
+import com.exchange.core.sbe.TradePair;
+import com.exchange.core.sbe.TradeSide;
 import com.exchange.me.domain.*;
 
 import java.util.ArrayDeque;
