@@ -60,34 +60,47 @@ public class EventManagerRouter extends RouteBuilder {
                                 EventInfoMessage.class);
                         if (eventInfoMessage.isPersistent()) {
                             eventInfoService.save(eventInfoMessage.getTag(),
-                                    eventInfoMessage.getTitle(),
+                                    eventInfoMessage.getDestinationTopic(),
                                     eventInfoMessage.getServiceName(),
                                     eventInfoMessage.getEvent().toString(), LocalDateTime.now());
 
                         }
 
                         if (eventInfoMessage.isRoutingEnabled()) {
-
-                            tagRouterService.save(eventInfoMessage.getTag(), eventInfoMessage.getTitle());
+                            tagRouterService.save(eventInfoMessage.getTag(), eventInfoMessage.getDestinationTopic());
                         }
+
 
                     } catch (Exception e) {
                         throw new RuntimeException(e.getMessage());
                     }
                 }).choice();
-        if (tags.size() > 0) {
-            Map<String, List<TagRouter>> topics = tags.stream().collect(Collectors.groupingBy(TagRouter::getTag));
-            topics.forEach((k, v) ->
-                    choice.when()
-                            .jsonpath("$.[?(@.tag == '" + k + "' )]")
-                            .transform(ExpressionBuilder.languageExpression("jsonpath", "$.event")).marshal().json(JsonLibrary.Jackson)
-                            .multicast()
-                            .to(v.stream().map(tagRout -> "kafka:" + tagRout.getTitleTopic() + "?brokers=kafka-service:9092")
-                                    .collect(Collectors.toList()).toArray(String[]::new))
-                            .log("Send message to topic:  " + v.get(0).getTitleTopic()));
+        if (!tags.isEmpty()) {
+            Map<String, List<TagRouter>> topics = tags.stream()
+                    .collect(Collectors.groupingBy(TagRouter::getTag));
+
+            topics.forEach((tag, routers) -> {
+                // همه مقصدها برای این tag
+                String[] destinations = routers.stream()
+                        .map(r -> "kafka:" + r.getDestinationTopic() + "?brokers=kafka-service:9092")
+                        .toArray(String[]::new);
+
+                String topicList = routers.stream()
+                        .map(TagRouter::getDestinationTopic)
+                        .collect(Collectors.joining(","));
+
+                choice.when()
+                        .jsonpath("$[?(@.tag == '" + tag + "')]")   // ← شرط داینامیک بر اساس tag
+                        .log("Matched tag: " + tag)
+                        .transform().jsonpath("$.event")
+                        .marshal().json(JsonLibrary.Jackson)
+                        .multicast().to(destinations)
+                        .log("Send message to topics: " + topicList);
+            });
             choice.endChoice();
+
         }
+
     }
 
-}//@.routingEnabled == true &&
-
+}

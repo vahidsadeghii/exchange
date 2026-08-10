@@ -9,5 +9,10 @@ public interface TagRouterService {
 
     List<TagRouter> findAll();
 
+
+    List<TagRouter> findByTag(String tag);
+
+    //void refreshRout();
+
     TagRouter findByTagAndTitleTopic(String tag, String titleTopic);
 }

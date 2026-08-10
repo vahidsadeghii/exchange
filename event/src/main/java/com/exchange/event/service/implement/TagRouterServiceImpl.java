@@ -14,30 +14,32 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 
 @Service
 @Transactional
 @RequiredArgsConstructor
 @Slf4j
 public class TagRouterServiceImpl implements TagRouterService {
- private final TagRouterRepository tagRouterRepository;
+    private final TagRouterRepository tagRouterRepository;
 
     private final CamelContext camelContext;
     private final EventInfoService eventInfoService;
+    private final AsyncRefreshService asyncRefreshService;
 
 
     @Override
     public TagRouter save(String tag, String titleTopic) {
-        return tagRouterRepository.findByTagAndTitleTopic(tag, titleTopic)
+        return tagRouterRepository.findByTagAndDestinationTopic(tag, titleTopic)
                 .orElseGet(() -> {
                     var router = tagRouterRepository.save(
                             TagRouter.builder()
                                     .tag(tag)
-                                    .titleTopic(titleTopic)
+                                    .destinationTopic(titleTopic)
                                     .build()
                     );
 
-                    refreshRout();
+                    asyncRefreshService.refreshAsync(this);   // <-- INJA TAGHIR
                     log.info("Added new topic '{}' to the router", tag);
 
                     return router;
@@ -54,14 +56,16 @@ public class TagRouterServiceImpl implements TagRouterService {
     }
 
     public void refreshRout() {
-        try {
-            camelContext.getRouteController().stopRoute("sourceKafka");
-            camelContext.removeRoute("sourceKafka");
-            camelContext.addRoutes(new EventManagerRouter(camelContext, eventInfoService, this));
-            log.info("Add new Router and refresh router at this time: " + LocalDateTime.now());
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
+      try {
+        camelContext.getRouteController().stopRoute("sourceKafka");
+        camelContext.removeRoute("sourceKafka");
+
+        camelContext.addRoutes(new EventManagerRouter(camelContext, eventInfoService, this));
+
+        log.info("Router refreshed at: " + LocalDateTime.now());
+    } catch (Exception e) {
+        e.printStackTrace();
+    }
     }
 
     @Override
@@ -70,7 +74,12 @@ public class TagRouterServiceImpl implements TagRouterService {
     }
 
     @Override
+    public List<TagRouter> findByTag(String tag) {
+        return List.of();
+    }
+
+    @Override
     public TagRouter findByTagAndTitleTopic(String tag, String titleTopic) {
-        return tagRouterRepository.findByTagAndTitleTopic(tag, titleTopic).orElse(null);
+        return tagRouterRepository.findByTagAndDestinationTopic(tag, titleTopic).orElse(null);
     }
 }

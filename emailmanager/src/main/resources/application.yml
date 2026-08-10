@@ -49,10 +49,6 @@ custom-config:
       topic: set-user-status
     changeEmailVerifyCode-input-message:
       topic: change-email-VerifyCode
-    appointment-input-message:
-      topic: appointment
-    booking-patient-appointment-input-message:
-      topic: patientappointment
     profile-test-dlt-input-message:
       topic: user-profile
 

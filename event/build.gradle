@@ -56,16 +56,23 @@ dependencies {
 
     // Kafka
     implementation 'org.springframework.kafka:spring-kafka'
-    implementation 'org.apache.camel.springboot:camel-kafka-starter:4.20.0'
 
     // OAuth2
     implementation 'org.springframework.boot:spring-boot-starter-oauth2-resource-server'
 
     // Apache Camel
     implementation 'org.apache.camel.springboot:camel-spring-boot-starter:4.20.0'
+    implementation 'org.apache.camel.springboot:camel-kafka-starter:4.20.0'
+    implementation 'org.apache.camel.springboot:camel-jackson-starter:4.20.0'
+    implementation 'org.apache.camel.springboot:camel-jsonpath-starter:4.20.0'
+
 
     // MongoDB
     implementation 'org.springframework.boot:spring-boot-starter-data-mongodb'
+
+    // Lombok
+    compileOnly 'org.projectlombok:lombok'
+    annotationProcessor 'org.projectlombok:lombok'
 
     // Logging
     implementation 'de.siegmar:logback-gelf:4.0.0'

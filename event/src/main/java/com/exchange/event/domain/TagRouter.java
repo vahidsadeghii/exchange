@@ -1,6 +1,7 @@
 package com.exchange.event.domain;
 
 
+import jakarta.persistence.Column;
 import jakarta.persistence.Id;
 import lombok.*;
 import org.springframework.data.mongodb.core.mapping.Document;
@@ -15,9 +16,14 @@ import java.util.UUID;
 @AllArgsConstructor
 @NoArgsConstructor
 public class TagRouter {
-      @Id
+    @Id
     @Builder.Default
     private String id = UUID.randomUUID().toString();
+    @Column(nullable = false)
     private String tag;
-    private String titleTopic;
+
+    @Column(nullable = false)
+    private String destinationTopic;
+
+    private boolean enabled;
 }

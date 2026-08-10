@@ -17,17 +17,27 @@ import java.time.LocalDateTime;
 public class EventInfoServiceImpl implements EventInfoService {
     private final EventInfoRepository eventInfoRepository;
 
-
     @Override
-    public void save(String tag, String title, String serviceName, String event, LocalDateTime date) {
-        eventInfoRepository.save(EventInfo.builder()
-                .tag(tag)
-                .title(title)
-                .serviceName(serviceName)
-                .event(event)
-                .createDate(LocalDateTime.now())
-                .build());
+    public void save(
+            String tag,
+            String title,
+            String serviceName,
+            String event,
+            LocalDateTime date
+    ) {
 
+        eventInfoRepository.save(
+                EventInfo.builder()
+                        .tag(tag)
+                        .destinationTopic(title)
+                        .serviceName(serviceName)
+                        .event(event)
+                        .createDate(
+                                date != null
+                                        ? date
+                                        : LocalDateTime.now()
+                        )
+                        .build()
+        );
     }
-
 }

@@ -30,3 +30,9 @@ management:
   endpoint:
     prometheus:
       enabled: true
+
+
+custom-config:
+  kafka:
+    event-input-message:
+      topic: event-topic
