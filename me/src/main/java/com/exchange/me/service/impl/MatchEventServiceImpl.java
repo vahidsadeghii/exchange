@@ -39,8 +39,8 @@ public class MatchEventServiceImpl implements MatchEventService {
 
         EventInfoMessage<MatchEngineUpdate> message =
                 EventInfoMessage.<MatchEngineUpdate>builder()
-                        .tag(createUpdateMeMessage)
-                        .title("save-update-order")
+                        .tag("SAVE-UPDATE-ORDER")
+                        .destinationTopic(createUpdateMeMessage)
                         .serviceName("matchingengine")
                         .persistent(true)
                         .routingEnabled(true)

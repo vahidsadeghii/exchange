@@ -14,7 +14,6 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.List;
-import java.util.concurrent.TimeUnit;
 
 @Service
 @Transactional
@@ -39,7 +38,7 @@ public class TagRouterServiceImpl implements TagRouterService {
                                     .build()
                     );
 
-                    asyncRefreshService.refreshAsync(this);   // <-- INJA TAGHIR
+                    asyncRefreshService.refreshAsync(this);
                     log.info("Added new topic '{}' to the router", tag);
 
                     return router;
@@ -56,16 +55,16 @@ public class TagRouterServiceImpl implements TagRouterService {
     }
 
     public void refreshRout() {
-      try {
-        camelContext.getRouteController().stopRoute("sourceKafka");
-        camelContext.removeRoute("sourceKafka");
+        try {
+            camelContext.getRouteController().stopRoute("sourceKafka");
+            camelContext.removeRoute("sourceKafka");
 
-        camelContext.addRoutes(new EventManagerRouter(camelContext, eventInfoService, this));
+            camelContext.addRoutes(new EventManagerRouter(camelContext, eventInfoService, this));
 
-        log.info("Router refreshed at: " + LocalDateTime.now());
-    } catch (Exception e) {
-        e.printStackTrace();
-    }
+            log.info("Router refreshed at: " + LocalDateTime.now());
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
     }
 
     @Override

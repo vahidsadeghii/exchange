@@ -8,7 +8,6 @@ import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.camel.CamelContext;
-import org.apache.camel.builder.ExpressionBuilder;
 import org.apache.camel.builder.RouteBuilder;
 import org.apache.camel.model.ChoiceDefinition;
 import org.apache.camel.model.dataformat.JsonLibrary;
@@ -67,30 +66,40 @@ public class EventManagerRouter extends RouteBuilder {
                         }
 
                         if (eventInfoMessage.isRoutingEnabled()) {
+                            log.info("Saving TagRouter: tag={}, topic={}",
+                                    eventInfoMessage.getTag(),
+                                    eventInfoMessage.getDestinationTopic());
                             tagRouterService.save(eventInfoMessage.getTag(), eventInfoMessage.getDestinationTopic());
                         }
 
 
                     } catch (Exception e) {
+                        log.error("ERROR PROCESSING EVENT", e);
                         throw new RuntimeException(e.getMessage());
                     }
                 }).choice();
+
         if (!tags.isEmpty()) {
             Map<String, List<TagRouter>> topics = tags.stream()
                     .collect(Collectors.groupingBy(TagRouter::getTag));
 
             topics.forEach((tag, routers) -> {
-                // همه مقصدها برای این tag
+
                 String[] destinations = routers.stream()
                         .map(r -> "kafka:" + r.getDestinationTopic() + "?brokers=kafka-service:9092")
                         .toArray(String[]::new);
 
+                if (destinations.length == 0) {
+                    return;
+                }
+
                 String topicList = routers.stream()
+                        .filter(r -> r.getDestinationTopic() != null && !r.getDestinationTopic().isBlank())
                         .map(TagRouter::getDestinationTopic)
                         .collect(Collectors.joining(","));
 
                 choice.when()
-                        .jsonpath("$[?(@.tag == '" + tag + "')]")   // ← شرط داینامیک بر اساس tag
+                        .jsonpath("$[?(@.tag == '" + tag + "')]")
                         .log("Matched tag: " + tag)
                         .transform().jsonpath("$.event")
                         .marshal().json(JsonLibrary.Jackson)

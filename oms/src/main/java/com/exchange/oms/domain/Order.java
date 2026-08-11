@@ -39,6 +39,7 @@ public class Order {
 
     private BigDecimal price;
 
+    @Enumerated(EnumType.STRING)
     private MatchEventStatus matchEngineStatus;
 
     private Long expireDays;

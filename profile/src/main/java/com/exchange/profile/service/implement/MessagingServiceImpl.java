@@ -31,7 +31,7 @@ public class MessagingServiceImpl implements MessagingService {
     @Override
     public String sendEmailTest() {
                 VerifyEmailSender message = new VerifyEmailSender(
-                        "email", "445555",
+                        "thoma12@gmail.com", "445555",
                         "545555",
                         LocalDateTime.now().plusDays(expiredDate).toString());
 

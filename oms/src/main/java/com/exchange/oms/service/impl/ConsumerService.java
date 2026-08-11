@@ -17,14 +17,25 @@ public class ConsumerService {
     private final ObjectMapper objectMapper;
 
 
-    @KafkaListener(topics = "${custom-config.kafka.me-create-update-input-message.topic}",
-            groupId = "oms-group")
+  @KafkaListener(topics = "${custom-config.kafka.me-create-update-input-message.topic}", groupId = "oms-group")
     public void saveUpdateMatchEngineEvent(String message) {
+
         try {
-            log.info("EMAIL CONSUMER RECEIVED: {}", message);
+
+            log.info("MATCH ENGINE EVENT RECEIVED: {}", message);
 
             MatchEngineUpdate matchEngineEvent =
-                    objectMapper.readValue(message, MatchEngineUpdate.class);
+                    objectMapper.readValue(
+                            message,
+                            MatchEngineUpdate.class
+                    );
+
+            log.info(
+                    "Processing MatchEngineUpdate: orderId={}, userId={}, status={}",
+                    matchEngineEvent.orderId(),
+                    matchEngineEvent.userId(),
+                    matchEngineEvent.status()
+            );
 
             orderService.matchEngineStatus(
                     matchEngineEvent.orderId(),
@@ -32,9 +43,12 @@ public class ConsumerService {
                     matchEngineEvent.status()
             );
 
+            log.info("MatchEngineUpdate processed successfully: orderId={}", matchEngineEvent.orderId());
+
         } catch (Exception e) {
-            log.error("Failed to process Kafka message: {}", message, e);
-            throw new RuntimeException("Kafka message processing failed", e);
+            log.error("Failed to process MatchEngineUpdate Kafka message: {}", message, e);
+
+            throw new RuntimeException("Kafka MatchEngineUpdate processing failed", e);
         }
     }
 }
