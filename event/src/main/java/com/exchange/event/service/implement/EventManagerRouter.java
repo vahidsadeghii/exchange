@@ -65,6 +65,12 @@ public class EventManagerRouter extends RouteBuilder {
                                     eventInfoMessage.getEvent().toString(), LocalDateTime.now());
 
                         }
+
+                        if (eventInfoMessage.isRoutingEnabled()) {
+
+                            tagRouterService.save(eventInfoMessage.getTag(), eventInfoMessage.getTitle());
+                        }
+
                     } catch (Exception e) {
                         throw new RuntimeException(e.getMessage());
                     }

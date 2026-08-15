@@ -9,7 +9,8 @@ import java.util.Optional;
 @Repository
 public interface TagRouterRepository extends MongoRepository<TagRouter, String> {
 
-    Optional<TagRouter> findByTag(String tag);
-
-    Optional<TagRouter> findByTagAndTitleTopic(String tag, String titleTopic);
+    Optional<TagRouter> findByTagAndTitleTopic(
+            String tag,
+            String titleTopic
+    );
 }

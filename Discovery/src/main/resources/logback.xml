@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<configuration debug="true" scan="true" scanPeriod="30 seconds">
+    <timestamp key="time" datePattern="yyyy-MM-dd'--'HH:mm:s"/>
+    <appender name="Console" class="ch.qos.logback.core.ConsoleAppender">
+        <encoder class="ch.qos.logback.classic.encoder.PatternLayoutEncoder">
+            <pattern>${time} - %-4r [%t] %5p %c{1} - %m - %X{requestId} %X{ip} %msg%n</pattern>
+        </encoder>
+
+    </appender>
+
+    <appender name="File" class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <file>logs/discovery.log</file>
+        <encoder class="ch.qos.logback.classic.encoder.PatternLayoutEncoder">
+            <pattern>${time} - %-4r [%t] %5p %c{1} - %m - %X{requestId} %X{ip} %msg%n</pattern>
+        </encoder>
+        <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+            <fileNamePattern>logs/flow-management-%d{yyyy-MM-dd}.log</fileNamePattern>
+        </rollingPolicy>
+    </appender>
+    <root level="INFO">
+        <!--        <appender-ref ref="GRAYLOG"/>-->
+        <appender-ref ref="Console"/>
+        <appender-ref ref="File"/>
+    </root>
+    <logger name="com.healthycare.discovery
+" level="INFO" additivity="false">
+        <!--        <appender-ref ref="GRAYLOG" />-->
+        <appender-ref ref="Console"/>
+        <appender-ref ref="File"/>
+    </logger>
+</configuration>

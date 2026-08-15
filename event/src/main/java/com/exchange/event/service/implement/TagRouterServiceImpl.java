@@ -20,7 +20,7 @@ import java.util.List;
 @RequiredArgsConstructor
 @Slf4j
 public class TagRouterServiceImpl implements TagRouterService {
-    private final TagRouterRepository tagRouterRepository;
+ private final TagRouterRepository tagRouterRepository;
 
     private final CamelContext camelContext;
     private final EventInfoService eventInfoService;

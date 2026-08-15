@@ -42,6 +42,9 @@ dependencies {
     // ----Kafka ----
     implementation 'org.springframework.kafka:spring-kafka'
 
+    // MongoDB
+    implementation 'org.springframework.boot:spring-boot-starter-data-mongodb'
+
 
     // Use JUnit Jupiter for testing.
     testImplementation libs.junit.jupiter

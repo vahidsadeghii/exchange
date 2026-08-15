@@ -2,6 +2,10 @@ Spring:
   kafka:
     bootstrap-servers: localhost:9092
 
+  data:
+    mongodb:
+      uri: mongodb://me_user:me@localhost:27017/me?authSource=me
+
 
 
 
@@ -14,3 +18,5 @@ custom-config:
       topic: event-topic
     me-create-update-output-message:
       topic: me-create-update-topic
+
+

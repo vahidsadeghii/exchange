@@ -5,7 +5,6 @@ import com.exchange.oms.client.matchingengine.CreateUpdateOrderRequestClient;
 import com.exchange.oms.client.matchingengine.OrderBookDepthResponseClient;
 import com.exchange.oms.client.wallet.WalletClient;
 import com.exchange.oms.config.exception.NotFoundException;
-import com.exchange.oms.controller.order.orderbookdepth.OrderBookDepthResponse;
 import com.exchange.oms.domain.*;
 import com.exchange.oms.exception.order.ExpiredOrderException;
 import com.exchange.oms.exception.order.InsufficientBalanceException;
@@ -42,14 +41,17 @@ public class OrderServiceImpl implements OrderService {
                     .orElseThrow(NotFoundException::new);
             if (expireDays != null) {
                 LocalDateTime createdAt = oldOrder.getCreatedAt();
-
                 if (createdAt.plusDays(expireDays).isBefore(LocalDateTime.now())) {
                     throw new ExpiredOrderException();
                 }
             }
+            //TODO: check here
+            oldOrder.setQuantity(quantity);
+            oldOrder.setPrice(price);
+            oldOrder.setExpireDays(expireDays);
 
-            oldOrder.setStatus(OrderStatus.CANCELED);
-            orderRepository.save(oldOrder);
+            //oldOrder.setStatus(OrderStatus.CANCELED);
+           // orderRepository.save(oldOrder);
         }
 
         validateSufficientBalance(onlineUser, assetType, quantity, price);
@@ -90,6 +92,8 @@ public class OrderServiceImpl implements OrderService {
 
     @Override
     public void matchEngineStatus(long orderId, long userId, MatchEventStatus matchEngineStatus) {
+
+        // TODO: Should we check if the order has exceeded the expiration period here?
         Order order = orderRepository.findById(orderId).orElseThrow(NotFoundException::new);
         order.setMatchEngineStatus(matchEngineStatus);
     }

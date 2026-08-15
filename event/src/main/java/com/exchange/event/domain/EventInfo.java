@@ -19,6 +19,6 @@ public class EventInfo {
     private String tag;
     private String title;
     private String serviceName;
-    private String event;
+    private Object event;
     private LocalDateTime createDate;
 }

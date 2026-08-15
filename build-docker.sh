@@ -93,7 +93,7 @@ if docker build \
     
     # Display image info
     echo "Image details:"
-    docker images "$IMAGE_NAME" 
+    docker images "$IMAGE_NAME"
     echo ""
     
     print_info "Running container:"
