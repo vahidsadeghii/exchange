@@ -50,9 +50,9 @@ Request-Id: 2002
   "tradePair": "BTC_EURO",
   "orderType": "LIMIT",
   "tradeSide": "SELL",
-  "marketType": "MARKET",
+  "marketType": "SPOT",
   "quantity": 0.5,
-  "price": 2306.75,
+  "price": 2300.75,
   "expireDays": 3
 }
 
@@ -110,10 +110,10 @@ Request-Id: 2002
   "tradePair": "BTC_EURO",
   "orderType": "LIMIT",
   "tradeSide": "SELL",
-  "marketType": "MARKET",
+  "marketType": "SPOT",
   "quantity": 0.5,
   "price": 3000.75,
-  "expireDays": 7
+  "expireDays": 4
 }
 
 > {%
@@ -163,14 +163,14 @@ Request-Id: 2002
 POST http://{{host}}/oms/api/v1/orders
 Authorization: Bearer {{loginToken}}
 Content-Type: application/json
-Request-Id: {{$uuid}}
+Request-Id: test-order-{{$timestamp}}
 
 {
   "assetType": "EUR",
   "tradePair": "BTC_EURO",
-  "orderType": "LIMIT",
+  "orderType": "FOK",
   "tradeSide": "SELL",
-  "marketType": "MARKET",
+  "marketType": "SPOT",
   "quantity": 0.5,
   "price": 1560.75,
   "expireDays": 7
@@ -203,7 +203,7 @@ else if (response.status === 200 && response.body) {
     });
 
     client.test("Order type correct", function () {
-        client.assert(response.body.orderType === "LIMIT");
+        client.assert(response.body.orderType === "FOK");
     });
 
     client.test("Quantity correct", function () {
@@ -235,14 +235,15 @@ Content-Type: application/json
 Request-Id: 2001
 
 {
-  "oldOrderId": 29,
+  "oldOrderId": {{orderId}},
   "assetType": "EUR",
   "tradePair": "BTC_EURO",
-  "orderType": "LIMIT",
+  "orderType": "MARKET",
   "tradeSide": "SELL",
-  "marketType": "MARKET",
+  "marketType": "SPOT",
   "quantity": 0.5,
-  "price": 2300.75
+  "price": 1303.75,
+  "expireDays": 8
 }
 
 > {%
@@ -268,8 +269,8 @@ Request-Id: 2001
             "Trade side mismatch");
     });
 
-    client.test("Order type is LIMIT", function () {
-        client.assert(body.orderType === "LIMIT",
+    client.test("Order type is MARKET", function () {
+        client.assert(body.orderType === "MARKET",
             "Order type mismatch");
     });
 

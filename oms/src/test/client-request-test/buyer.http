@@ -1,0 +1,306 @@
+### ===========================================
+### BUYER LOGIN
+### ===========================================
+
+POST http://{{host}}/profile/open/v1/user/signin
+Content-Type: application/json
+
+{
+  "userName": "helda.musterman11@example.com",
+  "password": "HeldaPass123!"
+}
+
+> {%
+client.test("Login Success", function () {
+    client.assert(response.status === 200);
+});
+
+client.global.set("buyerToken", response.body.accessToken.accessToken);
+
+client.log("Buyer logged in");
+%}
+
+
+
+### ===========================================
+### BUY LIMIT ORDER #1
+### ===========================================
+
+POST http://{{host}}/oms/api/v1/orders
+Authorization: Bearer {{buyerToken}}
+Content-Type: application/json
+Request-Id: {{$uuid}}
+
+{
+  "assetType":"EUR",
+  "tradePair":"BTC_EURO",
+  "orderType":"LIMIT",
+  "tradeSide":"BUY",
+  "marketType":"SPOT",
+  "quantity":1,
+  "price":1000,
+  "expireDays":7
+}
+
+> {%
+
+client.test("Status 200", function () {
+    client.assert(response.status===200);
+});
+
+client.test("TradeSide BUY", function () {
+    client.assert(response.body.tradeSide==="BUY");
+});
+
+client.test("OrderType LIMIT", function () {
+    client.assert(response.body.orderType==="LIMIT");
+});
+
+client.test("Price Correct", function () {
+    client.assert(response.body.price==1000);
+});
+
+client.global.set("buyOrder1",response.body.id);
+
+client.log("BUY ORDER="+response.body.id);
+
+%}
+
+
+
+### ===========================================
+### CHECK DEPTH
+### ===========================================
+
+GET http://{{host}}/oms/api/v1/orderdepth?pair=BTC_EURO&depth=2
+Authorization: Bearer {{buyerToken}}
+Request-Id: {{$uuid}}
+
+> {%
+
+client.test("Depth 200",function(){
+client.assert(response.status===200);
+});
+
+client.test("Has bids",function(){
+client.assert(Array.isArray(response.body.bids));
+});
+
+client.test("Has asks",function(){
+client.assert(Array.isArray(response.body.asks));
+});
+
+client.test("Depth <=2",function(){
+client.assert(response.body.bids.length<=2);
+client.assert(response.body.asks.length<=2);
+});
+
+%}
+
+
+
+### ===========================================
+### UPDATE BUY ORDER
+### ===========================================
+
+POST http://{{host}}/oms/api/v1/orders
+Authorization: Bearer {{buyerToken}}
+Content-Type: application/json
+Request-Id: {{$uuid}}
+
+{
+  "oldOrderId": {{buyOrder1}},
+  "assetType":"EUR",
+  "tradePair":"BTC_EURO",
+  "orderType":"LIMIT",
+  "tradeSide":"BUY",
+  "marketType":"SPOT",
+  "quantity":1,
+  "price":1100
+}
+
+> {%
+
+client.test("Status 200",function(){
+client.assert(response.status===200);
+});
+
+client.test("Updated Price",function(){
+client.assert(response.body.price==1100);
+});
+
+client.global.set("buyOrder2",response.body.id);
+
+%}
+
+### ===========================================
+### BUY MARKET ORDER
+### ===========================================
+
+POST http://{{host}}/oms/api/v1/orders
+Authorization: Bearer {{buyerToken}}
+Content-Type: application/json
+Request-Id: {{$uuid}}
+
+{
+  "assetType":"EUR",
+  "tradePair":"BTC_EURO",
+  "orderType":"MARKET",
+  "tradeSide":"BUY",
+  "marketType":"SPOT",
+  "quantity":0.5,
+  "price":0
+}
+
+> {%
+
+client.test("Status 200",function(){
+    client.assert(response.status===200);
+});
+
+client.test("OrderType MARKET",function(){
+    client.assert(response.body.orderType==="MARKET");
+});
+
+client.test("TradeSide BUY",function(){
+    client.assert(response.body.tradeSide==="BUY");
+});
+
+client.test("Quantity Correct",function(){
+    client.assert(response.body.quantity==0.5);
+});
+
+client.global.set("marketBuyId",response.body.id);
+
+client.log("MARKET BUY = "+response.body.id);
+
+%}
+
+
+
+### ===========================================
+### BUY FOK ORDER
+### ===========================================
+
+POST http://{{host}}/oms/api/v1/orders
+Authorization: Bearer {{buyerToken}}
+Content-Type: application/json
+Request-Id: {{$uuid}}
+
+{
+  "assetType":"EUR",
+  "tradePair":"BTC_EURO",
+  "orderType":"FOK",
+  "tradeSide":"BUY",
+  "marketType":"SPOT",
+  "quantity":1,
+  "price":1000
+}
+
+> {%
+
+client.test("Status OK",function(){
+    client.assert(response.status===200);
+});
+
+client.test("OrderType FOK",function(){
+    client.assert(response.body.orderType==="FOK");
+});
+
+client.test("TradeSide BUY",function(){
+    client.assert(response.body.tradeSide==="BUY");
+});
+
+client.test("Price Correct",function(){
+    client.assert(response.body.price==1000);
+});
+
+client.global.set("fokBuyId",response.body.id);
+
+client.log("FOK BUY = "+response.body.id);
+
+%}
+
+
+
+### ===========================================
+### SECOND LIMIT BUY (Partial Fill Scenario)
+### ===========================================
+
+POST http://{{host}}/oms/api/v1/orders
+Authorization: Bearer {{buyerToken}}
+Content-Type: application/json
+Request-Id: {{$uuid}}
+
+{
+  "assetType":"EUR",
+  "tradePair":"BTC_EURO",
+  "orderType":"LIMIT",
+  "tradeSide":"BUY",
+  "marketType":"SPOT",
+  "quantity":2,
+  "price":1200
+}
+
+> {%
+
+client.test("Status 200",function(){
+    client.assert(response.status===200);
+});
+
+client.test("LIMIT BUY",function(){
+    client.assert(response.body.orderType==="LIMIT");
+});
+
+client.test("Quantity 2",function(){
+    client.assert(response.body.quantity==2);
+});
+
+client.test("Price 1200",function(){
+    client.assert(response.body.price==1200);
+});
+
+client.global.set("partialBuyId",response.body.id);
+
+%}
+
+
+
+### ===========================================
+### VERIFY ORDERBOOK
+### ===========================================
+
+GET http://{{host}}/oms/api/v1/orderdepth?pair=BTC_EURO&depth=5
+Authorization: Bearer {{buyerToken}}
+Request-Id: {{$uuid}}
+
+> {%
+
+client.test("Depth OK",function(){
+    client.assert(response.status===200);
+});
+
+client.test("Bids Array",function(){
+    client.assert(Array.isArray(response.body.bids));
+});
+
+client.test("Asks Array",function(){
+    client.assert(Array.isArray(response.body.asks));
+});
+
+client.test("Depth <=5",function(){
+    client.assert(response.body.bids.length<=5);
+    client.assert(response.body.asks.length<=5);
+});
+
+if(response.body.bids.length>0){
+    client.log("Best Bid = "+response.body.bids[0].price);
+}
+
+if(response.body.asks.length>0){
+    client.log("Best Ask = "+response.body.asks[0].price);
+}
+
+client.log("Buyer tests finished.");
+
+%}

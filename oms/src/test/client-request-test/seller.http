@@ -1,0 +1,297 @@
+### ===========================================
+### SELLER LOGIN
+### ===========================================
+
+POST http://{{host}}/profile/open/v1/user/signin
+Content-Type: application/json
+
+{
+  "userName": "martin.hoffmann@example.com",
+  "password": "hoffmanmartinSecretPass123!"
+}
+
+> {%
+
+client.test("Login Success", function () {
+    client.assert(response.status === 200);
+});
+
+client.global.set("sellerToken", response.body.accessToken.accessToken);
+
+client.log("Seller logged in");
+
+%}
+
+
+
+### ===========================================
+### SELL LIMIT ORDER #1
+### ===========================================
+
+POST http://{{host}}/oms/api/v1/orders
+Authorization: Bearer {{sellerToken}}
+Content-Type: application/json
+Request-Id: {{$uuid}}
+
+{
+  "assetType":"EUR",
+  "tradePair":"BTC_EURO",
+  "orderType":"LIMIT",
+  "tradeSide":"SELL",
+  "marketType":"SPOT",
+  "quantity":1,
+  "price":1200,
+  "expireDays":7
+}
+
+> {%
+
+client.test("Status 200",function(){
+    client.assert(response.status===200);
+});
+
+client.test("TradeSide SELL",function(){
+    client.assert(response.body.tradeSide==="SELL");
+});
+
+client.test("OrderType LIMIT",function(){
+    client.assert(response.body.orderType==="LIMIT");
+});
+
+client.test("Price Correct",function(){
+    client.assert(response.body.price==1200);
+});
+
+client.global.set("sellOrder1",response.body.id);
+
+client.log("SELL ORDER="+response.body.id);
+
+%}
+
+
+
+### ===========================================
+### SECOND SELL ORDER (Price Priority)
+### ===========================================
+
+POST http://{{host}}/oms/api/v1/orders
+Authorization: Bearer {{sellerToken}}
+Content-Type: application/json
+Request-Id: {{$uuid}}
+
+{
+  "assetType":"EUR",
+  "tradePair":"BTC_EURO",
+  "orderType":"LIMIT",
+  "tradeSide":"SELL",
+  "marketType":"SPOT",
+  "quantity":1,
+  "price":1000,
+  "expireDays":7
+}
+
+> {%
+
+client.test("Status 200",function(){
+    client.assert(response.status===200);
+});
+
+client.test("Price Correct",function(){
+    client.assert(response.body.price==1000);
+});
+
+client.global.set("sellOrder2",response.body.id);
+
+%}
+
+
+
+### ===========================================
+### THIRD SELL ORDER (FIFO TEST)
+### ===========================================
+
+POST http://{{host}}/oms/api/v1/orders
+Authorization: Bearer {{sellerToken}}
+Content-Type: application/json
+Request-Id: {{$uuid}}
+
+{
+  "assetType":"EUR",
+  "tradePair":"BTC_EURO",
+  "orderType":"LIMIT",
+  "tradeSide":"SELL",
+  "marketType":"SPOT",
+  "quantity":1,
+  "price":1000,
+  "expireDays":7
+}
+
+> {%
+
+client.test("Status 200",function(){
+    client.assert(response.status===200);
+});
+
+client.global.set("fifoSellOrder",response.body.id);
+
+client.log("FIFO Order="+response.body.id);
+
+%}
+
+
+### ===========================================
+### MARKET SELL
+### ===========================================
+
+POST http://{{host}}/oms/api/v1/orders
+Authorization: Bearer {{sellerToken}}
+Content-Type: application/json
+Request-Id: {{$uuid}}
+
+{
+  "assetType":"EUR",
+  "tradePair":"BTC_EURO",
+  "orderType":"MARKET",
+  "tradeSide":"SELL",
+  "marketType":"SPOT",
+  "quantity":0.5,
+  "price":0
+}
+
+> {%
+
+client.test("Status 200",function(){
+    client.assert(response.status===200);
+});
+
+client.test("OrderType MARKET",function(){
+    client.assert(response.body.orderType==="MARKET");
+});
+
+client.test("TradeSide SELL",function(){
+    client.assert(response.body.tradeSide==="SELL");
+});
+
+client.global.set("marketSellId",response.body.id);
+
+%}
+
+
+
+### ===========================================
+### FOK SELL
+### ===========================================
+
+POST http://{{host}}/oms/api/v1/orders
+Authorization: Bearer {{sellerToken}}
+Content-Type: application/json
+Request-Id: {{$uuid}}
+
+{
+  "assetType":"EUR",
+  "tradePair":"BTC_EURO",
+  "orderType":"FOK",
+  "tradeSide":"SELL",
+  "marketType":"SPOT",
+  "quantity":1,
+  "price":1000
+}
+
+> {%
+
+client.test("Status 200",function(){
+    client.assert(response.status===200);
+});
+
+client.test("OrderType FOK",function(){
+    client.assert(response.body.orderType==="FOK");
+});
+
+client.test("TradeSide SELL",function(){
+    client.assert(response.body.tradeSide==="SELL");
+});
+
+client.global.set("fokSellId",response.body.id);
+
+%}
+
+
+
+### ===========================================
+### UPDATE SELL ORDER
+### ===========================================
+
+POST http://{{host}}/oms/api/v1/orders
+Authorization: Bearer {{sellerToken}}
+Content-Type: application/json
+Request-Id: {{$uuid}}
+
+{
+  "oldOrderId": {{sellOrder1}},
+  "assetType":"EUR",
+  "tradePair":"BTC_EURO",
+  "orderType":"LIMIT",
+  "tradeSide":"SELL",
+  "marketType":"SPOT",
+  "quantity":1,
+  "price":1300
+}
+
+> {%
+
+client.test("Status 200",function(){
+    client.assert(response.status===200);
+});
+
+client.test("TradeSide SELL",function(){
+    client.assert(response.body.tradeSide==="SELL");
+});
+
+client.test("Updated Price",function(){
+    client.assert(response.body.price==1300);
+});
+
+client.global.set("updatedSellOrder",response.body.id);
+
+%}
+
+
+
+### ===========================================
+### CHECK ORDERBOOK
+### ===========================================
+
+GET http://{{host}}/oms/api/v1/orderdepth?pair=BTC_EURO&depth=5
+Authorization: Bearer {{sellerToken}}
+Request-Id: {{$uuid}}
+
+> {%
+
+client.test("Depth OK",function(){
+    client.assert(response.status===200);
+});
+
+client.test("Has Bids",function(){
+    client.assert(Array.isArray(response.body.bids));
+});
+
+client.test("Has Asks",function(){
+    client.assert(Array.isArray(response.body.asks));
+});
+
+client.test("Depth <=5",function(){
+    client.assert(response.body.bids.length<=5);
+    client.assert(response.body.asks.length<=5);
+});
+
+if(response.body.bids.length>0){
+    client.log("Best Bid="+response.body.bids[0].price);
+}
+
+if(response.body.asks.length>0){
+    client.log("Best Ask="+response.body.asks[0].price);
+}
+
+client.log("Seller tests finished.");
+
+%}

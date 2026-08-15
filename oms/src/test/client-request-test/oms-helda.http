@@ -50,7 +50,7 @@ Request-Id: 2002
   "tradePair": "BTC_EURO",
   "orderType": "LIMIT",
   "tradeSide": "BUY",
-  "marketType": "MARKET",
+  "marketType": "SPOT",
   "quantity": 0.5,
   "price": 302.05,
   "expireDays": 7
@@ -108,9 +108,9 @@ Request-Id: 2002
 {
   "assetType": "EUR",
   "tradePair": "BTC_EURO",
-  "orderType": "LIMIT",
+  "orderType": "MARKET",
   "tradeSide": "BUY",
-  "marketType": "MARKET",
+  "marketType": "SPOT",
   "quantity": 0.5,
   "price": 120.75,
   "expireDays": 7
@@ -140,7 +140,7 @@ Request-Id: 2002
         });
 
         client.test("Order type is LIMIT", function () {
-            client.assert(response.body.orderType === "LIMIT");
+            client.assert(response.body.orderType === "MARKET");
         });
 
         client.test("Quantity is correct", function () {
@@ -159,7 +159,7 @@ Request-Id: 2002
     }
 %}
 
-####### Create Order
+####### Create the threed Order
 POST http://{{host}}/oms/api/v1/orders
 Authorization: Bearer {{loginToken}}
 Content-Type: application/json
@@ -170,7 +170,7 @@ Request-Id: {{$uuid}}
   "tradePair": "BTC_EURO",
   "orderType": "LIMIT",
   "tradeSide": "BUY",
-  "marketType": "MARKET",
+  "marketType": "SPOT",
   "quantity": 0.5,
   "price": 1200.75,
   "expireDays": 7
@@ -182,7 +182,7 @@ client.log("Response Body: " + JSON.stringify(response.body));
 
 // Always handle rate limiting first
 if (response.status === 429) {
-    client.log("⚠ 429 Too Many Requests - backend rate limit triggered");
+    client.log("429 Too Many Requests - backend rate limit triggered");
 }
 else if (response.status === 200 && response.body) {
 
@@ -232,15 +232,15 @@ else {
 POST http://{{host}}/oms/api/v1/orders
 Authorization: Bearer {{loginToken}}
 Content-Type: application/json
-Request-Id: 2001
+Request-Id: 10001-test
 
 {
-  "oldOrderId": 29,
+  "oldOrderId": {{orderId}},
   "assetType": "EUR",
   "tradePair": "BTC_EURO",
-  "orderType": "LIMIT",
+  "orderType": "MARKET",
   "tradeSide": "BUY",
-  "marketType": "MARKET",
+  "marketType": "SPOT",
   "quantity": 0.5,
   "price": 1300.75
 }
@@ -268,8 +268,8 @@ Request-Id: 2001
             "Trade side mismatch");
     });
 
-    client.test("Order type is LIMIT", function () {
-        client.assert(body.orderType === "LIMIT",
+    client.test("Order type is MARKET", function () {
+        client.assert(body.orderType === "MARKET",
             "Order type mismatch");
     });
 
