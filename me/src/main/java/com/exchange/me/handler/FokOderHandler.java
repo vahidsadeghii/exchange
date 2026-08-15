@@ -1,29 +1,27 @@
 package com.exchange.me.handler;
 
 
+import com.exchange.core.sbe.OrderType;
+import com.exchange.core.sbe.TradeSide;
 import com.exchange.me.domain.MatchInfo;
 import com.exchange.me.domain.Order;
-import com.exchange.me.domain.OrderType;
-import com.exchange.me.domain.TradeSide;
 import com.exchange.me.exception.FokOrderPriceCanNotBeNullException;
 import com.exchange.me.matching.MatchingContext;
 import com.exchange.me.matching.MatchingEngine;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
-import org.springframework.stereotype.Component;
 
 import java.util.Deque;
 import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
 
-@Component
-@RequiredArgsConstructor
-@Slf4j
 public class FokOderHandler implements OrderHandler {
     private final MatchingEngine matchingEngine;
 
     private static final double ZERO_PRICE = 0.0;
+
+    public FokOderHandler(MatchingEngine matchingEngine) {
+        this.matchingEngine = matchingEngine;
+    }
 
     @Override
     public OrderType supports() {
@@ -39,15 +37,11 @@ public class FokOderHandler implements OrderHandler {
 
         // Check if order can be fully filled
         if (!canFullyFill(order, context.getBids(), context.getAsks())) {
-            log.debug("FOK order {} cannot be fully filled, killing order. Required: {}, Available: {}",
-                    order.getId(),
-                    order.getQuantity(),
-                    calculateAvailableQuantity(order, context.getBids(), context.getAsks()));
+
             return List.of();
         }
 
         // Execute matchingfff
-        log.debug("FOK order {} can be fully filled, executing", order.getId());
         if (order.getTradeSide() == TradeSide.BUY) {
             return matchingEngine.executeBuyOrder(timestamp, order, context.getAsks(), context.getOrderIndex());
         } else {
@@ -57,7 +51,6 @@ public class FokOderHandler implements OrderHandler {
 
     private void validateFokOrder(Order order) {
         if (order.getOrderType() == OrderType.FOK && order.getPrice() <= ZERO_PRICE) {
-            log.error("FOK order {} has invalid price: {}", order.getId(), order.getPrice());
             throw new FokOrderPriceCanNotBeNullException();
         }
     }

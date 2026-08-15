@@ -1,6 +1,5 @@
 plugins {
     id 'application'
-    id 'me.champeau.jmh' version '0.7.2'
 }
 
 repositories {
@@ -13,7 +12,7 @@ dependencies {
     compileOnly 'org.projectlombok:lombok:1.18.36'
     annotationProcessor 'org.projectlombok:lombok:1.18.36'
 
-    implementation 'com.fasterxml.jackson.datatype:jackson-datatype-jsr310:2.18.4'
+    implementation 'com.fasterxml.jackson.datatype:jackson-datatype-jsr310:2.18.5'
 
     // ---- SBE generated codecs (shared with core) ----
     implementation 'org.agrona:agrona:2.1.0'

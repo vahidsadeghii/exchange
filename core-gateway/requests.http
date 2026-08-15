@@ -1,7 +1,7 @@
 @host = http://localhost:8089
 
 ### Get order info
-GET {{host}}/api/v1/me/orders?id=1
+GET {{host}}/api/v1/me/orders?id=1&pair=BTC_USD
 
 ### Put order
 POST {{host}}/api/v1/me/orders

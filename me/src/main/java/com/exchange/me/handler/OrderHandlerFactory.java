@@ -1,17 +1,26 @@
 package com.exchange.me.handler;
 
+import com.exchange.core.sbe.OrderType;
+import com.exchange.me.matching.MatchingEngine;
 
-import com.exchange.me.domain.OrderType;
-import org.springframework.stereotype.Component;
-
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
-@Component
 public class OrderHandlerFactory {
     private final Map<OrderType, OrderHandler> handlers;
+
+    public static OrderHandlerFactory createFactory() {
+        return new OrderHandlerFactory(
+                Arrays.asList(
+                        new FokOderHandler(new MatchingEngine()),
+                        new LimitOrderHandler(new MatchingEngine()),
+                        new MarketOrderHandler(new MatchingEngine())
+                )
+        );
+    }
 
     public OrderHandlerFactory(List<OrderHandler> handlers) {
 

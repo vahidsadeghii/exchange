@@ -1,18 +1,15 @@
 package com.exchange.me.handler;
 
+import com.exchange.core.sbe.OrderType;
+import com.exchange.core.sbe.TradeSide;
 import com.exchange.me.domain.MatchInfo;
 import com.exchange.me.domain.Order;
-import com.exchange.me.domain.OrderType;
-import com.exchange.me.domain.TradeSide;
 import com.exchange.me.matching.MatchingContext;
 import com.exchange.me.matching.MatchingEngine;
 import lombok.RequiredArgsConstructor;
-import org.springframework.stereotype.Component;
 
 import java.util.List;
 
-
-@Component
 @RequiredArgsConstructor
 public class LimitOrderHandler implements OrderHandler {
     private final MatchingEngine matchingEngine;

@@ -11,6 +11,7 @@ import com.exchange.me.domain.PriceLevel;
 import com.exchange.me.exception.InvalidTradPairException;
 import com.exchange.me.exception.NotFoundOrderBookHandlerException;
 import com.exchange.me.handler.OrderBookHandler;
+import com.exchange.me.handler.OrderHandlerFactory;
 
 import java.time.LocalDateTime;
 import java.time.ZoneId;
@@ -113,6 +114,6 @@ public class EngineService {
     }
 
     private OrderBookHandler getOrCreateBook(TradePair pair) {
-        return orderBooks.computeIfAbsent(pair, OrderBookHandler::new);
+        return orderBooks.computeIfAbsent(pair, (p) -> new OrderBookHandler(p, OrderHandlerFactory.createFactory()));
     }
 }
