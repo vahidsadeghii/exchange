@@ -1,6 +1,7 @@
 package com.exchange.me.domain;
 
 import com.exchange.core.sbe.MarketType;
+import com.exchange.core.sbe.MatchStatus;
 import com.exchange.core.sbe.OrderType;
 import com.exchange.core.sbe.TradePair;
 import com.exchange.core.sbe.TradeSide;
@@ -20,14 +21,14 @@ public class Order {
     private OrderType orderType;
     private TradePair tradePair;
     private MarketType  marketType;
-    private MatchEventStatus matchEngineStatus;
-    private double quantity;
-    private double price;
-    private double filled;
-    private Long expireDays;
+    private MatchStatus matchStatus;
+    private long quantity;
+    private long price;
+    private long filled;
+    private long expireDays;
 
 
-    public double getRemainingQuantity() {
+    public long getRemainingQuantity() {
         return quantity - filled;
     }
 }

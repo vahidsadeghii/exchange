@@ -1,4 +1,6 @@
 package com.exchange.me.domain;
 
-public record MatchEngine(long orderId, long userId, MatchEventStatus status){
+import com.exchange.core.sbe.MatchStatus;
+
+public record MatchEngine(long orderId, long userId, MatchStatus matchStatus){
 }

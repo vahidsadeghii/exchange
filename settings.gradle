@@ -21,6 +21,8 @@ include('mm')
 include('ce')
 include('gateway')
 include('core')
+include('core-sdk')
+include('core-gateway')
 include('event')
 include('admin')
 

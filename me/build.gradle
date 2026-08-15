@@ -15,9 +15,8 @@ dependencies {
 
     implementation 'com.fasterxml.jackson.datatype:jackson-datatype-jsr310:2.18.4'
 
-
-    // ---- Matching engine domain/services ----
-    implementation project(':core')
+    // ---- SBE generated codecs (shared with core) ----
+    implementation 'org.agrona:agrona:2.1.0'
 
     // Use JUnit Jupiter for testing.
     testImplementation libs.junit.jupiter
@@ -35,6 +34,16 @@ java {
         languageVersion = JavaLanguageVersion.of(21)
     }
 }
+
+sourceSets {
+    main {
+        java {
+            srcDir "$rootDir/core/build/generated-src/sbe"
+        }
+    }
+}
+
+compileJava.dependsOn ':core:generateSbe'
 
 tasks.named('test') {
     useJUnitPlatform()

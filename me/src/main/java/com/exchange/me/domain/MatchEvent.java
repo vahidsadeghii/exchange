@@ -3,6 +3,7 @@ package com.exchange.me.domain;
 import lombok.*;
 
 import java.time.LocalDateTime;
+import com.exchange.core.sbe.MatchStatus;
 
 @Getter
 @Setter
@@ -14,7 +15,7 @@ public class MatchEvent {
     private long userId;
     private String topic;
     private String eventData;
-    private MatchEventStatus status;
+    private MatchStatus matchStatus;
     private Boolean processed;
     private LocalDateTime processedAt;
     private LocalDateTime createdAt;

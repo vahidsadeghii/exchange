@@ -1,6 +1,7 @@
 package com.exchange.me.service;
 
 import com.exchange.core.sbe.MarketType;
+import com.exchange.core.sbe.MatchStatus;
 import com.exchange.core.sbe.OrderType;
 import com.exchange.core.sbe.TradePair;
 import com.exchange.core.sbe.TradeSide;
@@ -26,8 +27,8 @@ public class EngineService {
       TradePair tradePair,
       OrderType orderType,
       MarketType marketType,
-      double quantity,
-      double price) {
+      long quantity,
+      long price) {
 
     OrderBookHandler handler = getOrCreateBook(tradePair);
 
@@ -53,7 +54,7 @@ public class EngineService {
     handler.matchOrder(
         LocalDateTime.now().atZone(ZoneId.systemDefault()).toInstant().toEpochMilli(), order);
 
-    order.setMatchEngineStatus(MatchEventStatus.SUBMITED);
+    order.setMatchStatus(MatchStatus.SUBMITED);
 
     return order;
   }
