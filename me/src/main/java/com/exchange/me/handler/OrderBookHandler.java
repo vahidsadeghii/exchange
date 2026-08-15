@@ -1,20 +1,30 @@
 package com.exchange.me.handler;
 
-import com.exchange.me.domain.*;
-
-import java.util.*;
-
+import com.exchange.core.sbe.TradePair;
+import com.exchange.core.sbe.TradeSide;
+import com.exchange.me.domain.MatchInfo;
+import com.exchange.me.domain.Order;
 import com.exchange.me.exception.InvalidTradePairException;
 import com.exchange.me.exception.OrderCanNotBeNullException;
 import com.exchange.me.matching.MatchingContext;
-import lombok.extern.slf4j.Slf4j;
+import lombok.Getter;
+
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Deque;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.TreeMap;
 
 
-@Slf4j
 public class OrderBookHandler {
     private final TradePair tradePair;
 
+    @Getter
     private final TreeMap<Long, Deque<Order>> bids;
+    @Getter
     private final TreeMap<Long, Deque<Order>> asks;
     private final Map<Long, OrderLocation> orderIndex;
 
@@ -48,7 +58,6 @@ public class OrderBookHandler {
                         asks,
                         orderIndex);
 
-        log.debug("OrderBookHandler created for pair {}", tradePair);
     }
 
     public List<MatchInfo> matchOrder(
@@ -80,7 +89,6 @@ public class OrderBookHandler {
         OrderLocation location = orderIndex.remove(order.getId());
 
         if (location == null) {
-            log.warn("Order {} not found", order.getId());
             return;
         }
 
@@ -203,4 +211,5 @@ public class OrderBookHandler {
             double volume,
             int orderCount) {
     }
+
 }

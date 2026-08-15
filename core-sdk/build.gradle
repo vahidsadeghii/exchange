@@ -1,0 +1,46 @@
+plugins {
+    id 'java-library'
+}
+
+repositories {
+    mavenCentral()
+}
+
+configurations {
+    sbeTool
+}
+
+dependencies {
+    // Use JUnit Jupiter for testing.
+    testImplementation libs.junit.jupiter
+    testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+
+    // Guava
+    implementation libs.guava
+
+    // ---- Aeron (High-performance messaging) ----
+    implementation 'io.aeron:aeron-all:1.52.1'
+}
+
+
+
+java {
+    toolchain {
+        languageVersion = JavaLanguageVersion.of(21)
+    }
+}
+
+
+sourceSets {
+    main {
+        java {
+            srcDir "$rootDir/core/build/generated-src/sbe"
+        }
+    }
+}
+
+compileJava.dependsOn ':core:generateSbe'
+
+tasks.named('test') {
+    useJUnitPlatform()
+}

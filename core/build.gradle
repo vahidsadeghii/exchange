@@ -1,0 +1,69 @@
+plugins {
+    id 'application'
+    id 'me.champeau.jmh' version '0.7.2'
+}
+
+repositories {
+    mavenCentral()
+}
+
+configurations {
+    sbeTool
+}
+
+dependencies {
+    // Use JUnit Jupiter for testing.
+    testImplementation libs.junit.jupiter
+    testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+
+    // Guava
+    implementation libs.guava
+
+    // ---- Aeron (High-performance messaging) ----
+    implementation 'io.aeron:aeron-all:1.52.1'
+
+    // ---- Matching engine domain/services ----
+    implementation project(':me')
+
+    // ---- SBE (message codec generator) ----
+    sbeTool 'uk.co.real-logic:sbe-tool:1.35.6'
+}
+
+def sbeSchemaFile = "$projectDir/src/main/resources/sbe/message-schema.xml"
+def sbeOutputDir = "$buildDir/generated-src/sbe"
+
+tasks.register('generateSbe', JavaExec) {
+    group = 'build'
+    description = 'Generates Java message codecs from the SBE schema.'
+    classpath = configurations.sbeTool
+    mainClass = 'uk.co.real_logic.sbe.SbeTool'
+    systemProperty 'sbe.output.dir', sbeOutputDir
+    systemProperty 'sbe.target.language', 'Java'
+    args sbeSchemaFile
+    inputs.file(sbeSchemaFile)
+    outputs.dir(sbeOutputDir)
+}
+
+sourceSets {
+    main {
+        java {
+            srcDir sbeOutputDir
+        }
+    }
+}
+
+compileJava.dependsOn generateSbe
+
+java {
+    toolchain {
+        languageVersion = JavaLanguageVersion.of(21)
+    }
+}
+
+application {
+    mainClass = 'com.exchange.core.Runner'
+}
+
+tasks.named('test') {
+    useJUnitPlatform()
+}

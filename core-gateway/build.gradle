@@ -1,0 +1,35 @@
+plugins {
+    id 'application'
+    id 'org.springframework.boot' version '3.4.2'
+    id 'io.spring.dependency-management' version '1.1.7'
+}
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    implementation 'org.springframework.boot:spring-boot-starter-web'
+
+    // ---- core cluster client SDK ----
+    implementation project(':core-sdk')
+
+    implementation 'io.aeron:aeron-all:1.52.1'
+
+
+    testImplementation 'org.springframework.boot:spring-boot-starter-test'
+}
+
+java {
+    toolchain {
+        languageVersion = JavaLanguageVersion.of(21)
+    }
+}
+
+application {
+    mainClass = 'com.exchange.coregateway.CoreGatewayApp'
+}
+
+tasks.named('test') {
+    useJUnitPlatform()
+}

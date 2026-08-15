@@ -1,14 +1,17 @@
 package com.exchange.me.matching;
 
+import com.exchange.core.sbe.OrderType;
+import com.exchange.core.sbe.TradeSide;
 import com.exchange.me.domain.MatchInfo;
 import com.exchange.me.domain.Order;
-import com.exchange.me.domain.OrderType;
-import com.exchange.me.domain.TradeSide;
 import com.exchange.me.handler.OrderBookHandler;
-import lombok.extern.slf4j.Slf4j;
-import org.springframework.stereotype.Component;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Deque;
+import java.util.List;
+import java.util.Map;
+import java.util.TreeMap;
+import java.util.UUID;
 
 
 /**
@@ -28,8 +31,6 @@ import java.util.*;
  * @see Order
  * @see MatchInfo
  */
-@Component
-@Slf4j
 public class MatchingEngine {
 
     //Generic matching logic Limit and Market
@@ -116,7 +117,7 @@ public class MatchingEngine {
                 break;
             }
 
-            double tradedQuantity = Math.min(
+            long tradedQuantity = Math.min(
                     incomingOrder.getRemainingQuantity(),
                     levelOrder.getRemainingQuantity()
             );
@@ -161,19 +162,6 @@ public class MatchingEngine {
                         levelOrder.getQuantity(),
                         levelOrder.getRemainingQuantity()
                 ));
-
-        log.info(
-                "MATCH: taker={}, maker={}, qty={}, price={}",
-                incomingOrder.getId(),
-                levelOrder.getId(),
-                tradedQuantity,
-                priceLevel
-        );
-
-        log.debug("Match created: {} order {} ({}) matched with {} order {} ({}) at price {} qty {}",
-                incomingSide, incomingOrder.getId(), incomingOrder.getUserId(),
-                levelOrder.getTradeSide(), levelOrder.getId(), levelOrder.getUserId(),
-                priceLevel, tradedQuantity);
     }
 
 }
