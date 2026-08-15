@@ -38,7 +38,7 @@ public class Runner {
             .archiveDir(new File(BASE_DIR, "archive"))
             .controlChannel(ARCHIVE_CONTROL_CHANNEL)
             .replicationChannel("aeron:udp?endpoint=localhost:0")
-            .deleteArchiveOnStart(true);
+            .deleteArchiveOnStart(false);
 
     final AeronArchive.Context aeronArchiveContext =
         new AeronArchive.Context()
@@ -55,7 +55,7 @@ public class Runner {
             .ingressChannel("aeron:udp?term-length=64k")
             .replicationChannel("aeron:udp?endpoint=localhost:0")
             .archiveContext(aeronArchiveContext.clone())
-            .deleteDirOnStart(true)
+            .deleteDirOnStart(false)
             .terminationHook(barrier::signal);
 
     final ClusteredServiceContainer.Context serviceContainerContext =

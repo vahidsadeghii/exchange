@@ -110,14 +110,12 @@ public class CoreClusteredService implements ClusteredService {
                                 actingVersion,
                                 respondBuffer);
 
-        System.out.println("Response len: " + responseLen);
         long result;
         do {
             result = session.offer(respondBuffer, 0, responseLen);
         } while (result == io.aeron.Publication.ADMIN_ACTION
                 || result == io.aeron.Publication.BACK_PRESSURED);
 
-        System.out.println("Successfully offer response: " + result);
     }
 
     @Override
@@ -151,12 +149,14 @@ public class CoreClusteredService implements ClusteredService {
             ExpandableDirectByteBuffer respondBuffer) {
         putOrderDecoder.wrap(buffer, offset + headerLength, actingLength, actingVersion);
 
-        System.out.println("Put order called: " + putOrderDecoder.orderId());
+
+        System.out.println("Put order called: " + putOrderDecoder.toString());
         var order =
                 engineServiceImpl.createUpdateOrder(
                         null,
                         putOrderDecoder.orderId(),
                         putOrderDecoder.userId(),
+                        putOrderDecoder.timestamp(),
                         putOrderDecoder.tradeSide(),
                         putOrderDecoder.tradePair(),
                         putOrderDecoder.orderType(),
@@ -172,7 +172,7 @@ public class CoreClusteredService implements ClusteredService {
                     .timestamp(order.getTimestamp())
                     .userId(order.getUserId())
                     .matchStatus(order.getMatchStatus())
-                    .filledQuantity((long) order.getQuantity() - (long) order.getRemainingQuantity());
+                    .filledQuantity(order.getQuantity() - order.getRemainingQuantity());
 
             return orderInfoEncoder.encodedLength() + messageHeaderDecoder.encodedLength();
         } else {
@@ -204,31 +204,26 @@ public class CoreClusteredService implements ClusteredService {
         if (order != null) {
             orderInfoEncoder
                     .wrapAndApplyHeader(respondBuffer, 0, messageHeaderEncoder)
-                    .correlationId(putOrderDecoder.correlationId())
+                    .correlationId(getOrderInfoDecoder.correlationId())
                     .orderId(order.getId())
                     .timestamp(order.getTimestamp())
                     .userId(order.getUserId())
                     .matchStatus(order.getMatchStatus())
-                    .filledQuantity((long) order.getQuantity() - (long) order.getRemainingQuantity());
+                    .filledQuantity(order.getQuantity() - order.getRemainingQuantity());
 
             return orderInfoEncoder.encodedLength() + messageHeaderDecoder.encodedLength();
         } else {
-            int len = returnErrorMessage(respondBuffer, putOrderDecoder.correlationId(), ErrorCode.ORDER_NOT_FOUND);
-            System.out.println("Make error message: " + len);
-            return len;
+            return returnErrorMessage(respondBuffer, getOrderInfoDecoder.correlationId(), ErrorCode.ORDER_NOT_FOUND);
         }
     }
 
     private int returnErrorMessage(ExpandableDirectByteBuffer respondBuffer, long correlationId, int errorCode) {
-        System.out.println("Wrap header");
         errorMessageEncoder.wrapAndApplyHeader(
                 respondBuffer, 0, messageHeaderEncoder
         );
         errorMessageEncoder.correlationId(correlationId);
         errorMessageEncoder.code(errorCode);
 
-        int len = errorMessageEncoder.encodedLength() + messageHeaderDecoder.encodedLength();
-        System.out.println("Return len: " + len);
-        return len;
+        return errorMessageEncoder.encodedLength() + messageHeaderDecoder.encodedLength();
     }
 }

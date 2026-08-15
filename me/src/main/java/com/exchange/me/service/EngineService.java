@@ -5,10 +5,13 @@ import com.exchange.core.sbe.MatchStatus;
 import com.exchange.core.sbe.OrderType;
 import com.exchange.core.sbe.TradePair;
 import com.exchange.core.sbe.TradeSide;
-import com.exchange.me.domain.*;
+import com.exchange.me.domain.Order;
+import com.exchange.me.domain.OrderBookDepth;
+import com.exchange.me.domain.PriceLevel;
 import com.exchange.me.exception.InvalidTradPairException;
 import com.exchange.me.exception.NotFoundOrderBookHandlerException;
 import com.exchange.me.handler.OrderBookHandler;
+
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.util.List;
@@ -17,97 +20,99 @@ import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 
 public class EngineService {
-  private final Map<TradePair, OrderBookHandler> orderBooks = new ConcurrentHashMap<>();
+    private final Map<TradePair, OrderBookHandler> orderBooks = new ConcurrentHashMap<>();
 
-  public Order createUpdateOrder(
-      Long oldOrderId,
-      long orderId,
-      long userId,
-      TradeSide tradeSide,
-      TradePair tradePair,
-      OrderType orderType,
-      MarketType marketType,
-      long quantity,
-      long price) {
+    public Order createUpdateOrder(
+            Long oldOrderId,
+            long orderId,
+            long userId,
+            long timestamp,
+            TradeSide tradeSide,
+            TradePair tradePair,
+            OrderType orderType,
+            MarketType marketType,
+            long quantity,
+            long price) {
 
-    OrderBookHandler handler = getOrCreateBook(tradePair);
+        OrderBookHandler handler = getOrCreateBook(tradePair);
 
-    // Cancel old order
-    if (oldOrderId != null) {
-      Optional<Order> oldOrder = handler.getOrder(oldOrderId);
-      handler.deleteOrder(System.currentTimeMillis(), oldOrder.get());
+        // Cancel old order
+        if (oldOrderId != null) {
+            Optional<Order> oldOrder = handler.getOrder(oldOrderId);
+            handler.deleteOrder(System.currentTimeMillis(), oldOrder.get());
+        }
+
+        // create new order
+        Order order =
+                Order.builder()
+                        .id(orderId)
+                        .userId(userId)
+                        .tradeSide(tradeSide)
+                        .orderType(orderType)
+                        .tradePair(tradePair)
+                        .marketType(marketType)
+                        .quantity(quantity)
+                        .price(price)
+                        .timestamp(timestamp)
+                        .build();
+
+        handler.matchOrder(
+                LocalDateTime.now().atZone(ZoneId.systemDefault()).toInstant().toEpochMilli(), order);
+
+        order.setMatchStatus(MatchStatus.SUBMITED);
+
+        return order;
     }
 
-    // create new order
-    Order order =
-        Order.builder()
-            .id(orderId)
-            .userId(userId)
-            .tradeSide(tradeSide)
-            .orderType(orderType)
-            .tradePair(tradePair)
-            .marketType(marketType)
-            .quantity(quantity)
-            .price(price)
-            .build();
-
-    handler.matchOrder(
-        LocalDateTime.now().atZone(ZoneId.systemDefault()).toInstant().toEpochMilli(), order);
-
-    order.setMatchStatus(MatchStatus.SUBMITED);
-
-    return order;
-  }
-
-  public void deleteOrder(long timestamp, Order order) {
-    OrderBookHandler handler = orderBooks.get(order.getTradePair());
-    if (handler != null) {
-      handler.deleteOrder(timestamp, order);
-    }
-  }
-
-  public Order getOrder(TradePair pair, long orderId) {
-    if (pair == null) {
-      throw new InvalidTradPairException();
-    }
-    OrderBookHandler handler = orderBooks.get(pair);
-    if (handler == null) {
-      throw new NotFoundOrderBookHandlerException();
+    public void deleteOrder(long timestamp, Order order) {
+        OrderBookHandler handler = orderBooks.get(order.getTradePair());
+        if (handler != null) {
+            handler.deleteOrder(timestamp, order);
+        }
     }
 
-    return handler.getOrder(orderId).orElseThrow();
-  }
+    public Order getOrder(TradePair pair, long orderId) {
+        if (pair == null) {
+            throw new InvalidTradPairException();
+        }
+        OrderBookHandler handler = orderBooks.get(pair);
+        if (handler == null) {
+            throw new NotFoundOrderBookHandlerException();
+        }
 
-  public OrderBookHandler.MarketDepth getMarketDepth(TradePair pair, int levels) {
-    OrderBookHandler handler = orderBooks.get(pair);
-    return handler != null ? handler.getMarketDepth(levels) : null;
-  }
+        return handler.getOrder(orderId).orElseThrow();
+    }
 
-  public void resetAll() {
-    orderBooks.values().forEach(OrderBookHandler::reset);
-  }
+    public OrderBookHandler.MarketDepth getMarketDepth(TradePair pair, int levels) {
+        OrderBookHandler handler = orderBooks.get(pair);
+        return handler != null ? handler.getMarketDepth(levels) : null;
+    }
 
-  public OrderBookHandler getOrderBook(TradePair pair) {
-    return orderBooks.get(pair);
-  }
+    public void resetAll() {
+        orderBooks.values().forEach(OrderBookHandler::reset);
+    }
 
-  public OrderBookDepth getOrderBookDepth(TradePair pair, int depth) {
-    OrderBookHandler book = getOrderBook(pair);
+    public OrderBookHandler getOrderBook(TradePair pair) {
+        return orderBooks.get(pair);
+    }
 
-    List<PriceLevel> bids =
-        book.getBidsList(depth).stream()
-            .map(level -> new PriceLevel(level.price(), level.volume(), level.orderCount()))
-            .toList();
+    public OrderBookDepth getOrderBookDepth(TradePair pair, int depth) {
+        OrderBookHandler book = getOrderBook(pair);
 
-    List<PriceLevel> asks =
-        book.getAsksList(depth).stream()
-            .map(level -> new PriceLevel(level.price(), level.volume(), level.orderCount()))
-            .toList();
+        List<PriceLevel> bids =
+                book.getBidsList(depth).stream()
+                        .map(level -> new PriceLevel(level.price(), level.volume(), level.orderCount()))
+                        .toList();
 
-    return new OrderBookDepth(bids, asks);
-  }
+        List<PriceLevel> asks =
+                book.getAsksList(depth).stream()
+                        .map(level -> new PriceLevel(level.price(), level.volume(), level.orderCount()))
+                        .toList();
 
-  private OrderBookHandler getOrCreateBook(TradePair pair) {
-    return orderBooks.computeIfAbsent(pair, p -> new OrderBookHandler(p));
-  }
+        return new OrderBookDepth(bids, asks);
+    }
+
+    private OrderBookHandler getOrCreateBook(TradePair pair) {
+        return orderBooks.computeIfAbsent(pair, OrderBookHandler::new);
+    }
 }

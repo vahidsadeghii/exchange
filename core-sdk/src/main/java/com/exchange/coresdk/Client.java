@@ -240,8 +240,6 @@ public class Client implements EgressListener, AutoCloseable {
         final int actingBlockLength = messageHeaderDecoder.blockLength();
         final int actingVersion = messageHeaderDecoder.version();
 
-        System.out.println("New result coming: " + messageHeaderDecoder.templateId());
-
         switch (messageHeaderDecoder.templateId()) {
             case OrderInfoDecoder.TEMPLATE_ID: {
                 orderInfoDecoder.wrap(buffer, offset + headerLength, actingBlockLength, actingVersion);
@@ -263,7 +261,7 @@ public class Client implements EgressListener, AutoCloseable {
             case ErrorMessageDecoder.TEMPLATE_ID: {
                 errorMessageDecoder.wrap(buffer, offset + headerLength, actingBlockLength, actingVersion);
                 final CompletableFuture<Response> future =
-                        pendingRequests.remove(orderInfoDecoder.correlationId());
+                        pendingRequests.remove(errorMessageDecoder.correlationId());
                 if (future != null) {
                     future.complete(
                             new Response(errorMessageDecoder.code()));

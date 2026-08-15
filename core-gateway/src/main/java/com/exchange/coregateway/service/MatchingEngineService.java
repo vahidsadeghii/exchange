@@ -46,8 +46,8 @@ public class MatchingEngineService {
                             orderType,
                             tradePair,
                             marketType,
-                            10,
-                            10)
+                            quantity,
+                            price)
                     .get();
         } catch (Exception e) {
             e.printStackTrace();
