@@ -10,41 +10,15 @@ repositories {
     gradlePluginPortal() // Add this line to include the Gradle Plugin Portal
 }
 
-ext {
-    springCloudVersion = "2023.0.3"
-    resilience4jVersion = "2.2.0"
-}
-
-dependencyManagement {
-    imports {
-        mavenBom "org.springframework.cloud:spring-cloud-dependencies:${springCloudVersion}"
-    }
-}
-
 dependencies {
-    // Spring Boot dependencies
-    implementation 'org.springframework.boot:spring-boot-starter-web'
 
-    compileOnly 'org.projectlombok:lombok'
-    annotationProcessor 'org.projectlombok:lombok'
-    implementation 'io.micrometer:micrometer-registry-prometheus'
-    implementation 'org.springframework.cloud:spring-cloud-starter-netflix-eureka-client'
-    implementation 'org.springframework.cloud:spring-cloud-starter-openfeign'
-    //implementation 'org.springframework.cloud:spring-cloud-config-client'
-    runtimeOnly 'com.h2database:h2'
+    compileOnly 'org.projectlombok:lombok:1.18.36'
+    annotationProcessor 'org.projectlombok:lombok:1.18.36'
 
-    // ---- Resilience4j (Spring Boot 3) ----
-    implementation "io.github.resilience4j:resilience4j-spring-boot3:${resilience4jVersion}"
+    implementation 'com.fasterxml.jackson.datatype:jackson-datatype-jsr310:2.18.5'
 
-    // ---- JSON ----
-    implementation 'com.fasterxml.jackson.datatype:jackson-datatype-jsr310'
-
-    // ----Kafka ----
-    implementation 'org.springframework.kafka:spring-kafka'
-
-    // MongoDB
-    implementation 'org.springframework.boot:spring-boot-starter-data-mongodb'
-
+    // ---- SBE generated codecs (shared with core) ----
+    implementation 'org.agrona:agrona:2.1.0'
 
     // Use JUnit Jupiter for testing.
     testImplementation libs.junit.jupiter
@@ -63,9 +37,15 @@ java {
     }
 }
 
-application {
-    mainClass = 'com.exchange.me.ExchangeApp'
+sourceSets {
+    main {
+        java {
+            srcDir "$rootDir/core/build/generated-src/sbe"
+        }
+    }
 }
+
+compileJava.dependsOn ':core:generateSbe'
 
 tasks.named('test') {
     useJUnitPlatform()

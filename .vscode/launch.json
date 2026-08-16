@@ -2,14 +2,23 @@
     "configurations": [
         {
             "type": "java",
-            "name": "ExchangeApp",
+            "name": "CoreGateway",
             "request": "launch",
-            "mainClass": "com.exchange.me.ExchangeApp",
-            "projectName": "me"
+            "mainClass": "com.exchange.coregateway.CoreGatewayApp",
+            "projectName": "core-gateway",
+            "vmArgs": "--add-opens java.base/sun.nio.ch=ALL-UNNAMED --add-exports java.base/jdk.internal.misc=ALL-UNNAMED"
         },
         {
             "type": "java",
-            "name": "Spring Boot-OMS",
+            "name": "Core",
+            "request": "launch",
+            "mainClass": "com.exchange.core.Runner",
+            "projectName": "core",
+            "vmArgs": "--add-opens java.base/sun.nio.ch=ALL-UNNAMED --add-exports java.base/jdk.internal.misc=ALL-UNNAMED"
+        },
+        {
+            "type": "java",
+            "name": "OMS",
             "request": "launch",
             "cwd": "${workspaceFolder}",
             "mainClass": "com.exchange.oms.OMS",
@@ -20,7 +29,7 @@
         },
         {
             "type": "java",
-            "name": "Spring Boot-Profile",
+            "name": "Profile",
             "request": "launch",
             "cwd": "${workspaceFolder}",
             "mainClass": "com.exchange.profile.ProfileApp",

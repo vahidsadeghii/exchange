@@ -1,0 +1,96 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<sbe:messageSchema xmlns:sbe="http://fixprotocol.io/2016/sbe"
+                    package="com.exchange.core.sbe"
+                    id="1"
+                    version="0"
+                    semanticVersion="0.1"
+                    description="Exchange core message schema"
+                    byteOrder="littleEndian">
+    <types>
+        <composite name="messageHeader" description="Message identifiers and length of message root">
+            <type name="blockLength" primitiveType="uint16"/>
+            <type name="templateId" primitiveType="uint16"/>
+            <type name="schemaId" primitiveType="uint16"/>
+            <type name="version" primitiveType="uint16"/>
+        </composite>
+        <composite name="groupSizeEncoding" description="Repeating group dimensions">
+            <type name="blockLength" primitiveType="uint16"/>
+            <type name="numInGroup" primitiveType="uint16"/>
+        </composite>
+        <composite name="varStringEncoding">
+            <type name="length" primitiveType="uint32" maxValue="1073741824"/>
+            <type name="varData" primitiveType="uint8" length="0" characterEncoding="UTF-8"/>
+        </composite>
+        <enum name="tradeSide" encodingType="uint8">
+            <validValue name="BUY">1</validValue>
+            <validValue name="SELL">2</validValue>
+        </enum>
+        <enum name="orderType" encodingType="uint8">
+            <validValue name="LIMIT">1</validValue>
+            <validValue name="MARKET">2</validValue>
+            <validValue name="FOK">3</validValue>
+        </enum>
+        <enum name="matchStatus" encodingType="uint8">
+            <validValue name="SUBMITED">1</validValue>
+            <validValue name="FILLED">2</validValue>
+            <validValue name="CANCELED">3</validValue>
+            <validValue name="REJECTED">4</validValue>
+        </enum>
+        <enum name="tradePair" encodingType="uint8">
+            <validValue name="BTC_USD">1</validValue>
+            <validValue name="ETH_USD">2</validValue>
+            <validValue name="LTC_USD">3</validValue>
+            <validValue name="XRP_USD">4</validValue>
+            <validValue name="TTR_USD">5</validValue>
+            <validValue name="BTC_EURO">6</validValue>
+            <validValue name="ETH_EURO">7</validValue>
+            <validValue name="LTC_EURO">8</validValue>
+            <validValue name="XRP_EURO">9</validValue>
+            <validValue name="TTR_EURO">10</validValue>
+        </enum>
+        <enum name="marketType" encodingType="uint8">
+            <validValue name="SPOT">1</validValue>
+            <validValue name="FUTURES">2</validValue>
+        </enum>
+    </types>
+
+    <sbe:message name="Heartbeat" id="1" description="Placeholder message; replace with real domain messages">
+        <field name="timestamp" id="1" type="int64"/>
+    </sbe:message>
+
+    <sbe:message name="ErrorMessage" id="2" description="When error happened">
+        <field name="correlationId" id="1" type="uint64"/>
+        <field name="code" id="2" type="int32"/>
+    </sbe:message>
+
+    <sbe:message name="PutOrder" id="101" description="Put an order to order book, mirrors com.exchange.me.domain.Order">
+        <field name="correlationId" id="1" type="uint64"/>
+        <field name="orderId" id="2" type="uint64"/>
+        <field name="timestamp" id="3" type="uint64"/>
+        <field name="userId" id="4" type="uint64"/>
+        <field name="tradeSide" id="5" type="tradeSide"/>
+        <field name="orderType" id="6" type="orderType"/>
+        <field name="tradePair" id="7" type="tradePair"/>
+        <field name="marketType" id="8" type="marketType"/>
+        <field name="matchStatus" id="9" type="matchStatus"/>
+        <field name="quantity" id="10" type="uint64"/>
+        <field name="price" id="11" type="uint64"/>
+        <field name="filled" id="12" type="uint64"/>
+        <field name="expireDays" id="13" type="int32" presence="optional" nullValue="-1"/>
+    </sbe:message>
+
+    <sbe:message name="OrderInfo" id="102" description="Order info response">
+        <field name="correlationId" id="1" type="uint64"/>
+        <field name="orderId" id="2" type="uint64"/>
+        <field name="timestamp" id="3" type="uint64"/>
+        <field name="userId" id="4" type="uint64"/>
+        <field name="matchStatus" id="5" type="matchStatus"/>
+        <field name="filledQuantity" id="6" type="uint64"/>
+    </sbe:message>
+
+    <sbe:message name="GetOrderInfo" id="103" description="Get Order Info">
+        <field name="correlationId" id="1" type="uint64"/>
+        <field name="orderId" id="2" type="uint64"/>
+        <field name="tradePair" id="3" type="tradePair"/>
+    </sbe:message>
+</sbe:messageSchema>
