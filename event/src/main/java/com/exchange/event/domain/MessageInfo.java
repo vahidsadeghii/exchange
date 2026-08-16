@@ -13,7 +13,7 @@ import java.time.LocalDateTime;
 @NoArgsConstructor
 public class MessageInfo {
     private String tag;
-    private String title;
+    private String destinationTopic;
     private String serviceName;
     private boolean persistent;
     private LocalDateTime createDate;

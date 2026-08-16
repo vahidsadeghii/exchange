@@ -15,7 +15,7 @@ import java.time.LocalDateTime;
 @JsonDeserialize
 public class EventInfoMessage<T> {
     private String tag;
-    private String title;
+    private String destinationTopic;
     private String serviceName;
     private boolean routingEnabled;
     private boolean persistent;

@@ -24,20 +24,21 @@ public class TagRouterServiceImpl implements TagRouterService {
 
     private final CamelContext camelContext;
     private final EventInfoService eventInfoService;
+    private final AsyncRefreshService asyncRefreshService;
 
 
     @Override
     public TagRouter save(String tag, String titleTopic) {
-        return tagRouterRepository.findByTagAndTitleTopic(tag, titleTopic)
+        return tagRouterRepository.findByTagAndDestinationTopic(tag, titleTopic)
                 .orElseGet(() -> {
                     var router = tagRouterRepository.save(
                             TagRouter.builder()
                                     .tag(tag)
-                                    .titleTopic(titleTopic)
+                                    .destinationTopic(titleTopic)
                                     .build()
                     );
 
-                    refreshRout();
+                    asyncRefreshService.refreshAsync(this);
                     log.info("Added new topic '{}' to the router", tag);
 
                     return router;
@@ -57,8 +58,10 @@ public class TagRouterServiceImpl implements TagRouterService {
         try {
             camelContext.getRouteController().stopRoute("sourceKafka");
             camelContext.removeRoute("sourceKafka");
+
             camelContext.addRoutes(new EventManagerRouter(camelContext, eventInfoService, this));
-            log.info("Add new Router and refresh router at this time: " + LocalDateTime.now());
+
+            log.info("Router refreshed at: " + LocalDateTime.now());
         } catch (Exception e) {
             e.printStackTrace();
         }
@@ -70,7 +73,12 @@ public class TagRouterServiceImpl implements TagRouterService {
     }
 
     @Override
+    public List<TagRouter> findByTag(String tag) {
+        return List.of();
+    }
+
+    @Override
     public TagRouter findByTagAndTitleTopic(String tag, String titleTopic) {
-        return tagRouterRepository.findByTagAndTitleTopic(tag, titleTopic).orElse(null);
+        return tagRouterRepository.findByTagAndDestinationTopic(tag, titleTopic).orElse(null);
     }
 }
