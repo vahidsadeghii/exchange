@@ -2,8 +2,7 @@ version: '3.8'
 services:
 
 
-
-# ---------------- Eureka Discovery ----------------
+  # ---------------- Eureka Discovery ----------------
   discovery:
     image: discovery:latest
     container_name: discovery
@@ -14,19 +13,19 @@ services:
     ports:
       - "8761:8761"
     #network_mode: "host"
-# ----------------Keyclok ----------------user: admin pass: admin
-#  keycloak:
-#    image: quay.io/keycloak/keycloak:21.1.1
-#    container_name: keycloak
-#    environment:
-#      KEYCLOAK_ADMIN: admin
-#      KEYCLOAK_ADMIN_PASSWORD: admin
-#    command: start-dev
-#    restart: unless-stopped
-#    ports:
-#      - "8080:8080"
-#    networks:
-#      - exchange-network
+  # ----------------Keyclok ----------------user: admin pass: admin
+  #  keycloak:
+  #    image: quay.io/keycloak/keycloak:21.1.1
+  #    container_name: keycloak
+  #    environment:
+  #      KEYCLOAK_ADMIN: admin
+  #      KEYCLOAK_ADMIN_PASSWORD: admin
+  #    command: start-dev
+  #    restart: unless-stopped
+  #    ports:
+  #      - "8080:8080"
+  #    networks:
+  #      - exchange-network
 
   # ---------------- MongoDB ----------------
   mongodb:
@@ -49,16 +48,16 @@ services:
       - exchange-network
     #network_mode: "host"
 
-# ----------------postgres ----------------
-#  postgresql:
-#    container_name: postgres
-#    image: postgres
-#    restart: always
-#    network_mode: "host"
-#    environment:
-#      POSTGRES_PASSWORD: postgress
-#    volumes:
-#      - pgdata:/var/lib/postgresql/data
+  # ----------------postgres ----------------
+  #  postgresql:
+  #    container_name: postgres
+  #    image: postgres
+  #    restart: always
+  #    network_mode: "host"
+  #    environment:
+  #      POSTGRES_PASSWORD: postgress
+  #    volumes:
+  #      - pgdata:/var/lib/postgresql/data
 
 
   # ---------------- Prometheus ----------------
@@ -73,7 +72,7 @@ services:
       - exchange-network
     restart: unless-stopped
 
-# ---------------- Grafana ----------------
+  # ---------------- Grafana ----------------
   grafana:
     image: grafana/grafana
     container_name: grafana
@@ -112,7 +111,7 @@ services:
 
 
 
- # ---------------- Kafka ----------------
+  # ---------------- Kafka ----------------
   kafka:
     image: bitnami/kafka:latest
     container_name: kafka
@@ -138,7 +137,7 @@ services:
     volumes:
       - kafka_data:/bitnami/kafka
 
-# ---------------- Redpanda Console:Kafka ----------------
+  # ---------------- Redpanda Console:Kafka ----------------
   console:
     image: vectorized/console:latest
     container_name: kafka-console
@@ -152,7 +151,7 @@ services:
     ports:
       - "7080:8080"
 
-# ---------------- Microservices ----------------
+  # ---------------- Microservices ----------------
 
   gateway:
     image: gateway:latest
@@ -178,8 +177,8 @@ services:
       - "8091:8091"
     environment:
       SPRING.PROFILES.ACTIVE: docker
-     # eureka.client.serviceUrl.defaultZone: http://discovery:8761/eureka
-      spring.data.mongodb.uri:   jdbc:postgresql://localhost:5432/exchange_user_profile
+      # eureka.client.serviceUrl.defaultZone: http://discovery:8761/eureka
+      spring.data.mongodb.uri: jdbc:postgresql://localhost:5432/exchange_user_profile
       spring.kafka.bootstrap-servers: "kafka:9092"
       eureka.instance.hostname: profile
       eureka.instance.prefer.ip.address: "false"
@@ -193,7 +192,7 @@ services:
     restart: always
     depends_on:
       - kafka
-     # - discovery
+      # - discovery
     ports:
       - "8092:8092"
     environment:
@@ -207,18 +206,21 @@ services:
       - exchange-network
 
   event:
+    build:
+      context: .
+      dockerfile: ./event/Dockerfile
     image: event:latest
     container_name: event
     restart: always
     depends_on:
       - kafka
-      # - discovery
+      - discovery
     ports:
       - "8085:8085"
     environment:
       SPRING.PROFILES.ACTIVE: docker
-      #eureka.client.serviceUrl.defaultZone: http://discovery:8761/eureka
       spring.kafka.bootstrap-servers: "kafka:9092"
+      eureka.client.serviceUrl.defaultZone: "http://discovery:8761/eureka/"
       eureka.instance.hostname: event
       eureka.instance.prefer.ip.address: "false"
       eureka.instance.metadata-map.prometheus.path: event/actuator/prometheus
@@ -273,7 +275,7 @@ volumes:
   grafana-data:
   pgdata:
   metabase-data:
-   driver: local
+    driver: local
 
 networks:
   exchange-network:

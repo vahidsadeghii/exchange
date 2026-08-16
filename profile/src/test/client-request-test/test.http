@@ -1,0 +1,124 @@
+## Step 1 - Register email
+POST http://{{host}}/profile/open/v1/verify-email
+Content-Type: application/json
+
+
+{
+  "email": "mona.hoffmann@example.com"
+}
+
+> {%
+    client.log("Status: " + response.status);
+    client.log("Body: " + JSON.stringify(response.body));
+
+    client.test("Status code is 200", function () {
+        client.assert(response.status === 200, "Expected status 200");
+    });
+
+    if (response.status === 200) {
+
+        client.global.set(
+            "verifySentEmailHistoryId",
+            response.body.verifySentEmailHistoryId
+        );
+
+        client.global.set(
+            "verifyCode",
+            response.body.verifyCode
+        );
+
+        client.global.set(
+            "expiredDate",
+            response.body.expiredDate
+        );
+
+        client.log("verifySentEmailHistoryId saved");
+        client.log("verifyCode saved");
+        client.log("expiredDate saved");
+    }
+%}
+
+### Step 2 - Verify email code
+POST http://{{host}}/profile/open/v1/verify-code
+Content-Type: application/json
+
+{
+  "verifySentEmailHistoryId": "{{verifySentEmailHistoryId}}",
+  "verifyCode": "{{verifyCode}}",
+  "expiredDate": "{{expiredDate}}"
+}
+
+> {%
+    client.log("BODY = " + JSON.stringify(response.body));
+
+    client.test("Status 200", function () {
+        client.assert(response.status === 200, "Expected 200");
+    });
+
+    if (response.status === 200 && response.body) {
+
+        const accessToken =
+            response.body?.accessTokenResponse?.accessToken;
+
+        const refreshToken =
+            response.body?.refreshTokenResponse?.refreshToken;
+
+        client.log("ACCESS TOKEN = " + accessToken);
+        client.log("REFRESH TOKEN = " + refreshToken);
+
+        client.test("Access token exists", function () {
+            client.assert(accessToken, "accessToken missing");
+        });
+
+        client.test("Refresh token exists", function () {
+            client.assert(refreshToken, "refreshToken missing");
+        });
+
+        client.global.set("accessToken", accessToken);
+        client.global.set("refreshToken", refreshToken);
+    }
+%}
+
+### Step 3 - Set password (upgrade user)
+POST http://{{host}}/profile/api/v1/set-password
+Content-Type: application/json
+Authorization: Bearer {{accessToken}}
+Request-Id: 123
+
+{
+  "username": "martin.hoffmann@example.com",
+  "email": "martin.hoffmann@example.com",
+  "password": "hoffmanmartinSecretPass123!"
+}
+
+> {%
+    client.log("STATUS = " + response.status);
+    client.log("BODY = " + JSON.stringify(response.body));
+
+    client.test("Response is successful", function () {
+        client.assert(
+            response.status === 200 || response.status === 429,
+            "Unexpected status: " + response.status
+        );
+    });
+
+    if (response.status === 200) {
+
+        client.test("Response body exists", function () {
+            client.assert(response.body != null, "Response body is null");
+        });
+
+        client.test("Access token returned", function () {
+            client.assert(
+                response.body.accessToken !== undefined,
+                "accessToken missing"
+            );
+        });
+
+    } else {
+
+        client.test("Rate limit triggered", function () {
+            client.assert(response.status === 429);
+        });
+    }
+%}

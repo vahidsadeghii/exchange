@@ -6,6 +6,8 @@ server:
 
 
 
+
+
 camel:
   springboot:
     jmx-enabled: true

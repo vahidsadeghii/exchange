@@ -24,7 +24,7 @@ import java.util.stream.Collectors;
 @Slf4j
 public class EventManagerRouter extends RouteBuilder {
 
-     private final CamelContext camelContext;
+    private final CamelContext camelContext;
     private final EventInfoService eventInfoService;
     @Lazy
     private final TagRouterService tagRouterService;

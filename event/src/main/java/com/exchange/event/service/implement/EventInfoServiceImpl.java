@@ -19,13 +19,7 @@ public class EventInfoServiceImpl implements EventInfoService {
     private final EventInfoRepository eventInfoRepository;
 
     @Override
-    public void save(
-            String tag,
-            String title,
-            String serviceName,
-            String event,
-            LocalDateTime date
-    ) {
+    public void save(String tag, String title, String serviceName, String event, LocalDateTime date) {
 
         eventInfoRepository.save(
                 EventInfo.builder()
