@@ -28,7 +28,7 @@ public class OrderBookHandler {
             OrderHandlerFactory handlerFactory) {
 
         if (tradePair == null) {
-            throw new IllegalArgumentException("TradePair cannot be null");
+            throw new InvalidTradePairException();
         }
 
         if (handlerFactory == null) {
