@@ -1,7 +1,6 @@
 package com.exchange.me.handler;
 
 
-import com.exchange.me.domain.OrderType;
 import org.springframework.stereotype.Component;
 
 import java.util.List;

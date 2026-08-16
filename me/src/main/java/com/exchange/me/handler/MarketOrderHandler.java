@@ -2,7 +2,6 @@ package com.exchange.me.handler;
 
 import com.exchange.me.domain.MatchInfo;
 import com.exchange.me.domain.Order;
-import com.exchange.me.domain.OrderType;
 import com.exchange.me.domain.TradeSide;
 import com.exchange.me.matching.MatchingContext;
 import com.exchange.me.matching.MatchingEngine;

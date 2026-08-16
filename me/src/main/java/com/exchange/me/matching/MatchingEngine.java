@@ -2,7 +2,6 @@ package com.exchange.me.matching;
 
 import com.exchange.me.domain.MatchInfo;
 import com.exchange.me.domain.Order;
-import com.exchange.me.domain.OrderType;
 import com.exchange.me.domain.TradeSide;
 import com.exchange.me.handler.OrderBookHandler;
 import lombok.extern.slf4j.Slf4j;

@@ -8,7 +8,6 @@ import com.exchange.core.sbe.MessageHeaderEncoder;
 import com.exchange.core.sbe.OrderInfoEncoder;
 import com.exchange.core.sbe.PutOrderDecoder;
 import com.exchange.me.domain.Order;
-import com.exchange.me.service.EngineService;
 import io.aeron.ExclusivePublication;
 import io.aeron.Image;
 import io.aeron.cluster.codecs.CloseReason;

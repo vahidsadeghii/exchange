@@ -97,3 +97,7 @@ dependencies {
 tasks.named('test') {
     useJUnitPlatform()
 }
+
+configurations.configureEach {
+    exclude group: 'org.lz4', module: 'lz4-java'
+}
