@@ -8,7 +8,7 @@ import com.exchange.core.sbe.MessageHeaderEncoder;
 import com.exchange.core.sbe.OrderInfoEncoder;
 import com.exchange.core.sbe.PutOrderDecoder;
 import com.exchange.me.domain.Order;
-import com.exchange.me.service.EngineService;
+import com.exchange.me.matching.ExchangeEngine;
 import io.aeron.ExclusivePublication;
 import io.aeron.Image;
 import io.aeron.cluster.codecs.CloseReason;
@@ -37,12 +37,12 @@ public class CoreClusteredService implements ClusteredService {
 
     private final HashMap<Integer, RequestFunction> requestMap;
 
-    private final EngineService engineServiceImpl;
+    private final ExchangeEngine exchangeEngine;
 
     private final ExpandableDirectByteBuffer respondBuffer;
 
     public CoreClusteredService() {
-        this.engineServiceImpl = new EngineService();
+        this.exchangeEngine = new ExchangeEngine();
 
         this.respondBuffer = new ExpandableDirectByteBuffer(1024);
 
@@ -152,7 +152,7 @@ public class CoreClusteredService implements ClusteredService {
 
         System.out.println("Put order called: " + putOrderDecoder.toString());
         var order =
-                engineServiceImpl.createUpdateOrder(
+                exchangeEngine.createUpdateOrder(
                         null,
                         putOrderDecoder.orderId(),
                         putOrderDecoder.userId(),
@@ -196,7 +196,7 @@ public class CoreClusteredService implements ClusteredService {
         Order order;
         try {
             order =
-                    engineServiceImpl.getOrder(getOrderInfoDecoder.tradePair(), getOrderInfoDecoder.orderId());
+                    exchangeEngine.getOrder(getOrderInfoDecoder.tradePair(), getOrderInfoDecoder.orderId());
         } catch (Exception e) {
             order = null;
         }

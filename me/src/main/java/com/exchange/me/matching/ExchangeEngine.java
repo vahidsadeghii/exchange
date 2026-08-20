@@ -1,10 +1,6 @@
-package com.exchange.me.service;
+package com.exchange.me.matching;
 
-import com.exchange.core.sbe.MarketType;
-import com.exchange.core.sbe.MatchStatus;
-import com.exchange.core.sbe.OrderType;
-import com.exchange.core.sbe.TradePair;
-import com.exchange.core.sbe.TradeSide;
+import com.exchange.core.sbe.*;
 import com.exchange.me.domain.Order;
 import com.exchange.me.domain.OrderBookDepth;
 import com.exchange.me.domain.PriceLevel;
@@ -20,8 +16,9 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 
-public class EngineService {
-    private final Map<TradePair, OrderBookHandler> orderBooks = new ConcurrentHashMap<>();
+public class ExchangeEngine {
+
+ private final Map<TradePair, OrderBookHandler> orderBooks = new ConcurrentHashMap<>();
 
     public Order createUpdateOrder(
             Long oldOrderId,
@@ -34,6 +31,7 @@ public class EngineService {
             MarketType marketType,
             long quantity,
             long price) {
+
 
         OrderBookHandler handler = getOrCreateBook(tradePair);
 
@@ -117,3 +115,4 @@ public class EngineService {
         return orderBooks.computeIfAbsent(pair, (p) -> new OrderBookHandler(p, OrderHandlerFactory.createFactory()));
     }
 }
+

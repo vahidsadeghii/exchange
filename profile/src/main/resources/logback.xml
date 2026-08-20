@@ -1,37 +1,40 @@
-<?xml version="1.0" encoding="UTF-8" ?>
+<?xml version="1.0" encoding="UTF-8"?>
 
 <configuration scan="true">
 
     <timestamp key="time" datePattern="yyyy-MM-dd'--'HH:mm:ss"/>
 
+    <!-- Console kubctel logs  -->
     <appender name="Console" class="ch.qos.logback.core.ConsoleAppender">
         <encoder class="ch.qos.logback.classic.encoder.PatternLayoutEncoder">
-            <pattern>${time} - %-4r [%t] %5p %c{1} - %m - %X{requestId} %X{ip}%n</pattern>
+            <pattern>${time} [%thread] %-5level %logger{36} - %msg%n</pattern>
         </encoder>
     </appender>
+
+    <!-- File logs container-->
     <appender name="File" class="ch.qos.logback.core.rolling.RollingFileAppender">
-        <file>logs/wallet.log</file>
-        <encoder
-                class="ch.qos.logback.classic.encoder.PatternLayoutEncoder">
-            <pattern>${time} - %-4r [%t] %5p %c{1} - %m - %X{requestId} %X{ip}%n</pattern>
+        <file>/log/profile.log</file>
+
+        <encoder class="ch.qos.logback.classic.encoder.PatternLayoutEncoder">
+            <pattern>${time} [%thread] %-5level %logger{36} - %msg%n</pattern>
         </encoder>
 
-        <rollingPolicy
-                class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
-            <fileNamePattern>logs/flow-profile-%d{yyyy-MM-dd}.log</fileNamePattern>
+        <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+            <fileNamePattern>/log/profile-%d{yyyy-MM-dd}.log</fileNamePattern>
+            <maxHistory>14</maxHistory>
         </rollingPolicy>
     </appender>
 
+    <!-- Root logger -->
     <root level="INFO">
-        <!--        <appender-ref ref="GRAYLOG"/>-->
         <appender-ref ref="Console"/>
         <appender-ref ref="File"/>
     </root>
-    <logger name="com.profile.prfile" level="INFO" additivity="false">
-        <!--     <appender-ref ref="GRAYLOG" />-->
+
+    <!-- Logger Service profile -->
+    <logger name="com.profile" level="INFO" additivity="false">
         <appender-ref ref="Console"/>
         <appender-ref ref="File"/>
     </logger>
-
 
 </configuration>
