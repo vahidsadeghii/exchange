@@ -27,27 +27,14 @@ public class MatchingEngineService {
         }
     }
 
-    public OrderInfoResponse putOrder(
-            long orderId,
-            long userId,
-            TradeSide tradeSide,
-            OrderType orderType,
-            TradePair tradePair,
-            MarketType marketType,
-            long quantity,
-            long price) {
+    public OrderInfoResponse putOrder(long orderId, long userId, TradeSide tradeSide,
+            OrderType orderType, TradePair tradePair, MarketType marketType,
+            long quantity, long price) {
+
         try {
             return client
                     .putOrder(
-                            orderId,
-                            System.currentTimeMillis(),
-                            userId,
-                            tradeSide,
-                            orderType,
-                            tradePair,
-                            marketType,
-                            quantity,
-                            price)
+                            orderId, System.currentTimeMillis(), userId, tradeSide, orderType, tradePair, marketType, quantity, price)
                     .get();
         } catch (Exception e) {
             e.printStackTrace();

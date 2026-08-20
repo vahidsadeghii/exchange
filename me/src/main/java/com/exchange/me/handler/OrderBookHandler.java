@@ -116,14 +116,12 @@ public class OrderBookHandler {
     }
 
     public void reset() {
-
         bids.clear();
         asks.clear();
         orderIndex.clear();
     }
 
     public Long getBestBid() {
-
         return bids.isEmpty()
                 ? null
                 : bids.firstKey();
@@ -211,5 +209,4 @@ public class OrderBookHandler {
             double volume,
             int orderCount) {
     }
-
 }
