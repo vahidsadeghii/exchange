@@ -28,6 +28,10 @@ java {
 
 application {
     mainClass = 'com.exchange.coregateway.CoreGatewayApp'
+
+    applicationDefaultJvmArgs = [
+        '--add-exports=java.base/jdk.internal.misc=ALL-UNNAMED'
+    ]
 }
 
 tasks.named('test') {

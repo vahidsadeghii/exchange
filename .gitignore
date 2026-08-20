@@ -35,3 +35,4 @@ media-driver/loss-report.dat
 media-driver/cnc.dat
 cluster-data/**
 /.run/**
+/log/**.log
