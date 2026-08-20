@@ -23,7 +23,6 @@ public class CoreClusteredService implements ClusteredService {
 
     private final MessageHeaderDecoder messageHeaderDecoder;
 
-
     private final HashMap<Integer, RequestFunction> requestMap;
     private final ExpandableDirectByteBuffer respondBuffer;
 
@@ -106,6 +105,7 @@ public class CoreClusteredService implements ClusteredService {
     public void onTakeSnapshot(final ExclusivePublication snapshotPublication) {
         // No state to persist yet.
     }
+
 
     @Override
     public void onRoleChange(final Cluster.Role newRole) {
