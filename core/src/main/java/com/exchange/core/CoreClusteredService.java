@@ -1,14 +1,10 @@
 package com.exchange.core;
 
-import com.exchange.core.domain.ErrorCode;
-import com.exchange.core.sbe.ErrorMessageEncoder;
 import com.exchange.core.sbe.GetOrderInfoDecoder;
 import com.exchange.core.sbe.MessageHeaderDecoder;
-import com.exchange.core.sbe.MessageHeaderEncoder;
-import com.exchange.core.sbe.OrderInfoEncoder;
 import com.exchange.core.sbe.PutOrderDecoder;
-import com.exchange.me.domain.Order;
-import com.exchange.me.service.EngineService;
+import com.exchange.core.service.RequestFunction;
+import com.exchange.core.service.RequestHandlerService;
 import io.aeron.ExclusivePublication;
 import io.aeron.Image;
 import io.aeron.cluster.codecs.CloseReason;
@@ -26,38 +22,21 @@ public class CoreClusteredService implements ClusteredService {
     private Cluster cluster;
 
     private final MessageHeaderDecoder messageHeaderDecoder;
-    private final MessageHeaderEncoder messageHeaderEncoder;
 
-    private final ErrorMessageEncoder errorMessageEncoder;
-
-    private final PutOrderDecoder putOrderDecoder;
-    private final OrderInfoEncoder orderInfoEncoder;
-
-    private final GetOrderInfoDecoder getOrderInfoDecoder;
 
     private final HashMap<Integer, RequestFunction> requestMap;
-
-    private final EngineService engineServiceImpl;
-
     private final ExpandableDirectByteBuffer respondBuffer;
 
     public CoreClusteredService() {
-        this.engineServiceImpl = new EngineService();
+        RequestHandlerService requestHandlerService = new RequestHandlerService();
 
+        messageHeaderDecoder = new MessageHeaderDecoder();
         this.respondBuffer = new ExpandableDirectByteBuffer(1024);
-
-        // Encoder-Decoders
-        this.messageHeaderDecoder = new MessageHeaderDecoder();
-        this.messageHeaderEncoder = new MessageHeaderEncoder();
-        this.errorMessageEncoder = new ErrorMessageEncoder();
-        this.putOrderDecoder = new PutOrderDecoder();
-        this.orderInfoEncoder = new OrderInfoEncoder();
-        this.getOrderInfoDecoder = new GetOrderInfoDecoder();
 
         requestMap = new HashMap<>();
 
-        requestMap.put(PutOrderDecoder.TEMPLATE_ID, this::handlePutOrderRequest);
-        requestMap.put(GetOrderInfoDecoder.TEMPLATE_ID, this::handleGetOrderInfo);
+        requestMap.put(PutOrderDecoder.TEMPLATE_ID, requestHandlerService::handlePutOrderRequest);
+        requestMap.put(GetOrderInfoDecoder.TEMPLATE_ID, requestHandlerService::handlePutOrderRequest);
     }
 
     @Override
@@ -136,94 +115,5 @@ public class CoreClusteredService implements ClusteredService {
     @Override
     public void onTerminate(final Cluster cluster) {
         System.out.println("Cluster node terminating");
-    }
-
-    private int handlePutOrderRequest(
-            long sessionId,
-            long timestamp,
-            DirectBuffer buffer,
-            int offset,
-            int headerLength,
-            int actingLength,
-            int actingVersion,
-            ExpandableDirectByteBuffer respondBuffer) {
-        putOrderDecoder.wrap(buffer, offset + headerLength, actingLength, actingVersion);
-
-
-        System.out.println("Put order called: " + putOrderDecoder.toString());
-        var order =
-                engineServiceImpl.createUpdateOrder(
-                        null,
-                        putOrderDecoder.orderId(),
-                        putOrderDecoder.userId(),
-                        putOrderDecoder.timestamp(),
-                        putOrderDecoder.tradeSide(),
-                        putOrderDecoder.tradePair(),
-                        putOrderDecoder.orderType(),
-                        putOrderDecoder.marketType(),
-                        putOrderDecoder.quantity(),
-                        putOrderDecoder.price());
-
-        if (order != null) {
-            orderInfoEncoder
-                    .wrapAndApplyHeader(respondBuffer, 0, messageHeaderEncoder)
-                    .correlationId(putOrderDecoder.correlationId())
-                    .orderId(order.getId())
-                    .timestamp(order.getTimestamp())
-                    .userId(order.getUserId())
-                    .matchStatus(order.getMatchStatus())
-                    .filledQuantity(order.getQuantity() - order.getRemainingQuantity());
-
-            return orderInfoEncoder.encodedLength() + messageHeaderDecoder.encodedLength();
-        } else {
-            return returnErrorMessage(respondBuffer, putOrderDecoder.correlationId(), ErrorCode.ORDER_NOT_FOUND);
-        }
-    }
-
-    private int handleGetOrderInfo(
-            long sessionId,
-            long timestamp,
-            DirectBuffer buffer,
-            int offset,
-            int headerLength,
-            int actingLength,
-            int actingVersion,
-            ExpandableDirectByteBuffer respondBuffer) {
-        getOrderInfoDecoder.wrap(buffer, offset + headerLength, actingLength, actingVersion);
-
-        System.out.println("Get order info called: " + getOrderInfoDecoder.orderId());
-
-        Order order;
-        try {
-            order =
-                    engineServiceImpl.getOrder(getOrderInfoDecoder.tradePair(), getOrderInfoDecoder.orderId());
-        } catch (Exception e) {
-            order = null;
-        }
-
-        if (order != null) {
-            orderInfoEncoder
-                    .wrapAndApplyHeader(respondBuffer, 0, messageHeaderEncoder)
-                    .correlationId(getOrderInfoDecoder.correlationId())
-                    .orderId(order.getId())
-                    .timestamp(order.getTimestamp())
-                    .userId(order.getUserId())
-                    .matchStatus(order.getMatchStatus())
-                    .filledQuantity(order.getQuantity() - order.getRemainingQuantity());
-
-            return orderInfoEncoder.encodedLength() + messageHeaderDecoder.encodedLength();
-        } else {
-            return returnErrorMessage(respondBuffer, getOrderInfoDecoder.correlationId(), ErrorCode.ORDER_NOT_FOUND);
-        }
-    }
-
-    private int returnErrorMessage(ExpandableDirectByteBuffer respondBuffer, long correlationId, int errorCode) {
-        errorMessageEncoder.wrapAndApplyHeader(
-                respondBuffer, 0, messageHeaderEncoder
-        );
-        errorMessageEncoder.correlationId(correlationId);
-        errorMessageEncoder.code(errorCode);
-
-        return errorMessageEncoder.encodedLength() + messageHeaderDecoder.encodedLength();
     }
 }

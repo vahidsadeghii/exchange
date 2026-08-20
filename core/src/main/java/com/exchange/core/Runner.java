@@ -8,6 +8,7 @@ import org.agrona.concurrent.ShutdownSignalBarrier;
 
 public class Runner {
     public static void main(String[] args) {
+        System.out.println("Starting core service ...");
         final ShutdownSignalBarrier barrier = new ShutdownSignalBarrier();
         final ClusterConfig clusterConfig = new ClusterConfig(Environment.getInstance(), barrier);
 
@@ -18,7 +19,7 @@ public class Runner {
              ClusteredServiceContainer ignored1 =
                      ClusteredServiceContainer.launch(clusterConfig.getClusteredServiceContext())) {
 
-            System.out.println("Started cluster node...");
+            System.out.println("Cluster started successfully :)");
             barrier.await();
             System.out.println("Shutting down cluster node...");
 
