@@ -1,6 +1,6 @@
 package com.exchange.core;
 
-import com.exchange.core.config.ErrorCode;
+import com.exchange.core.domain.ErrorCode;
 import com.exchange.core.sbe.ErrorMessageEncoder;
 import com.exchange.core.sbe.GetOrderInfoDecoder;
 import com.exchange.core.sbe.MessageHeaderDecoder;
