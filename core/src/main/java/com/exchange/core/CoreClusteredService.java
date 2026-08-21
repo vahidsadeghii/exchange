@@ -35,7 +35,7 @@ public class CoreClusteredService implements ClusteredService {
         requestMap = new HashMap<>();
 
         requestMap.put(PutOrderDecoder.TEMPLATE_ID, requestHandlerService::handlePutOrderRequest);
-        requestMap.put(GetOrderInfoDecoder.TEMPLATE_ID, requestHandlerService::handlePutOrderRequest);
+        requestMap.put(GetOrderInfoDecoder.TEMPLATE_ID, requestHandlerService::handleGetOrderInfo);
     }
 
     @Override

@@ -1,6 +1,6 @@
 # Exchange Platform
 
-A comprehensive cryptocurrency exchange platform built with Spring Boot and microservices architecture.
+A comprehensive cryptocurrency exchange platform built with Aeron Lib, Spring Boot and microservices architecture.
 
 ## Overview
 
@@ -11,7 +11,7 @@ This project is a modern cryptocurrency exchange platform designed to provide se
 The platform consists of the following modules:
 
 - **OMS (Order Management System)** - Handles order processing and management
-- **ME (Matching Engine)** - Core trading engine for order matching
+- **core (Matching Engine / Wallet core)** - Core trading engine for order matching and wallet management by using Aeron
 - **Wallet** - Manages user cryptocurrency wallets and balances
 - **DP (Data Provider)** - Provides market data and real-time feeds
 - **Profile** - User profile and account management
