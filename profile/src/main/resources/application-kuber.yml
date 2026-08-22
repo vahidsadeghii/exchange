@@ -1,14 +1,24 @@
 spring:
   datasource:
-    url: jdbc:postgresql://host.docker.internal:5432/postgres
+    url: jdbc:postgresql://172.17.0.1:5432/postgres
     username: postgres
     password: pass
     driver-class-name: org.postgresql.Driver
 
   jpa:
-    hiebernate:
+    hibernate:
       ddl-auto: none
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
 
-  flyway:
-    enabled: false
+flyway:
+  enabled: false
+
+server:
+  port: 8088
+  servlet:
+    context-path: /profile
+
+
 
