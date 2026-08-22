@@ -41,8 +41,6 @@ public class RequestHandlerService {
             ExpandableDirectByteBuffer respondBuffer) {
         putOrderDecoder.wrap(buffer, offset + headerLength, actingLength, actingVersion);
 
-
-        System.out.println("Put order called: " + putOrderDecoder);
         var order =
                 engineService.createUpdateOrder(
                         null,
@@ -72,7 +70,7 @@ public class RequestHandlerService {
         }
     }
 
-    private int handleGetOrderInfo(
+    public int handleGetOrderInfo(
             long sessionId,
             long timestamp,
             DirectBuffer buffer,
@@ -82,8 +80,6 @@ public class RequestHandlerService {
             int actingVersion,
             ExpandableDirectByteBuffer respondBuffer) {
         getOrderInfoDecoder.wrap(buffer, offset + headerLength, actingLength, actingVersion);
-
-        System.out.println("Get order info called: " + getOrderInfoDecoder.orderId());
 
         Order order;
         try {

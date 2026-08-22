@@ -14,7 +14,9 @@ api:
 spring:
   application:
     name: core-gateway
-
+  threads:
+    virtual:
+      enabled: true
   cloud:
     config:
       enabled: false

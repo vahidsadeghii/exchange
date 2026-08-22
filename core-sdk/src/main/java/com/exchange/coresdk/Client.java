@@ -29,6 +29,8 @@ import org.agrona.concurrent.SleepingMillisIdleStrategy;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 
@@ -59,6 +61,8 @@ public class Client implements EgressListener, AutoCloseable {
 
     private final MessageHeaderDecoder messageHeaderDecoder = new MessageHeaderDecoder();
     private final OrderInfoDecoder orderInfoDecoder = new OrderInfoDecoder();
+
+    private final ExecutorService virtualThreadExecutor = Executors.newVirtualThreadPerTaskExecutor();
 
     private final Map<Long, CompletableFuture<Response>> pendingRequests = new ConcurrentHashMap<>();
     private final AtomicLong correlationIdSequence = new AtomicLong();
@@ -155,14 +159,14 @@ public class Client implements EgressListener, AutoCloseable {
         sendRequest(future,
                 correlationId, messageHeaderEncoder.encodedLength() + putOrderEncoder.encodedLength());
 
-        return future.thenApply(
+        return future.thenApplyAsync(
                 response -> {
                     if (response instanceof OrderInfoResponse orderInfoResponse) {
                         return orderInfoResponse;
                     } else {
                         return new OrderInfoResponse(response.getErrorCode());
                     }
-                }
+                }, virtualThreadExecutor
         );
     }
 
@@ -181,14 +185,14 @@ public class Client implements EgressListener, AutoCloseable {
         sendRequest(future,
                 correlationId, messageHeaderEncoder.encodedLength() + getOrderInfoEncoder.encodedLength());
 
-        return future.thenApply(
+        return future.thenApplyAsync(
                 response -> {
                     if (response instanceof OrderInfoResponse orderInfoResponse) {
                         return orderInfoResponse;
                     } else {
                         return new OrderInfoResponse(response.getErrorCode());
                     }
-                }
+                }, virtualThreadExecutor
         );
     }
 
@@ -211,8 +215,6 @@ public class Client implements EgressListener, AutoCloseable {
             pendingRequests.remove(correlationId);
             future.completeExceptionally(
                     new IllegalStateException("offer failed: " + describeOfferResult(result)));
-        } else {
-            System.out.println("Success on sending request: " + result);
         }
     }
 
