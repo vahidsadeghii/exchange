@@ -1,5 +1,6 @@
 package com.exchange.core;
 
+import com.exchange.core.sbe.CancelOrderDecoder;
 import com.exchange.core.sbe.GetOrderInfoDecoder;
 import com.exchange.core.sbe.MessageHeaderDecoder;
 import com.exchange.core.sbe.PutOrderDecoder;
@@ -36,6 +37,7 @@ public class CoreClusteredService implements ClusteredService {
 
         requestMap.put(PutOrderDecoder.TEMPLATE_ID, requestHandlerService::handlePutOrderRequest);
         requestMap.put(GetOrderInfoDecoder.TEMPLATE_ID, requestHandlerService::handleGetOrderInfo);
+        requestMap.put(CancelOrderDecoder.TEMPLATE_ID, requestHandlerService::handleCancelOrder);
     }
 
     @Override

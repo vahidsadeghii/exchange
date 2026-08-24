@@ -31,6 +31,15 @@ public class MatchingEngineService {
         }
     }
 
+    public OrderInfoResponse cancelOrder(long orderId, TradePair tradePair) {
+        try {
+            return client.cancelOrder(orderId, tradePair).get(5, TimeUnit.SECONDS);
+        } catch (Exception e) {
+            logger.error("Error while cancel order {}, {}", orderId, tradePair, e);
+            return null;
+        }
+    }
+
     public OrderInfoResponse putOrder(
             long orderId,
             long userId,

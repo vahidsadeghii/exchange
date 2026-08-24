@@ -93,4 +93,10 @@
         <field name="orderId" id="2" type="uint64"/>
         <field name="tradePair" id="3" type="tradePair"/>
     </sbe:message>
+
+    <sbe:message name="CancelOrder" id="104" description="Cancel order">
+        <field name="correlationId" id="1" type="uint64"/>
+        <field name="orderId" id="2" type="uint64"/>
+        <field name="tradePair" id="3" type="tradePair"/>
+    </sbe:message>
 </sbe:messageSchema>

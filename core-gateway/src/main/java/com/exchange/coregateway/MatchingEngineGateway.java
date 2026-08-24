@@ -6,6 +6,7 @@ import com.exchange.core.sbe.TradePair;
 import com.exchange.core.sbe.TradeSide;
 import com.exchange.coregateway.service.MatchingEngineService;
 import com.exchange.coresdk.domain.OrderInfoResponse;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -40,6 +41,12 @@ public class MatchingEngineGateway {
                 request.price
         );
     }
+
+    @DeleteMapping("/orders")
+    public OrderInfoResponse cancelOrder(@RequestParam("id") long orderId, @RequestParam("pair") String tradePair) {
+        return matchingEngineService.cancelOrder(orderId, TradePair.valueOf(tradePair));
+    }
+
 
     public record PutOrderRequest(long orderId, long userId, TradeSide tradeSide, OrderType orderType,
                                   TradePair pair, MarketType marketType, long quantity, long price) {

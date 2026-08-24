@@ -65,6 +65,12 @@ public class EngineService {
         return order;
     }
 
+    public Order cancelOrder(long orderId, TradePair tradePair) {
+        Order order = getOrder(tradePair, orderId);
+        deleteOrder(System.currentTimeMillis(), order);
+        return order;
+    }
+
     public void deleteOrder(long timestamp, Order order) {
         OrderBookHandler handler = orderBooks.get(order.getTradePair());
         if (handler != null) {
