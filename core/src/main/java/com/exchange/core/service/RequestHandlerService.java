@@ -1,11 +1,13 @@
 package com.exchange.core.service;
 
 import com.exchange.core.domain.ErrorCode;
+import com.exchange.core.sbe.CancelOrderDecoder;
 import com.exchange.core.sbe.ErrorMessageEncoder;
 import com.exchange.core.sbe.GetOrderInfoDecoder;
 import com.exchange.core.sbe.MessageHeaderEncoder;
 import com.exchange.core.sbe.OrderInfoEncoder;
 import com.exchange.core.sbe.PutOrderDecoder;
+import com.exchange.core.sbe.TradePair;
 import com.exchange.me.domain.Order;
 import com.exchange.me.service.EngineService;
 import org.agrona.DirectBuffer;
@@ -17,6 +19,7 @@ public class RequestHandlerService {
     private final MessageHeaderEncoder messageHeaderEncoder;
     private final ErrorMessageEncoder errorMessageEncoder;
     private final GetOrderInfoDecoder getOrderInfoDecoder;
+    private final CancelOrderDecoder cancelOrderDecoder;
 
     private final EngineService engineService;
 
@@ -26,6 +29,7 @@ public class RequestHandlerService {
         messageHeaderEncoder = new MessageHeaderEncoder();
         errorMessageEncoder = new ErrorMessageEncoder();
         getOrderInfoDecoder = new GetOrderInfoDecoder();
+        cancelOrderDecoder = new CancelOrderDecoder();
 
         engineService = new EngineService();
     }
@@ -102,6 +106,43 @@ public class RequestHandlerService {
             return orderInfoEncoder.encodedLength() + messageHeaderEncoder.encodedLength();
         } else {
             return returnErrorMessage(respondBuffer, getOrderInfoDecoder.correlationId(), ErrorCode.ORDER_NOT_FOUND);
+        }
+    }
+
+    public int handleCancelOrder(
+            long sessionId,
+            long timestamp,
+            DirectBuffer buffer,
+            int offset,
+            int headerLength,
+            int actingLength,
+            int actingVersion,
+            ExpandableDirectByteBuffer respondBuffer) {
+        cancelOrderDecoder.wrap(buffer, offset + headerLength, actingLength, actingVersion);
+
+        long orderId = cancelOrderDecoder.orderId();
+        TradePair tradePair = cancelOrderDecoder.tradePair();
+
+        Order order;
+        try {
+            order = engineService.cancelOrder(orderId, tradePair);
+        } catch (Exception e) {
+            order = null;
+        }
+
+        if (order != null) {
+            orderInfoEncoder
+                    .wrapAndApplyHeader(respondBuffer, 0, messageHeaderEncoder)
+                    .correlationId(cancelOrderDecoder.correlationId())
+                    .orderId(order.getId())
+                    .timestamp(order.getTimestamp())
+                    .userId(order.getUserId())
+                    .matchStatus(order.getMatchStatus())
+                    .filledQuantity(order.getQuantity() - order.getRemainingQuantity());
+
+            return orderInfoEncoder.encodedLength() + messageHeaderEncoder.encodedLength();
+        } else {
+            return returnErrorMessage(respondBuffer, cancelOrderDecoder.correlationId(), ErrorCode.ORDER_NOT_FOUND);
         }
     }
 

@@ -1,5 +1,6 @@
 package com.exchange.coresdk;
 
+import com.exchange.core.sbe.CancelOrderEncoder;
 import com.exchange.core.sbe.ErrorMessageDecoder;
 import com.exchange.core.sbe.GetOrderInfoEncoder;
 import com.exchange.core.sbe.MarketType;
@@ -61,6 +62,8 @@ public class Client implements EgressListener, AutoCloseable {
 
     private final MessageHeaderDecoder messageHeaderDecoder = new MessageHeaderDecoder();
     private final OrderInfoDecoder orderInfoDecoder = new OrderInfoDecoder();
+
+    private final CancelOrderEncoder cancelOrderEncoder = new CancelOrderEncoder();
 
     private final ExecutorService virtualThreadExecutor = Executors.newVirtualThreadPerTaskExecutor();
 
@@ -159,6 +162,29 @@ public class Client implements EgressListener, AutoCloseable {
         sendRequest(future,
                 correlationId, messageHeaderEncoder.encodedLength() + putOrderEncoder.encodedLength());
 
+        return future.thenApplyAsync(
+                response -> {
+                    if (response instanceof OrderInfoResponse orderInfoResponse) {
+                        return orderInfoResponse;
+                    } else {
+                        return new OrderInfoResponse(response.getErrorCode());
+                    }
+                }, virtualThreadExecutor
+        );
+    }
+
+    public CompletableFuture<OrderInfoResponse> cancelOrder(final long orderId, final TradePair tradePair) {
+        final long correlationId = nextCorrelationId();
+        final CompletableFuture<Response> future = new CompletableFuture<>();
+        pendingRequests.put(correlationId, future);
+
+        cancelOrderEncoder.wrapAndApplyHeader(
+                        sendBuffer, 0, messageHeaderEncoder
+                ).correlationId(correlationId)
+                .orderId(orderId)
+                .tradePair(tradePair);
+
+        sendRequest(future, correlationId, messageHeaderEncoder.encodedLength() + cancelOrderEncoder.encodedLength());
         return future.thenApplyAsync(
                 response -> {
                     if (response instanceof OrderInfoResponse orderInfoResponse) {
