@@ -1,22 +1,20 @@
 <configuration scan="true">
 
-    <timestamp key="time" datePattern="yyyy-MM-dd'--'HH:mm:ss"/>
-
     <appender name="Console" class="ch.qos.logback.core.ConsoleAppender">
         <encoder class="ch.qos.logback.classic.encoder.PatternLayoutEncoder">
-            <pattern>${time} [%thread] %-5level %logger{36} - %msg%n</pattern>
+            <pattern>%d{yyyy-MM-dd--HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n</pattern>
         </encoder>
     </appender>
 
     <appender name="File" class="ch.qos.logback.core.rolling.RollingFileAppender">
-        <file>/log/profile.log</file>
+        <file>logs/profile.log</file>
 
         <encoder class="ch.qos.logback.classic.encoder.PatternLayoutEncoder">
-            <pattern>${time} [%thread] %-5level %logger{36} - %msg%n</pattern>
+            <pattern>%d{yyyy-MM-dd--HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n</pattern>
         </encoder>
 
         <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
-            <fileNamePattern>/log/profile-%d{yyyy-MM-dd}.log</fileNamePattern>
+            <fileNamePattern>logs/profile-%d{yyyy-MM-dd}.log</fileNamePattern>
             <maxHistory>14</maxHistory>
         </rollingPolicy>
     </appender>
@@ -26,10 +24,12 @@
         <appender-ref ref="File"/>
     </root>
 
-    <logger name="com.profile" level="INFO" additivity="false">
+    <logger name="com.exchange.profile" level="INFO" additivity="false">
         <appender-ref ref="Console"/>
         <appender-ref ref="File"/>
     </logger>
 
-</configuration>
+    <logger name="org.mongodb.driver" level="DEBUG"/>
+    <logger name="org.springframework.data.mongodb" level="DEBUG"/>
 
+</configuration>

@@ -4,10 +4,6 @@ server:
     context-path: /event
   shutdown: graceful
 
-
-
-
-
 camel:
   springboot:
     jmx-enabled: true
