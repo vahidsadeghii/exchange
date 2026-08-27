@@ -9,7 +9,7 @@ import com.exchange.core.sbe.OrderInfoEncoder;
 import com.exchange.core.sbe.PutOrderDecoder;
 import com.exchange.core.sbe.TradePair;
 import com.exchange.me.domain.Order;
-import com.exchange.me.service.EngineService;
+import com.exchange.me.matching.ExchangeEngine;
 import org.agrona.DirectBuffer;
 import org.agrona.ExpandableDirectByteBuffer;
 
@@ -21,7 +21,7 @@ public class RequestHandlerService {
     private final GetOrderInfoDecoder getOrderInfoDecoder;
     private final CancelOrderDecoder cancelOrderDecoder;
 
-    private final EngineService engineService;
+    private final ExchangeEngine exchangeEngine;
 
     public RequestHandlerService() {
         putOrderDecoder = new PutOrderDecoder();
@@ -31,7 +31,7 @@ public class RequestHandlerService {
         getOrderInfoDecoder = new GetOrderInfoDecoder();
         cancelOrderDecoder = new CancelOrderDecoder();
 
-        engineService = new EngineService();
+        exchangeEngine = new ExchangeEngine();
     }
 
     public int handlePutOrderRequest(
@@ -46,7 +46,7 @@ public class RequestHandlerService {
         putOrderDecoder.wrap(buffer, offset + headerLength, actingLength, actingVersion);
 
         var order =
-                engineService.createUpdateOrder(
+                exchangeEngine.createUpdateOrder(
                         null,
                         putOrderDecoder.orderId(),
                         putOrderDecoder.userId(),
@@ -88,7 +88,7 @@ public class RequestHandlerService {
         Order order;
         try {
             order =
-                    engineService.getOrder(getOrderInfoDecoder.tradePair(), getOrderInfoDecoder.orderId());
+                    exchangeEngine.getOrder(getOrderInfoDecoder.tradePair(), getOrderInfoDecoder.orderId());
         } catch (Exception e) {
             order = null;
         }
@@ -125,7 +125,7 @@ public class RequestHandlerService {
 
         Order order;
         try {
-            order = engineService.cancelOrder(orderId, tradePair);
+            order = exchangeEngine.cancelOrder(orderId, tradePair);
         } catch (Exception e) {
             order = null;
         }

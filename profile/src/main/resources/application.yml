@@ -67,10 +67,11 @@ keycloak:
 
 
 logging:
+  file:
+    name: /log/profile.log
   level:
     org.springframework.security: DEBUG
     org.springframework.security.oauth2: DEBUG
-
 
 resilience4j:
   circuitbreaker:

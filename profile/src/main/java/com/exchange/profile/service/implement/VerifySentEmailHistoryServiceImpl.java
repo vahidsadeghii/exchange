@@ -27,7 +27,7 @@ import java.util.UUID;
 @RequiredArgsConstructor
 @Slf4j
 public class VerifySentEmailHistoryServiceImpl implements VerifySentEmailHistoryService {
-    private final VerifySentEmailHistoryRepository verifySentEmailHistoryRepository;
+  private final VerifySentEmailHistoryRepository verifySentEmailHistoryRepository;
     private final KafkaTemplate<String, Object> kafkaTemplateSendMessage;
     private final UserProfileService userProfileService;
     private final TokenService tokenService;
@@ -132,15 +132,15 @@ public class VerifySentEmailHistoryServiceImpl implements VerifySentEmailHistory
 
         //eventMessage
         EventInfoMessage eventInfoMessage = EventInfoMessage.builder()
-                .tag(eventMessage)
-                .title("event-verify-email")
+                .tag("EMAIL_VERIFICATION")
+                .destinationTopic(verificationMessage)
                 .serviceName("verify-sent-email-history")
                 .routingEnabled(true)
                 .persistent(true)
                 .createDate(LocalDateTime.now())
                 .event(message)
                 .build();
-        kafkaTemplateSendMessage.send(verificationMessage, eventInfoMessage)
+        kafkaTemplateSendMessage.send(eventMessage, eventInfoMessage)
                 .whenComplete((r, e) -> {
                     if (e != null)
                         log.error("send error", e);
@@ -148,4 +148,5 @@ public class VerifySentEmailHistoryServiceImpl implements VerifySentEmailHistory
                         log.info("message sent");
                 });
     }
+
 }

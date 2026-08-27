@@ -17,3 +17,11 @@ spring:
       health.path: /eventmanager/actuator/health
       context-path: /eventmanager
       management.context-path: /eventmanager
+
+eureka:
+  client:
+    serviceUrl:
+      defaultZone: http://discovery:8761/eureka/
+  instance:
+    hostname: event
+    prefer-ip-address: false

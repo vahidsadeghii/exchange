@@ -1,0 +1,56 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: profile
+  labels:
+    app: profile
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: profile
+  template:
+    metadata:
+      labels:
+        app: profile
+    spec:
+      containers:
+        - name: profile
+          image: profile:latest
+          imagePullPolicy: Never
+          ports:
+            - containerPort: 8088
+          env:
+            - name: SPRING_PROFILES_ACTIVE
+              value: kuber
+          volumeMounts:
+            - name: profile-log
+              mountPath: /log
+          readinessProbe:
+            httpGet:
+              path: /profile/actuator/health
+              port: 8088
+            initialDelaySeconds: 5
+            periodSeconds: 5
+          livenessProbe:
+            httpGet:
+              path: /profile/actuator/health
+              port: 8088
+            initialDelaySeconds: 10
+            periodSeconds: 10
+      volumes:
+        - name: profile-log
+          emptyDir: {}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: profile
+spec:
+  selector:
+    app: profile
+  ports:
+    - name: http
+      port: 8088
+      targetPort: 8088
+  type: ClusterIP

@@ -20,7 +20,10 @@ FROM eclipse-temurin:21-jre-alpine
 WORKDIR /app
 
 # Add non-root user for security
-RUN addgroup -S appgroup && adduser -S appuser -G appgroup
+RUN addgroup -S appgroup && \
+    adduser -S appuser -G appgroup && \
+    mkdir -p /app/logs && \
+    chown -R appuser:appgroup /app
 
 # Copy built jar from builder
 COPY --from=builder /build/oms/build/libs/*.jar app.jar
@@ -34,6 +37,6 @@ USER appuser
 HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
     CMD java -cp app.jar org.springframework.boot.loader.JarLauncher || exit 1
 
-EXPOSE 8080
+EXPOSE 8090
 
 ENTRYPOINT ["java", "-jar", "app.jar"]

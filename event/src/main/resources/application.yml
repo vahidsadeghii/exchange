@@ -4,8 +4,6 @@ server:
     context-path: /event
   shutdown: graceful
 
-
-
 camel:
   springboot:
     jmx-enabled: true
@@ -30,3 +28,8 @@ management:
   endpoint:
     prometheus:
       enabled: true
+
+
+eureka:
+  client:
+    enabled: false

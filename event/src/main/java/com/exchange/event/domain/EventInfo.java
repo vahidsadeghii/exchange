@@ -17,7 +17,7 @@ public class EventInfo {
     @Id
     private String id;
     private String tag;
-    private String title;
+    private String destinationTopic;
     private String serviceName;
     private Object event;
     private LocalDateTime createDate;

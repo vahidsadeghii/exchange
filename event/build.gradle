@@ -9,6 +9,7 @@ version = '0.0.1-SNAPSHOT'
 description = 'event'
 
 ext {
+    camelVersion = '4.18.0'
     resilience4jVersion = '2.2.0'
     springCloudVersion = "2023.0.3"
 }
@@ -26,6 +27,7 @@ repositories {
 dependencyManagement {
     imports {
         mavenBom "org.springframework.cloud:spring-cloud-dependencies:${springCloudVersion}"
+        mavenBom "org.apache.camel.springboot:camel-spring-boot-bom:${camelVersion}"
     }
 }
 
@@ -56,15 +58,18 @@ dependencies {
 
     // Kafka
     implementation 'org.springframework.kafka:spring-kafka'
-    implementation('org.apache.camel.springboot:camel-kafka-starter:4.20.0') {
-        exclude group: 'at.yawk.lz4', module: 'lz4-java'
-    }
 
     // OAuth2
     implementation 'org.springframework.boot:spring-boot-starter-oauth2-resource-server'
 
     // Apache Camel
-    implementation 'org.apache.camel.springboot:camel-spring-boot-starter:4.20.0'
+    implementation 'org.apache.camel.springboot:camel-spring-boot-starter'
+    implementation('org.apache.camel.springboot:camel-kafka-starter') {
+        exclude group: 'at.yawk.lz4', module: 'lz4-java'
+    }
+
+    implementation 'org.apache.camel.springboot:camel-jsonpath-starter'
+    implementation 'org.apache.camel.springboot:camel-jackson-starter'
 
     // MongoDB
     implementation 'org.springframework.boot:spring-boot-starter-data-mongodb'
