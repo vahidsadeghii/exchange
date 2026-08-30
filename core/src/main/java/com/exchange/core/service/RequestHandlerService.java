@@ -1,14 +1,9 @@
 package com.exchange.core.service;
 
 import com.exchange.core.domain.ErrorCode;
-import com.exchange.core.sbe.CancelOrderDecoder;
-import com.exchange.core.sbe.ErrorMessageEncoder;
-import com.exchange.core.sbe.GetOrderInfoDecoder;
-import com.exchange.core.sbe.MessageHeaderEncoder;
-import com.exchange.core.sbe.OrderInfoEncoder;
-import com.exchange.core.sbe.PutOrderDecoder;
-import com.exchange.core.sbe.TradePair;
+import com.exchange.core.sbe.*;
 import com.exchange.me.domain.Order;
+import com.exchange.me.handler.OrderBookHandler;
 import com.exchange.me.service.EngineService;
 import org.agrona.DirectBuffer;
 import org.agrona.ExpandableDirectByteBuffer;
@@ -20,6 +15,8 @@ public class RequestHandlerService {
     private final ErrorMessageEncoder errorMessageEncoder;
     private final GetOrderInfoDecoder getOrderInfoDecoder;
     private final CancelOrderDecoder cancelOrderDecoder;
+    private final OrderBookDepthDecoder orderBookDepthDecoder;
+    private final MarketDepthEncoder marketDepthEncoder;
 
     private final EngineService engineService;
 
@@ -30,6 +27,8 @@ public class RequestHandlerService {
         errorMessageEncoder = new ErrorMessageEncoder();
         getOrderInfoDecoder = new GetOrderInfoDecoder();
         cancelOrderDecoder = new CancelOrderDecoder();
+        orderBookDepthDecoder = new OrderBookDepthDecoder();
+        marketDepthEncoder = new MarketDepthEncoder();
 
         engineService = new EngineService();
     }
@@ -145,6 +144,53 @@ public class RequestHandlerService {
             return returnErrorMessage(respondBuffer, cancelOrderDecoder.correlationId(), ErrorCode.ORDER_NOT_FOUND);
         }
     }
+
+
+    public int handleOrderBookDepth(
+            long sessionId,
+            long timestamp,
+            DirectBuffer buffer,
+            int offset,
+            int headerLength,
+            int actingLength,
+            int actingVersion,
+            ExpandableDirectByteBuffer respondBuffer) {
+
+        orderBookDepthDecoder.wrap(buffer, offset + headerLength, actingLength, actingVersion);
+
+        int depth = orderBookDepthDecoder.depth();
+        TradePair pair = orderBookDepthDecoder.pair();
+
+        OrderBookHandler.MarketDepth marketDepth;
+
+        try {
+            marketDepth = engineService.getMarketDepth(pair, depth);
+        } catch (Exception e) {
+            marketDepth = null;
+        }
+
+        if (marketDepth != null) {
+            marketDepthEncoder.wrapAndApplyHeader(respondBuffer, 0, messageHeaderEncoder)
+                    .correlationId(orderBookDepthDecoder.correlationId());
+
+            MarketDepthEncoder.BidsEncoder bidsEncoder = marketDepthEncoder.bidsCount(marketDepth.bids().size());
+
+            for (OrderBookHandler.PriceLevel bid : marketDepth.bids()) {
+                bidsEncoder.next().volume(bid.volume());
+            }
+
+            MarketDepthEncoder.AsksEncoder asksEncoder = marketDepthEncoder.asksCount(marketDepth.asks().size());
+
+            for (OrderBookHandler.PriceLevel ask : marketDepth.asks()) {
+                asksEncoder.next().volume(ask.volume());
+            }
+
+            return marketDepthEncoder.encodedLength() + messageHeaderEncoder.encodedLength();
+        } else {
+            return returnErrorMessage(respondBuffer, orderBookDepthDecoder.correlationId(), ErrorCode.ORDER_NOT_FOUND);
+        }
+    }
+
 
     private int returnErrorMessage(ExpandableDirectByteBuffer respondBuffer, long correlationId, int errorCode) {
         errorMessageEncoder.wrapAndApplyHeader(

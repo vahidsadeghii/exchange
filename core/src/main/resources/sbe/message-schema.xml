@@ -1,11 +1,11 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <sbe:messageSchema xmlns:sbe="http://fixprotocol.io/2016/sbe"
-                    package="com.exchange.core.sbe"
-                    id="1"
-                    version="0"
-                    semanticVersion="0.1"
-                    description="Exchange core message schema"
-                    byteOrder="littleEndian">
+                   package="com.exchange.core.sbe"
+                   id="1"
+                   version="0"
+                   semanticVersion="0.1"
+                   description="Exchange core message schema"
+                   byteOrder="littleEndian">
     <types>
         <composite name="messageHeader" description="Message identifiers and length of message root">
             <type name="blockLength" primitiveType="uint16"/>
@@ -63,7 +63,8 @@
         <field name="code" id="2" type="int32"/>
     </sbe:message>
 
-    <sbe:message name="PutOrder" id="101" description="Put an order to order book, mirrors com.exchange.me.domain.Order">
+    <sbe:message name="PutOrder" id="101"
+                 description="Put an order to order book, mirrors com.exchange.me.domain.Order">
         <field name="correlationId" id="1" type="uint64"/>
         <field name="orderId" id="2" type="uint64"/>
         <field name="timestamp" id="3" type="uint64"/>
@@ -98,5 +99,25 @@
         <field name="correlationId" id="1" type="uint64"/>
         <field name="orderId" id="2" type="uint64"/>
         <field name="tradePair" id="3" type="tradePair"/>
+    </sbe:message>
+
+    <sbe:message name="OrderBookDepth" id="105" description="Depth order">
+        <field name="correlationId" id="1" type="uint64"/>
+        <field name="pair" id="2" type="tradePair"/>
+        <field name="depth" id="3" type="int32"/>
+    </sbe:message>
+
+    <sbe:message name="MarketDepth" id="106" description="Market depth response">
+        <field name="correlationId" id="1" type="uint64"/>
+        <group name="bids" id="2" dimensionType="groupSizeEncoding">
+            <field name="price" id="1" type="uint64"/>
+            <field name="volume" id="2" type="double"/>
+            <field name="orderCount" id="3" type="int32"/>
+        </group>
+        <group name="asks" id="3" dimensionType="groupSizeEncoding">
+            <field name="price" id="1" type="uint64"/>
+            <field name="volume" id="2" type="double"/>
+            <field name="orderCount" id="3" type="int32"/>
+        </group>
     </sbe:message>
 </sbe:messageSchema>
