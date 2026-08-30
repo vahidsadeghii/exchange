@@ -5,6 +5,7 @@ import com.exchange.core.sbe.OrderType;
 import com.exchange.core.sbe.TradePair;
 import com.exchange.core.sbe.TradeSide;
 import com.exchange.coresdk.Client;
+import com.exchange.coresdk.domain.OrderBookDepthResponse;
 import com.exchange.coresdk.domain.OrderInfoResponse;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -36,6 +37,15 @@ public class MatchingEngineService {
             return client.cancelOrder(orderId, tradePair).get(5, TimeUnit.SECONDS);
         } catch (Exception e) {
             logger.error("Error while cancel order {}, {}", orderId, tradePair, e);
+            return null;
+        }
+    }
+
+    public OrderBookDepthResponse orderBookDepth(TradePair pair, int depth){
+           try {
+            return client.getOrderBookDepth(pair, depth).get(5, TimeUnit.SECONDS);
+        } catch (Exception e) {
+            logger.error("Error while order book depth {}, {}", depth, pair, e);
             return null;
         }
     }

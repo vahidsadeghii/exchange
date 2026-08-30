@@ -5,6 +5,7 @@ import com.exchange.core.sbe.OrderType;
 import com.exchange.core.sbe.TradePair;
 import com.exchange.core.sbe.TradeSide;
 import com.exchange.coregateway.service.MatchingEngineService;
+import com.exchange.coresdk.domain.OrderBookDepthResponse;
 import com.exchange.coresdk.domain.OrderInfoResponse;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -47,6 +48,10 @@ public class MatchingEngineGateway {
         return matchingEngineService.cancelOrder(orderId, TradePair.valueOf(tradePair));
     }
 
+    @GetMapping("/orderdepth")
+    public OrderBookDepthResponse orderDepth(@RequestParam("pair") String pair, @RequestParam("depth") int depth) {
+        return matchingEngineService.orderBookDepth( TradePair.valueOf(pair), depth);
+    }
 
     public record PutOrderRequest(long orderId, long userId, TradeSide tradeSide, OrderType orderType,
                                   TradePair pair, MarketType marketType, long quantity, long price) {

@@ -1,17 +1,7 @@
 package com.exchange.coresdk;
 
-import com.exchange.core.sbe.CancelOrderEncoder;
-import com.exchange.core.sbe.ErrorMessageDecoder;
-import com.exchange.core.sbe.GetOrderInfoEncoder;
-import com.exchange.core.sbe.MarketType;
-import com.exchange.core.sbe.MatchStatus;
-import com.exchange.core.sbe.MessageHeaderDecoder;
-import com.exchange.core.sbe.MessageHeaderEncoder;
-import com.exchange.core.sbe.OrderInfoDecoder;
-import com.exchange.core.sbe.OrderType;
-import com.exchange.core.sbe.PutOrderEncoder;
-import com.exchange.core.sbe.TradePair;
-import com.exchange.core.sbe.TradeSide;
+import com.exchange.core.sbe.*;
+import com.exchange.coresdk.domain.OrderBookDepthResponse;
 import com.exchange.coresdk.domain.OrderInfoResponse;
 import com.exchange.coresdk.domain.Response;
 import io.aeron.Publication;
@@ -59,6 +49,7 @@ public class Client implements EgressListener, AutoCloseable {
     private final GetOrderInfoEncoder getOrderInfoEncoder = new GetOrderInfoEncoder();
     private final ErrorMessageDecoder errorMessageDecoder = new ErrorMessageDecoder();
     private final ExpandableArrayBuffer sendBuffer = new ExpandableArrayBuffer();
+    private final OrderBookDepthEncoder orderBookDepthEncoder = new OrderBookDepthEncoder();
 
     private final MessageHeaderDecoder messageHeaderDecoder = new MessageHeaderDecoder();
     private final OrderInfoDecoder orderInfoDecoder = new OrderInfoDecoder();
@@ -217,6 +208,32 @@ public class Client implements EgressListener, AutoCloseable {
                         return orderInfoResponse;
                     } else {
                         return new OrderInfoResponse(response.getErrorCode());
+                    }
+                }, virtualThreadExecutor
+        );
+    }
+
+    public CompletableFuture<OrderBookDepthResponse> getOrderBookDepth(final TradePair pair, final int depth) {
+        final long correlationId = nextCorrelationId();
+
+        final CompletableFuture<Response> future = new CompletableFuture<>();
+        pendingRequests.put(correlationId, future);
+
+        orderBookDepthEncoder
+                .wrapAndApplyHeader(sendBuffer, 0, messageHeaderEncoder)
+                .correlationId(correlationId)
+                .pair(pair)
+                .depth(depth);
+
+        sendRequest(future,
+                correlationId, messageHeaderEncoder.encodedLength() + getOrderInfoEncoder.encodedLength());
+
+        return future.thenApplyAsync(
+                response -> {
+                    if (response instanceof OrderBookDepthResponse orderBookDepthResponse) {
+                        return orderBookDepthResponse;
+                    } else {
+                        return new OrderBookDepthResponse(response.getErrorCode());
                     }
                 }, virtualThreadExecutor
         );
