@@ -8,6 +8,7 @@ import com.exchange.me.service.EngineService;
 import org.agrona.DirectBuffer;
 import org.agrona.ExpandableDirectByteBuffer;
 
+
 public class RequestHandlerService {
     private final PutOrderDecoder putOrderDecoder;
     private final OrderInfoEncoder orderInfoEncoder;
@@ -147,49 +148,61 @@ public class RequestHandlerService {
 
 
     public int handleOrderBookDepth(
-            long sessionId,
-            long timestamp,
-            DirectBuffer buffer,
-            int offset,
-            int headerLength,
-            int actingLength,
-            int actingVersion,
-            ExpandableDirectByteBuffer respondBuffer) {
+        long sessionId,
+        long timestamp,
+        DirectBuffer buffer,
+        int offset,
+        int headerLength,
+        int actingLength,
+        int actingVersion,
+        ExpandableDirectByteBuffer respondBuffer) {
 
-        orderBookDepthDecoder.wrap(buffer, offset + headerLength, actingLength, actingVersion);
+    orderBookDepthDecoder.wrap(buffer, offset + headerLength, actingLength, actingVersion);
 
-        int depth = orderBookDepthDecoder.depth();
-        TradePair pair = orderBookDepthDecoder.pair();
+    int depth = orderBookDepthDecoder.depth();
+    TradePair pair = orderBookDepthDecoder.pair();
 
-        OrderBookHandler.MarketDepth marketDepth;
+    OrderBookHandler.MarketDepth marketDepth;
 
-        try {
-            marketDepth = engineService.getMarketDepth(pair, depth);
-        } catch (Exception e) {
-            marketDepth = null;
-        }
-
-        if (marketDepth != null) {
-            marketDepthEncoder.wrapAndApplyHeader(respondBuffer, 0, messageHeaderEncoder)
-                    .correlationId(orderBookDepthDecoder.correlationId());
-
-            MarketDepthEncoder.BidsEncoder bidsEncoder = marketDepthEncoder.bidsCount(marketDepth.bids().size());
-
-            for (OrderBookHandler.PriceLevel bid : marketDepth.bids()) {
-                bidsEncoder.next().volume(bid.volume());
-            }
-
-            MarketDepthEncoder.AsksEncoder asksEncoder = marketDepthEncoder.asksCount(marketDepth.asks().size());
-
-            for (OrderBookHandler.PriceLevel ask : marketDepth.asks()) {
-                asksEncoder.next().volume(ask.volume());
-            }
-
-            return marketDepthEncoder.encodedLength() + messageHeaderEncoder.encodedLength();
-        } else {
-            return returnErrorMessage(respondBuffer, orderBookDepthDecoder.correlationId(), ErrorCode.ORDER_NOT_FOUND);
-        }
+    try {
+        marketDepth = engineService.getMarketDepth(pair, depth);
+    } catch (Exception e) {
+        marketDepth = null;
     }
+
+    System.out.println("OrderBookDepth request received");
+
+    if (marketDepth != null) {
+        marketDepthEncoder.wrapAndApplyHeader(respondBuffer, 0, messageHeaderEncoder)
+                .correlationId(orderBookDepthDecoder.correlationId());
+
+        MarketDepthEncoder.BidsEncoder bidsEncoder = marketDepthEncoder.bidsCount(marketDepth.bids().size());
+
+        for (OrderBookHandler.PriceLevel bid : marketDepth.bids()) {
+            bidsEncoder.next()
+                    .price(bid.price())
+                    .volume(bid.volume())
+                    .orderCount(bid.orderCount());
+        }
+        // ensure header count matches actual written elements (safety)
+        //bidsEncoder.resetCountToIndex();
+
+        MarketDepthEncoder.AsksEncoder asksEncoder = marketDepthEncoder.asksCount(marketDepth.asks().size());
+
+        for (OrderBookHandler.PriceLevel ask : marketDepth.asks()) {
+            asksEncoder.next()
+                    .price(ask.price())
+                    .volume(ask.volume())
+                    .orderCount(ask.orderCount());
+        }
+        // ensure header count matches actual written elements (safety)
+      //  asksEncoder.resetCountToIndex();
+
+        return marketDepthEncoder.encodedLength() + messageHeaderEncoder.encodedLength();
+    } else {
+        return returnErrorMessage(respondBuffer, orderBookDepthDecoder.correlationId(), ErrorCode.ORDER_NOT_FOUND);
+    }
+}
 
 
     private int returnErrorMessage(ExpandableDirectByteBuffer respondBuffer, long correlationId, int errorCode) {

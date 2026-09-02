@@ -67,9 +67,16 @@ public class CoreClusteredService implements ClusteredService {
         if (session == null) {
             return;
         }
-
         messageHeaderDecoder.wrap(buffer, offset);
         int templateId = messageHeaderDecoder.templateId();
+
+        System.out.println("Received templateId=" + templateId);
+
+        messageHeaderDecoder.wrap(buffer, offset);
+
+        System.out.println(
+                "Expected=" + OrderBookDepthDecoder.TEMPLATE_ID +
+                        ", Received=" + templateId);
 
         final int headerLength = messageHeaderDecoder.encodedLength();
         final int actingLength = messageHeaderDecoder.blockLength();
@@ -116,4 +123,5 @@ public class CoreClusteredService implements ClusteredService {
     public void onTerminate(final Cluster cluster) {
         System.out.println("Cluster node terminating");
     }
+
 }
