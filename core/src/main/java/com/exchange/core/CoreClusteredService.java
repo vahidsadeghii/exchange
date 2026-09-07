@@ -1,9 +1,6 @@
 package com.exchange.core;
 
-import com.exchange.core.sbe.CancelOrderDecoder;
-import com.exchange.core.sbe.GetOrderInfoDecoder;
-import com.exchange.core.sbe.MessageHeaderDecoder;
-import com.exchange.core.sbe.PutOrderDecoder;
+import com.exchange.core.sbe.*;
 import com.exchange.core.service.RequestFunction;
 import com.exchange.core.service.RequestHandlerService;
 import io.aeron.ExclusivePublication;
@@ -38,6 +35,7 @@ public class CoreClusteredService implements ClusteredService {
         requestMap.put(PutOrderDecoder.TEMPLATE_ID, requestHandlerService::handlePutOrderRequest);
         requestMap.put(GetOrderInfoDecoder.TEMPLATE_ID, requestHandlerService::handleGetOrderInfo);
         requestMap.put(CancelOrderDecoder.TEMPLATE_ID, requestHandlerService::handleCancelOrder);
+        requestMap.put(OrderBookDepthDecoder.TEMPLATE_ID, requestHandlerService::handleOrderBookDepth);
     }
 
     @Override
@@ -69,9 +67,16 @@ public class CoreClusteredService implements ClusteredService {
         if (session == null) {
             return;
         }
-
         messageHeaderDecoder.wrap(buffer, offset);
         int templateId = messageHeaderDecoder.templateId();
+
+        System.out.println("Received templateId=" + templateId);
+
+        messageHeaderDecoder.wrap(buffer, offset);
+
+        System.out.println(
+                "Expected=" + OrderBookDepthDecoder.TEMPLATE_ID +
+                        ", Received=" + templateId);
 
         final int headerLength = messageHeaderDecoder.encodedLength();
         final int actingLength = messageHeaderDecoder.blockLength();
@@ -118,4 +123,5 @@ public class CoreClusteredService implements ClusteredService {
     public void onTerminate(final Cluster cluster) {
         System.out.println("Cluster node terminating");
     }
+
 }

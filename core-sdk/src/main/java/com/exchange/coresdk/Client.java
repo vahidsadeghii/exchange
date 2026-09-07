@@ -1,18 +1,9 @@
 package com.exchange.coresdk;
 
-import com.exchange.core.sbe.CancelOrderEncoder;
-import com.exchange.core.sbe.ErrorMessageDecoder;
-import com.exchange.core.sbe.GetOrderInfoEncoder;
-import com.exchange.core.sbe.MarketType;
-import com.exchange.core.sbe.MatchStatus;
-import com.exchange.core.sbe.MessageHeaderDecoder;
-import com.exchange.core.sbe.MessageHeaderEncoder;
-import com.exchange.core.sbe.OrderInfoDecoder;
-import com.exchange.core.sbe.OrderType;
-import com.exchange.core.sbe.PutOrderEncoder;
-import com.exchange.core.sbe.TradePair;
-import com.exchange.core.sbe.TradeSide;
+import com.exchange.core.sbe.*;
+import com.exchange.coresdk.domain.OrderBookDepthResponse;
 import com.exchange.coresdk.domain.OrderInfoResponse;
+import com.exchange.coresdk.domain.PriceLevelResponse;
 import com.exchange.coresdk.domain.Response;
 import io.aeron.Publication;
 import io.aeron.cluster.client.AeronCluster;
@@ -27,6 +18,9 @@ import org.agrona.concurrent.Agent;
 import org.agrona.concurrent.AgentRunner;
 import org.agrona.concurrent.SleepingMillisIdleStrategy;
 
+import java.util.ArrayList;
+import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
@@ -59,6 +53,8 @@ public class Client implements EgressListener, AutoCloseable {
     private final GetOrderInfoEncoder getOrderInfoEncoder = new GetOrderInfoEncoder();
     private final ErrorMessageDecoder errorMessageDecoder = new ErrorMessageDecoder();
     private final ExpandableArrayBuffer sendBuffer = new ExpandableArrayBuffer();
+    private final OrderBookDepthEncoder orderBookDepthEncoder = new OrderBookDepthEncoder();
+    private final MarketDepthDecoder marketDepthDecoder = new MarketDepthDecoder();
 
     private final MessageHeaderDecoder messageHeaderDecoder = new MessageHeaderDecoder();
     private final OrderInfoDecoder orderInfoDecoder = new OrderInfoDecoder();
@@ -222,12 +218,44 @@ public class Client implements EgressListener, AutoCloseable {
         );
     }
 
+    public CompletableFuture<OrderBookDepthResponse> getOrderBookDepth(final TradePair pair, final int depth) {
+        final long correlationId = nextCorrelationId();
+
+        System.out.println("REQUEST SEND correlationId= " + correlationId + "pair = " + pair + "depth = " + depth);
+        final CompletableFuture<Response> future = new CompletableFuture<>();
+        pendingRequests.put(correlationId, future);
+
+        orderBookDepthEncoder
+                .wrapAndApplyHeader(sendBuffer, 0, messageHeaderEncoder)
+                .correlationId(correlationId)
+                .pair(pair)
+                .depth(depth);
+
+        sendRequest(future,
+                correlationId, messageHeaderEncoder.encodedLength() + orderBookDepthEncoder.encodedLength());
+
+        return future.thenApplyAsync(
+                response -> {
+                    if (response instanceof OrderBookDepthResponse orderBookDepthResponse) {
+                        return orderBookDepthResponse;
+                    } else {
+                        return new OrderBookDepthResponse(response.getErrorCode());
+                    }
+                }, virtualThreadExecutor
+        );
+    }
+
     private long nextCorrelationId() {
         return correlationIdSequence.incrementAndGet();
     }
 
     private void sendRequest(CompletableFuture<Response> future, final long correlationId, final int length) {
         long result = offer(length);
+
+        System.out.println(
+                "Sending aeron request correlationId="
+                        + correlationId);
+
 
         if (result == Publication.CLOSED || result == Publication.NOT_CONNECTED) {
             // The cluster connection died (e.g. the cluster node was restarted) - reconnect once
@@ -283,6 +311,38 @@ public class Client implements EgressListener, AutoCloseable {
                                     orderInfoDecoder.matchStatus(),
                                     orderInfoDecoder.filledQuantity()));
                 }
+                break;
+            }
+            case MarketDepthDecoder.TEMPLATE_ID: {
+                marketDepthDecoder.wrap(buffer, offset + headerLength, actingBlockLength, actingVersion);
+
+                final CompletableFuture<Response> future =
+                        pendingRequests.remove(marketDepthDecoder.correlationId());
+                if (future != null) {
+                    MarketDepthDecoder.BidsDecoder bids = marketDepthDecoder.bids();
+                    Iterator<MarketDepthDecoder.BidsDecoder> bidsIterator = bids.iterator();
+
+                    MarketDepthDecoder.AsksDecoder asks = marketDepthDecoder.asks();
+                    Iterator<MarketDepthDecoder.AsksDecoder> asksIterator = asks.iterator();
+
+                    List<PriceLevelResponse> bidsList = new ArrayList<>();
+                    List<PriceLevelResponse> asksList = new ArrayList<>();
+
+
+                    while (bidsIterator.hasNext()) {
+                        MarketDepthDecoder.BidsDecoder bidsDecoder = bidsIterator.next();
+                        bidsList.add(new PriceLevelResponse(bidsDecoder.price(), bidsDecoder.volume(), bidsDecoder.orderCount()));
+                    }
+                    while (asksIterator.hasNext()) {
+                        MarketDepthDecoder.AsksDecoder askDecoder = asksIterator.next();
+                        asksList.add(new PriceLevelResponse(askDecoder.price(), askDecoder.volume(), askDecoder.orderCount()));
+                    }
+                    future.complete(
+                            new OrderBookDepthResponse(bidsList, asksList)
+                    );
+
+                }
+
                 break;
             }
 
