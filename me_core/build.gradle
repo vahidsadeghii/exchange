@@ -1,0 +1,93 @@
+plugins {
+    id 'application'
+}
+
+group = 'com.exchange'
+version = '0.0.1-SNAPSHOT'
+description = 'me_core'
+
+java {
+    toolchain {
+        languageVersion = JavaLanguageVersion.of(21)
+    }
+}
+
+repositories {
+    mavenCentral()
+    gradlePluginPortal() // Add this line to include the Gradle Plugin Portal
+}
+
+configurations {
+    sbeTool
+}
+
+dependencies {
+    compileOnly 'org.projectlombok:lombok:1.18.36'
+    annotationProcessor 'org.projectlombok:lombok:1.18.36'
+
+    implementation 'com.fasterxml.jackson.datatype:jackson-datatype-jsr310:2.18.5'
+
+
+    // ---- Aeron (High-performance messaging) ----
+    implementation 'io.aeron:aeron-all:1.52.1'
+
+    // ---- SBE (message codec generator) ----
+    sbeTool 'uk.co.real-logic:sbe-tool:1.35.6'
+
+
+    // Use JUnit Jupiter for testing.
+    testImplementation libs.junit.jupiter
+    testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+
+    // Benchmark Testing
+    implementation 'org.openjdk.jmh:jmh-core:1.37'
+    annotationProcessor 'org.openjdk.jmh:jmh-generator-annprocess:1.37'
+    // Guava
+    implementation libs.guava
+}
+
+def sbeSchemaFile = "$projectDir/src/main/resources/sbe/message-schema.xml"
+def sbeOutputDir = "$buildDir/generated-src/sbe"
+
+tasks.register('generateSbe', JavaExec) {
+    group = 'build'
+    description = 'Generates Java message codecs from the SBE schema.'
+    classpath = configurations.sbeTool
+    mainClass = 'uk.co.real_logic.sbe.SbeTool'
+    systemProperty 'sbe.output.dir', sbeOutputDir
+    systemProperty 'sbe.target.language', 'Java'
+    args sbeSchemaFile
+    inputs.file(sbeSchemaFile)
+    outputs.dir(sbeOutputDir)
+}
+
+sourceSets {
+    main {
+        java {
+            srcDir sbeOutputDir
+        }
+    }
+}
+
+compileJava.dependsOn generateSbe
+
+java {
+    toolchain {
+        languageVersion = JavaLanguageVersion.of(21)
+    }
+}
+
+application {
+    mainClass = 'com.exchange.me_core.Runner'
+}
+
+tasks.withType(JavaExec).configureEach {
+    jvmArgs(
+        '--add-exports=java.base/jdk.internal.misc=ALL-UNNAMED',
+        '--add-opens=java.base/jdk.internal.misc=ALL-UNNAMED'
+    )
+}
+
+tasks.named('test') {
+    useJUnitPlatform()
+}

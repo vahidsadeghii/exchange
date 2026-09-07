@@ -25,4 +25,5 @@ include('core-sdk')
 include('core-gateway')
 include('event')
 include('Discovery')
+include('me_core')
 
