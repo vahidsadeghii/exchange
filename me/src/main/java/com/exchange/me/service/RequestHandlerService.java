@@ -1,10 +1,9 @@
-package com.exchange.core.service;
+package com.exchange.me.service;
 
-import com.exchange.core.domain.ErrorCode;
-import com.exchange.core.sbe.*;
+import com.exchange.me.domain.ErrorCode;
 import com.exchange.me.domain.Order;
 import com.exchange.me.handler.OrderBookHandler;
-import com.exchange.me.service.EngineService;
+import com.exchange.me.sbe.*;
 import org.agrona.DirectBuffer;
 import org.agrona.ExpandableDirectByteBuffer;
 
@@ -45,7 +44,7 @@ public class RequestHandlerService {
             ExpandableDirectByteBuffer respondBuffer) {
         putOrderDecoder.wrap(buffer, offset + headerLength, actingLength, actingVersion);
 
-        var order =
+        Order order =
                 engineService.createUpdateOrder(
                         null,
                         putOrderDecoder.orderId(),

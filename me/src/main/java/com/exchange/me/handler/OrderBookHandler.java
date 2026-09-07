@@ -1,7 +1,6 @@
 package com.exchange.me.handler;
 
-import com.exchange.core.sbe.TradePair;
-import com.exchange.core.sbe.TradeSide;
+import com.exchange.me.sbe.*;
 import com.exchange.me.domain.MatchInfo;
 import com.exchange.me.domain.Order;
 import com.exchange.me.exception.InvalidTradePairException;

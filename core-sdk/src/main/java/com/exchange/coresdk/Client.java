@@ -1,10 +1,11 @@
 package com.exchange.coresdk;
 
-import com.exchange.core.sbe.*;
 import com.exchange.coresdk.domain.OrderBookDepthResponse;
 import com.exchange.coresdk.domain.OrderInfoResponse;
 import com.exchange.coresdk.domain.PriceLevelResponse;
 import com.exchange.coresdk.domain.Response;
+import com.exchange.me.sbe.*;
+import com.exchange.me.sbe.MessageHeaderEncoder;
 import io.aeron.Publication;
 import io.aeron.cluster.client.AeronCluster;
 import io.aeron.cluster.client.EgressListener;

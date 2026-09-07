@@ -1,4 +1,4 @@
-package com.exchange.core.config;
+package com.exchange.me.config;
 
 public class Environment {
     public enum ENV {

@@ -1,10 +1,10 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <sbe:messageSchema xmlns:sbe="http://fixprotocol.io/2016/sbe"
-                   package="com.exchange.core.sbe"
+                   package="com.exchange.me.sbe"
                    id="1"
                    version="0"
                    semanticVersion="0.1"
-                   description="Exchange core message schema"
+                   description="Exchange me message schema"
                    byteOrder="littleEndian">
     <types>
         <composite name="messageHeader" description="Message identifiers and length of message root">
