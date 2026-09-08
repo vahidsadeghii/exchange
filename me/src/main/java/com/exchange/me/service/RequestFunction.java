@@ -1,4 +1,4 @@
-package com.exchange.core.service;
+package com.exchange.me.service;
 
 import org.agrona.DirectBuffer;
 import org.agrona.ExpandableDirectByteBuffer;

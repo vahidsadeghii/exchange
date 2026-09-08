@@ -1,10 +1,11 @@
 package com.exchange.coresdk;
 
-import com.exchange.core.sbe.*;
 import com.exchange.coresdk.domain.OrderBookDepthResponse;
 import com.exchange.coresdk.domain.OrderInfoResponse;
 import com.exchange.coresdk.domain.PriceLevelResponse;
 import com.exchange.coresdk.domain.Response;
+import com.exchange.me.sbe.*;
+import com.exchange.me.sbe.MessageHeaderEncoder;
 import io.aeron.Publication;
 import io.aeron.cluster.client.AeronCluster;
 import io.aeron.cluster.client.EgressListener;
@@ -154,13 +155,14 @@ public class Client implements EgressListener, AutoCloseable {
 
         final CompletableFuture<Response> future = new CompletableFuture<>();
         pendingRequests.put(correlationId, future);
-
+        System.out.println("SBE CLIENT");
         sendRequest(future,
                 correlationId, messageHeaderEncoder.encodedLength() + putOrderEncoder.encodedLength());
-
+        System.out.println("SBE CLIENT after sendRequest");
         return future.thenApplyAsync(
                 response -> {
                     if (response instanceof OrderInfoResponse orderInfoResponse) {
+                        System.out.println("SBE CLIENT orderInfoResponse"+ orderInfoResponse);
                         return orderInfoResponse;
                     } else {
                         return new OrderInfoResponse(response.getErrorCode());

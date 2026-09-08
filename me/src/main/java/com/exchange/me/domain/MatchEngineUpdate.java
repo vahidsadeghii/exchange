@@ -1,6 +1,6 @@
 package com.exchange.me.domain;
 
-import com.exchange.core.sbe.MatchStatus;
+import com.exchange.me.sbe.MatchStatus;
 
 public record MatchEngineUpdate(Long orderId, Long userId, MatchStatus matchStatus){
 }

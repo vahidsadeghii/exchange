@@ -2,20 +2,38 @@ plugins {
     id 'application'
 }
 
+group = 'com.exchange'
+version = '0.0.1-SNAPSHOT'
+description = 'me'
+
+java {
+    toolchain {
+        languageVersion = JavaLanguageVersion.of(21)
+    }
+}
+
 repositories {
     mavenCentral()
     gradlePluginPortal() // Add this line to include the Gradle Plugin Portal
 }
 
-dependencies {
+configurations {
+    sbeTool
+}
 
+dependencies {
     compileOnly 'org.projectlombok:lombok:1.18.36'
     annotationProcessor 'org.projectlombok:lombok:1.18.36'
 
     implementation 'com.fasterxml.jackson.datatype:jackson-datatype-jsr310:2.18.5'
 
-    // ---- SBE generated codecs (shared with core) ----
-    implementation 'org.agrona:agrona:2.1.0'
+
+    // ---- Aeron (High-performance messaging) ----
+    implementation 'io.aeron:aeron-all:1.52.1'
+
+    // ---- SBE (message codec generator) ----
+    sbeTool 'uk.co.real-logic:sbe-tool:1.35.6'
+
 
     // Use JUnit Jupiter for testing.
     testImplementation libs.junit.jupiter
@@ -28,21 +46,47 @@ dependencies {
     implementation libs.guava
 }
 
+def sbeSchemaFile = "$projectDir/src/main/resources/sbe/message-schema.xml"
+def sbeOutputDir = "$buildDir/generated-src/sbe"
+
+tasks.register('generateSbe', JavaExec) {
+    group = 'build'
+    description = 'Generates Java message codecs from the SBE schema.'
+    classpath = configurations.sbeTool
+    mainClass = 'uk.co.real_logic.sbe.SbeTool'
+    systemProperty 'sbe.output.dir', sbeOutputDir
+    systemProperty 'sbe.target.language', 'Java'
+    args sbeSchemaFile
+    inputs.file(sbeSchemaFile)
+    outputs.dir(sbeOutputDir)
+}
+
+sourceSets {
+    main {
+        java {
+            srcDir sbeOutputDir
+        }
+    }
+}
+
+compileJava.dependsOn generateSbe
+
 java {
     toolchain {
         languageVersion = JavaLanguageVersion.of(21)
     }
 }
 
-sourceSets {
-    main {
-        java {
-            srcDir "$rootDir/core/build/generated-src/sbe"
-        }
-    }
+application {
+    mainClass = 'com.exchange.me.Runner'
 }
 
-compileJava.dependsOn ':core:generateSbe'
+tasks.withType(JavaExec).configureEach {
+    jvmArgs(
+        '--add-exports=java.base/jdk.internal.misc=ALL-UNNAMED',
+        '--add-opens=java.base/jdk.internal.misc=ALL-UNNAMED'
+    )
+}
 
 tasks.named('test') {
     useJUnitPlatform()

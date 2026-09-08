@@ -1,10 +1,6 @@
 package com.exchange.me.service;
 
-import com.exchange.core.sbe.MarketType;
-import com.exchange.core.sbe.MatchStatus;
-import com.exchange.core.sbe.OrderType;
-import com.exchange.core.sbe.TradePair;
-import com.exchange.core.sbe.TradeSide;
+
 import com.exchange.me.domain.Order;
 import com.exchange.me.domain.OrderBookDepth;
 import com.exchange.me.domain.PriceLevel;
@@ -12,6 +8,7 @@ import com.exchange.me.exception.InvalidTradPairException;
 import com.exchange.me.exception.NotFoundOrderBookHandlerException;
 import com.exchange.me.handler.OrderBookHandler;
 import com.exchange.me.handler.OrderHandlerFactory;
+import com.exchange.me.sbe.*;
 
 import java.time.LocalDateTime;
 import java.time.ZoneId;
