@@ -42,7 +42,6 @@ public class CoreClusteredService implements ClusteredService {
         requestMap.put(CancelOrderDecoder.TEMPLATE_ID, requestHandlerService::handleCancelOrder);
         requestMap.put(OrderBookDepthDecoder.TEMPLATE_ID, requestHandlerService::handleOrderBookDepth);
 
-        System.out.println("Cluster Servcie---------------");
     }
 
     @Override
