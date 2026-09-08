@@ -57,6 +57,8 @@ public class RequestHandlerService {
                         putOrderDecoder.quantity(),
                         putOrderDecoder.price());
 
+        System.out.println("Put Order me RequestHandlerService");
+
         if (order != null) {
             orderInfoEncoder
                     .wrapAndApplyHeader(respondBuffer, 0, messageHeaderEncoder)
@@ -66,6 +68,8 @@ public class RequestHandlerService {
                     .userId(order.getUserId())
                     .matchStatus(order.getMatchStatus())
                     .filledQuantity(order.getQuantity() - order.getRemainingQuantity());
+            System.out.println("orderInfoEncoder.encodedLength() + messageHeaderEncoder.encodedLength()" +
+                    orderInfoEncoder.encodedLength() + messageHeaderEncoder.encodedLength());
 
             return orderInfoEncoder.encodedLength() + messageHeaderEncoder.encodedLength();
         } else {

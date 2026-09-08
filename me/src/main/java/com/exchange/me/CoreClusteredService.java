@@ -1,7 +1,6 @@
 package com.exchange.me;
 
 
-
 import com.exchange.me.sbe.CancelOrderDecoder;
 import com.exchange.me.sbe.GetOrderInfoDecoder;
 import com.exchange.me.sbe.OrderBookDepthDecoder;
@@ -42,6 +41,8 @@ public class CoreClusteredService implements ClusteredService {
         requestMap.put(GetOrderInfoDecoder.TEMPLATE_ID, requestHandlerService::handleGetOrderInfo);
         requestMap.put(CancelOrderDecoder.TEMPLATE_ID, requestHandlerService::handleCancelOrder);
         requestMap.put(OrderBookDepthDecoder.TEMPLATE_ID, requestHandlerService::handleOrderBookDepth);
+
+        System.out.println("Cluster Servcie---------------");
     }
 
     @Override
