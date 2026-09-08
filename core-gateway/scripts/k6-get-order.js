@@ -6,7 +6,7 @@ export const options = {
   scenarios: {
     contacts: {
       executor: 'shared-iterations',
-      vus: 10,
+      vus: 15,
       iterations: 100,
       maxDuration: '1s',
     },
@@ -15,6 +15,6 @@ export const options = {
 
 
 export default function () {
-  const res = http.get('http://localhost:8089/api/v1/me/orders?id=2&pair=BTC_USD');
+  const res = http.get('http://localhost:8089/api/v1/me/orders?id=10&pair=BTC_EURO');
   expect(res.status).toBe(200);
 }
