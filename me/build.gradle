@@ -22,11 +22,15 @@ configurations {
 }
 
 dependencies {
-    compileOnly 'org.projectlombok:lombok:1.18.36'
-    annotationProcessor 'org.projectlombok:lombok:1.18.36'
-
     implementation 'com.fasterxml.jackson.datatype:jackson-datatype-jsr310:2.18.5'
 
+    // Lombok
+    compileOnly 'org.projectlombok:lombok:1.18.42'
+    annotationProcessor 'org.projectlombok:lombok:1.18.42'
+
+    // SLF4J
+    implementation 'org.slf4j:slf4j-api:2.0.17'
+    runtimeOnly 'ch.qos.logback:logback-classic:1.5.18'
 
     // ---- Aeron (High-performance messaging) ----
     implementation 'io.aeron:aeron-all:1.52.1'
@@ -61,6 +65,7 @@ tasks.register('generateSbe', JavaExec) {
     outputs.dir(sbeOutputDir)
 }
 
+
 sourceSets {
     main {
         java {
@@ -83,8 +88,8 @@ application {
 
 tasks.withType(JavaExec).configureEach {
     jvmArgs(
-        '--add-exports=java.base/jdk.internal.misc=ALL-UNNAMED',
-        '--add-opens=java.base/jdk.internal.misc=ALL-UNNAMED'
+            '--add-exports=java.base/jdk.internal.misc=ALL-UNNAMED',
+            '--add-opens=java.base/jdk.internal.misc=ALL-UNNAMED'
     )
 }
 

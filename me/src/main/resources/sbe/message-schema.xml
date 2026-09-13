@@ -120,4 +120,20 @@
             <field name="orderCount" id="3" type="int32"/>
         </group>
     </sbe:message>
+   <sbe:message name="EngineSnapshot" id="500">
+    <group name="orders" id="1" dimensionType="groupSizeEncoding">
+        <field name="orderId" id="1" type="uint64"/>
+        <field name="timestamp" id="2" type="uint64"/>
+        <field name="userId" id="3" type="uint64"/>
+        <field name="tradeSide" id="4" type="tradeSide"/>
+        <field name="orderType" id="5" type="orderType"/>
+        <field name="tradePair" id="6" type="tradePair"/>
+        <field name="marketType" id="7" type="marketType"/>
+        <field name="matchStatus" id="8" type="matchStatus"/>
+        <field name="quantity" id="9" type="uint64"/>
+        <field name="price" id="10" type="uint64"/>
+        <field name="filled" id="11" type="uint64"/>
+        <field name="expireDays" id="12" type="int64"/>
+    </group>
+</sbe:message>
 </sbe:messageSchema>
