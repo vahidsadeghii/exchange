@@ -34,12 +34,12 @@ java {
 sourceSets {
     main {
         java {
-            srcDir "$rootDir/core/build/generated-src/sbe"
+            srcDir "$rootDir/me/build/generated-src/sbe"
         }
     }
 }
 
-compileJava.dependsOn ':core:generateSbe'
+compileJava.dependsOn ':me:generateSbe'
 
 tasks.named('test') {
     useJUnitPlatform()

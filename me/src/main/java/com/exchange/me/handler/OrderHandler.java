@@ -1,6 +1,6 @@
 package com.exchange.me.handler;
 
-import com.exchange.core.sbe.OrderType;
+import com.exchange.me.sbe.OrderType;
 import com.exchange.me.domain.MatchInfo;
 import com.exchange.me.domain.Order;
 import com.exchange.me.matching.MatchingContext;

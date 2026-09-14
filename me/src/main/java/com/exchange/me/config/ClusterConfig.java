@@ -1,6 +1,6 @@
-package com.exchange.core.config;
+package com.exchange.me.config;
 
-import com.exchange.core.CoreClusteredService;
+import com.exchange.me.CoreClusteredService;
 import io.aeron.archive.Archive;
 import io.aeron.archive.client.AeronArchive;
 import io.aeron.cluster.ConsensusModule;

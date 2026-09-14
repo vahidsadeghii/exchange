@@ -1,6 +1,6 @@
 package com.exchange.coresdk.domain;
 
-import com.exchange.core.sbe.MatchStatus;
+import com.exchange.me.sbe.MatchStatus;
 
 public class OrderInfoResponse extends Response {
     private long id;

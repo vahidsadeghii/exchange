@@ -1,9 +1,6 @@
 package com.exchange.coregateway.service;
 
-import com.exchange.core.sbe.MarketType;
-import com.exchange.core.sbe.OrderType;
-import com.exchange.core.sbe.TradePair;
-import com.exchange.core.sbe.TradeSide;
+import com.exchange.me.sbe.*;
 import com.exchange.coresdk.Client;
 import com.exchange.coresdk.domain.OrderBookDepthResponse;
 import com.exchange.coresdk.domain.OrderInfoResponse;

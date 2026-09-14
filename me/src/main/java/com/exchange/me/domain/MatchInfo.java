@@ -1,6 +1,6 @@
 package com.exchange.me.domain;
 
-import com.exchange.core.sbe.TradeSide;
+import com.exchange.me.sbe.TradeSide;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;

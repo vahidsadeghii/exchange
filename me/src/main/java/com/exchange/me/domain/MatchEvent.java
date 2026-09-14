@@ -3,7 +3,7 @@ package com.exchange.me.domain;
 import lombok.*;
 
 import java.time.LocalDateTime;
-import com.exchange.core.sbe.MatchStatus;
+import com.exchange.me.sbe.MatchStatus;
 
 @Getter
 @Setter
