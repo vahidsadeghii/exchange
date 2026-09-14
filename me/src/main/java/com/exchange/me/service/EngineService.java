@@ -9,13 +9,21 @@ import com.exchange.me.exception.InvalidTradPairException;
 import com.exchange.me.exception.NotFoundOrderBookHandlerException;
 import com.exchange.me.handler.OrderBookHandler;
 import com.exchange.me.handler.OrderHandlerFactory;
-import com.exchange.me.sbe.*;
+import com.exchange.me.sbe.MarketType;
+import com.exchange.me.sbe.MatchStatus;
+import com.exchange.me.sbe.OrderType;
+import com.exchange.me.sbe.TradePair;
+import com.exchange.me.sbe.TradeSide;
 import lombok.extern.slf4j.Slf4j;
-
 
 import java.time.LocalDateTime;
 import java.time.ZoneId;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Deque;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.TreeMap;
 import java.util.concurrent.ConcurrentHashMap;
 
 
@@ -189,7 +197,14 @@ public class EngineService {
         List<Order> allOrders = getAllOrders();
 
         log.info("Engine snapshot created: orderCount={}", allOrders.size());
-        return new EngineSnapshot(allOrders);
+        Map<TradePair, Map<Long, Deque<Order>>> bids = new TreeMap<>();
+        Map<TradePair, Map<Long, Deque<Order>>> asks = new TreeMap<>();
+        orderBooks.forEach((key, value) -> {
+            bids.put(key, value.getBids());
+            asks.put(key, value.getAsks());
+        });
+
+        return new EngineSnapshot(allOrders, bids, asks);
     }
 
     public List<Order> getAllOrders() {
@@ -206,10 +221,12 @@ public class EngineService {
         log.info("Restoring orders: orderCount={}", orders.size());
 
         resetAll();
-        for (Order order : orders) {
+
+        //Todo: just put orders in order list
+        /*for (Order order : orders) {
             OrderBookHandler handler = getOrCreateBook(order.getTradePair());
             handler.restoreOrder(order);
-        }
+        }*/
 
         log.info("Orders restored successfully: orderCount={}, orderBookCount={}", orders.size(), orderBooks.size());
     }

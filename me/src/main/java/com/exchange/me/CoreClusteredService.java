@@ -3,12 +3,27 @@ package com.exchange.me;
 
 import com.exchange.me.domain.EngineSnapshot;
 import com.exchange.me.domain.Order;
-import com.exchange.me.sbe.*;
+import com.exchange.me.sbe.CancelOrderDecoder;
+import com.exchange.me.sbe.EngineSnapshotDecoder;
+import com.exchange.me.sbe.GetOrderInfoDecoder;
+import com.exchange.me.sbe.MarketType;
+import com.exchange.me.sbe.MatchStatus;
+import com.exchange.me.sbe.MessageHeaderEncoder;
+import com.exchange.me.sbe.OrderBookDepthDecoder;
+import com.exchange.me.sbe.OrderType;
+import com.exchange.me.sbe.PutOrderDecoder;
+import com.exchange.me.sbe.SnapshotOrderBookDecoder;
+import com.exchange.me.sbe.SnapshotOrderBookEncoder;
+import com.exchange.me.sbe.SnapshotOrderDecoder;
+import com.exchange.me.sbe.SnapshotOrderEncoder;
+import com.exchange.me.sbe.TradePair;
+import com.exchange.me.sbe.TradeSide;
 import com.exchange.me.service.EngineService;
 import com.exchange.me.service.RequestFunction;
 import com.exchange.me.service.RequestHandlerService;
 import io.aeron.ExclusivePublication;
 import io.aeron.Image;
+import io.aeron.Publication;
 import io.aeron.cluster.codecs.CloseReason;
 import io.aeron.cluster.codecs.MessageHeaderDecoder;
 import io.aeron.cluster.service.ClientSession;
@@ -19,22 +34,29 @@ import io.aeron.logbuffer.Header;
 import lombok.extern.slf4j.Slf4j;
 import org.agrona.DirectBuffer;
 import org.agrona.ExpandableDirectByteBuffer;
-import io.aeron.Publication;
 
+import java.util.ArrayDeque;
 import java.util.ArrayList;
+import java.util.Deque;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.TreeMap;
+import java.util.function.BiConsumer;
 
 
 @Slf4j
 public class CoreClusteredService implements ClusteredService {
     private final MessageHeaderDecoder messageHeaderDecoder;
     private final ExpandableDirectByteBuffer respondBuffer;
-    private final EngineSnapshotEncoder snapshotEncoder;
+    private final SnapshotOrderEncoder snapshotOrderEncoder;
+    private final SnapshotOrderDecoder snapshotOrderDecoder;
+    private final SnapshotOrderBookEncoder snapshotOrderBookEncoder;
+    private final SnapshotOrderBookDecoder snapshotOrderBookDecoder;
     private final EngineService engineService;
     private final MessageHeaderEncoder messageHeaderEncoder;
     private final ExpandableDirectByteBuffer snapshotBuffer;
-    private final EngineSnapshotDecoder snapshotDecoder;
 
     private final HashMap<Integer, RequestFunction> requestMap;
     private Cluster cluster;
@@ -46,8 +68,10 @@ public class CoreClusteredService implements ClusteredService {
         RequestHandlerService requestHandlerService = new RequestHandlerService();
         engineService = new EngineService();
         messageHeaderDecoder = new MessageHeaderDecoder();
-        this.snapshotEncoder = new EngineSnapshotEncoder();
-        this.snapshotDecoder = new EngineSnapshotDecoder();
+        this.snapshotOrderEncoder = new SnapshotOrderEncoder();
+        this.snapshotOrderBookEncoder = new SnapshotOrderBookEncoder();
+        this.snapshotOrderBookDecoder = new SnapshotOrderBookDecoder();
+        this.snapshotOrderDecoder = new SnapshotOrderDecoder();
         this.respondBuffer = new ExpandableDirectByteBuffer(1024);
         messageHeaderEncoder = new MessageHeaderEncoder();
         snapshotBuffer = new ExpandableDirectByteBuffer(1024 * 1024);
@@ -186,13 +210,9 @@ public class CoreClusteredService implements ClusteredService {
 
         log.info("Engine snapshot created: orderCount={}", snapshot.orders().size());
 
-        snapshotEncoder.wrapAndApplyHeader(snapshotBuffer, 0, messageHeaderEncoder);
-
-        EngineSnapshotEncoder.OrdersEncoder ordersEncoder = snapshotEncoder.ordersCount(snapshot.orders().size());
-
         for (Order order : snapshot.orders()) {
-            ordersEncoder
-                    .next()
+            snapshotOrderEncoder.wrapAndApplyHeader(snapshotBuffer, 0, messageHeaderEncoder);
+            snapshotOrderEncoder
                     .orderId(order.getId())
                     .timestamp(order.getTimestamp())
                     .userId(order.getUserId())
@@ -205,12 +225,39 @@ public class CoreClusteredService implements ClusteredService {
                     .price(order.getPrice())
                     .filled(order.getFilled())
                     .expireDays(order.getExpireDays());
+
+            int length = messageHeaderEncoder.encodedLength() + snapshotOrderEncoder.encodedLength();
+            offerSnapshot(snapshotPublication, length);
         }
 
-        int length = messageHeaderEncoder.encodedLength() + snapshotEncoder.encodedLength();
+        BiConsumer<TradePair, Map<Long, Deque<Order>>> orderBookSnapshotConsumer = (TradePair tradePair, Map<Long, Deque<Order>> items) -> {
+            snapshotOrderBookEncoder.wrapAndApplyHeader(snapshotBuffer, 0, messageHeaderEncoder);
+            SnapshotOrderBookEncoder.LevelEncoder levelEncoder = snapshotOrderBookEncoder
+                    .pair(tradePair)
+                    .side(TradeSide.BUY)
+                    .levelCount(items.size());
 
-        log.info("Snapshot encoded: orderCount={}, payloadLength={}", snapshot.orders().size(), length);
+            items.forEach(
+                    (price, orders) -> {
+                        SnapshotOrderBookEncoder.LevelEncoder.LevelOrdersEncoder levelOrdersEncoder = levelEncoder.next()
+                                .price(price)
+                                .levelOrdersCount(orders.size());
+                        orders.forEach(order -> {
+                            levelOrdersEncoder.next()
+                                    .orderId(order.getId());
+                        });
+                    }
+            );
 
+            int length = messageHeaderEncoder.encodedLength() + snapshotOrderBookEncoder.encodedLength();
+            offerSnapshot(snapshotPublication, length);
+        };
+
+        snapshot.bids().forEach(orderBookSnapshotConsumer);
+        snapshot.asks().forEach(orderBookSnapshotConsumer);
+    }
+
+    private void offerSnapshot(final ExclusivePublication snapshotPublication, int length) {
         while (true) {
             long result = snapshotPublication.offer(snapshotBuffer, 0, length);
 
@@ -219,18 +266,13 @@ public class CoreClusteredService implements ClusteredService {
             }
 
             if (result == Publication.CLOSED || result == Publication.MAX_POSITION_EXCEEDED) {
-                log.error("Snapshot publication failed: result={}, orderCount={}, length={}", result, snapshot.orders().size(), length);
-
                 throw new IllegalStateException("Snapshot offer failed: " + result);
             }
 
             log.debug("========== TAKING SNAPSHOT ==========");
-            log.debug("Snapshot publication temporarily unavailable: result={}, orderCount={}", result, snapshot.orders().size());
-
             Thread.yield();
         }
     }
-
 
     @Override
     public void onRoleChange(final Cluster.Role newRole) {
@@ -247,6 +289,8 @@ public class CoreClusteredService implements ClusteredService {
         log.info("Loading engine snapshot");
 
         List<Order> restoredOrders = new ArrayList<>();
+        Map<TradePair, Map<Long, Deque<Long>>> bids = new TreeMap<>();
+        Map<TradePair, Map<Long, Deque<Long>>> asks = new TreeMap<>();
 
         final FragmentHandler handler = (buffer, offset, length, header) -> {
             messageHeaderDecoder.wrap(buffer, offset);
@@ -256,31 +300,56 @@ public class CoreClusteredService implements ClusteredService {
                 log.warn("Ignoring unexpected snapshot template: templateId={}", templateId);
                 return;
             }
+
+
             int headerLength = messageHeaderDecoder.encodedLength();
-            snapshotDecoder.wrap(buffer, offset + headerLength, messageHeaderDecoder.blockLength(), messageHeaderDecoder.version()
-            );
 
-            EngineSnapshotDecoder.OrdersDecoder ordersDecoder = snapshotDecoder.orders();
+            switch (templateId) {
+                case SnapshotOrderDecoder.TEMPLATE_ID -> {
+                    snapshotOrderDecoder.wrap(buffer, offset + headerLength, messageHeaderDecoder.blockLength(), messageHeaderDecoder.version());
+                    Order order = Order.builder()
+                            .id(snapshotOrderDecoder.orderId())
+                            .userId(snapshotOrderDecoder.userId())
+                            .timestamp(snapshotOrderDecoder.timestamp())
+                            .tradeSide(snapshotOrderDecoder.tradeSide())
+                            .tradePair(snapshotOrderDecoder.tradePair())
+                            .orderType(snapshotOrderDecoder.orderType())
+                            .marketType(snapshotOrderDecoder.marketType())
+                            .matchStatus(snapshotOrderDecoder.matchStatus())
+                            .quantity(snapshotOrderDecoder.quantity())
+                            .price(snapshotOrderDecoder.price())
+                            .filled(snapshotOrderDecoder.filled())
+                            .expireDays(snapshotOrderDecoder.expireDays())
+                            .build();
 
-            while (ordersDecoder.hasNext()) {
-                ordersDecoder.next();
-                Order order = Order.builder()
-                        .id(ordersDecoder.orderId())
-                        .userId(ordersDecoder.userId())
-                        .timestamp(ordersDecoder.timestamp())
-                        .tradeSide(ordersDecoder.tradeSide())
-                        .tradePair(ordersDecoder.tradePair())
-                        .orderType(ordersDecoder.orderType())
-                        .marketType(ordersDecoder.marketType())
-                        .matchStatus(ordersDecoder.matchStatus())
-                        .quantity(ordersDecoder.quantity())
-                        .price(ordersDecoder.price())
-                        .filled(ordersDecoder.filled())
-                        .expireDays(ordersDecoder.expireDays())
-                        .build();
+                    restoredOrders.add(order);
+                    log.debug("Snapshot fragment processed: fragmentLength={}, restoredOrdersSoFar={}", length, restoredOrders.size());
+                    break;
+                }
 
-                restoredOrders.add(order);
-                log.debug("Snapshot fragment processed: fragmentLength={}, restoredOrdersSoFar={}", length, restoredOrders.size());
+                case SnapshotOrderBookDecoder.TEMPLATE_ID -> {
+                    snapshotOrderBookDecoder.wrap(buffer, offset + headerLength, messageHeaderDecoder.blockLength(), messageHeaderDecoder.version());
+                    TradePair pair = snapshotOrderBookDecoder.pair();
+                    TradeSide side = snapshotOrderBookDecoder.side();
+                    SnapshotOrderBookDecoder.LevelDecoder level = snapshotOrderBookDecoder.level();
+
+                    while (level.hasNext()) {
+                        SnapshotOrderBookDecoder.LevelDecoder levelDetail = level.next();
+                        long price = levelDetail.price();
+                        SnapshotOrderBookDecoder.LevelDecoder.LevelOrdersDecoder levelOrdersDecoder = levelDetail.levelOrders();
+
+                        ArrayDeque<Long> orderIds = new ArrayDeque<>();
+                        while (levelOrdersDecoder.hasNext()) {
+                            orderIds.add(levelOrdersDecoder.orderId());
+                        }
+
+                        if (side == TradeSide.BUY) {
+                            Objects.requireNonNull(bids.putIfAbsent(pair, new TreeMap<>())).putIfAbsent(price, orderIds);
+                        } else {
+                            Objects.requireNonNull(asks.putIfAbsent(pair, new TreeMap<>())).putIfAbsent(price, orderIds);
+                        }
+                    }
+                }
             }
         };
 
@@ -293,6 +362,7 @@ public class CoreClusteredService implements ClusteredService {
             cluster.idleStrategy().idle(fragments);
         }
         engineService.restoreOrders(restoredOrders);
+        //enginService.restoreOrderBooks
 
         log.info("Engine snapshot restored successfully: orderCount={}", restoredOrders.size());
     }
