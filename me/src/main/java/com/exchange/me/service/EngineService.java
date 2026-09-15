@@ -25,6 +25,8 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.TreeMap;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 
 @Slf4j
@@ -229,6 +231,46 @@ public class EngineService {
         }*/
 
         log.info("Orders restored successfully: orderCount={}, orderBookCount={}", orders.size(), orderBooks.size());
+    }
+
+    public void restoreOrderBooks(List<Order> orders, Map<TradePair, Map<Long, Deque<Long>>> bids,
+                                  Map<TradePair, Map<Long, Deque<Long>>> asks) {
+        resetAll();
+
+        log.info("Restoring order books");
+
+        Map<Long, Order> ordersById = orders.stream().collect(Collectors.toMap(Order::getId, Function.identity()));
+
+        bids.forEach((pair, levels) -> {
+            OrderBookHandler book = getOrCreateBook(pair);
+            levels.forEach((price, orderIds) -> {
+                for (Long orderId : orderIds) {
+                    Order order = ordersById.get(orderId);
+
+                    if (order != null) {
+                        book.restoreOrder(order);
+                    } else {
+                        log.warn("Bid order not found during restore: pair={}, orderId={}", pair, orderId);
+                    }
+                }
+            });
+        });
+
+        asks.forEach((pair, levels) -> {
+            OrderBookHandler book = getOrCreateBook(pair);
+            levels.forEach((price, orderIds) -> {
+                for (Long orderId : orderIds) {
+                    Order order = ordersById.get(orderId);
+
+                    if (order != null) {
+                        book.restoreOrder(order);
+                    } else {
+                        log.warn("Ask order not found during restore: pair={}, orderId={}", pair, orderId);
+                    }
+                }
+            });
+        });
+        log.info("Order books restored successfully");
     }
 
 }

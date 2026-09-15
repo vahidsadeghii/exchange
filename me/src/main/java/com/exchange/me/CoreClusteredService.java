@@ -230,31 +230,39 @@ public class CoreClusteredService implements ClusteredService {
             offerSnapshot(snapshotPublication, length);
         }
 
-        BiConsumer<TradePair, Map<Long, Deque<Order>>> orderBookSnapshotConsumer = (TradePair tradePair, Map<Long, Deque<Order>> items) -> {
-            snapshotOrderBookEncoder.wrapAndApplyHeader(snapshotBuffer, 0, messageHeaderEncoder);
-            SnapshotOrderBookEncoder.LevelEncoder levelEncoder = snapshotOrderBookEncoder
-                    .pair(tradePair)
-                    .side(TradeSide.BUY)
-                    .levelCount(items.size());
+        snapshot.bids().forEach(
+                (pair, levels) -> writeBookSnapshot(
+                        snapshotPublication,
+                        pair,
+                        TradeSide.BUY,
+                        levels));
 
-            items.forEach(
-                    (price, orders) -> {
-                        SnapshotOrderBookEncoder.LevelEncoder.LevelOrdersEncoder levelOrdersEncoder = levelEncoder.next()
-                                .price(price)
-                                .levelOrdersCount(orders.size());
-                        orders.forEach(order -> {
-                            levelOrdersEncoder.next()
-                                    .orderId(order.getId());
-                        });
-                    }
-            );
+        snapshot.asks().forEach(
+                (pair, levels) -> writeBookSnapshot(
+                        snapshotPublication,
+                        pair,
+                        TradeSide.SELL,
+                        levels));
+    }
 
-            int length = messageHeaderEncoder.encodedLength() + snapshotOrderBookEncoder.encodedLength();
-            offerSnapshot(snapshotPublication, length);
-        };
+    private void writeBookSnapshot(ExclusivePublication publication, TradePair pair, TradeSide side, Map<Long, Deque<Order>> levels) {
+        snapshotOrderBookEncoder.wrapAndApplyHeader(snapshotBuffer, 0, messageHeaderEncoder);
 
-        snapshot.bids().forEach(orderBookSnapshotConsumer);
-        snapshot.asks().forEach(orderBookSnapshotConsumer);
+        SnapshotOrderBookEncoder.LevelEncoder levelEncoder =
+                snapshotOrderBookEncoder.pair(pair).side(side).levelCount(levels.size());
+        levels.forEach((price, orders) -> {
+            var levelOrders = levelEncoder.next()
+                    .price(price)
+                    .levelOrdersCount(orders.size());
+
+            orders.forEach(order ->
+                    levelOrders.next()
+                            .orderId(order.getId()));
+        });
+
+        int length = messageHeaderEncoder.encodedLength() + snapshotOrderBookEncoder.encodedLength();
+
+        offerSnapshot(publication, length);
     }
 
     private void offerSnapshot(final ExclusivePublication snapshotPublication, int length) {
@@ -296,8 +304,8 @@ public class CoreClusteredService implements ClusteredService {
             messageHeaderDecoder.wrap(buffer, offset);
             int templateId = messageHeaderDecoder.templateId();
 
-            if (messageHeaderDecoder.templateId() != EngineSnapshotDecoder.TEMPLATE_ID) {
-                log.warn("Ignoring unexpected snapshot template: templateId={}", templateId);
+            if (templateId != SnapshotOrderDecoder.TEMPLATE_ID && templateId != SnapshotOrderBookDecoder.TEMPLATE_ID) {
+                log.warn("Ignoring snapshot template {}", templateId);
                 return;
             }
 
@@ -340,7 +348,7 @@ public class CoreClusteredService implements ClusteredService {
 
                         ArrayDeque<Long> orderIds = new ArrayDeque<>();
                         while (levelOrdersDecoder.hasNext()) {
-                            orderIds.add(levelOrdersDecoder.orderId());
+                            orderIds.add(levelOrdersDecoder.next().orderId());
                         }
 
                         if (side == TradeSide.BUY) {
@@ -362,7 +370,7 @@ public class CoreClusteredService implements ClusteredService {
             cluster.idleStrategy().idle(fragments);
         }
         engineService.restoreOrders(restoredOrders);
-        //enginService.restoreOrderBooks
+        engineService.restoreOrderBooks(restoredOrders, bids, asks);
 
         log.info("Engine snapshot restored successfully: orderCount={}", restoredOrders.size());
     }
