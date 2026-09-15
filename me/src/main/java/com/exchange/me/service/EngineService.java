@@ -186,7 +186,6 @@ public class EngineService {
         return new OrderBookDepth(bids, asks);
     }
 
-
     private OrderBookHandler getOrCreateBook(TradePair pair) {
         return orderBooks.computeIfAbsent(pair, (p) ->
         {
