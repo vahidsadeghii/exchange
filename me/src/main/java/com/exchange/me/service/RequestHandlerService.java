@@ -9,6 +9,7 @@ import org.agrona.DirectBuffer;
 import org.agrona.ExpandableDirectByteBuffer;
 
 import java.io.File;
+import java.util.concurrent.CompletableFuture;
 
 
 public class RequestHandlerService {
@@ -21,7 +22,7 @@ public class RequestHandlerService {
     private final OrderBookDepthDecoder orderBookDepthDecoder;
     private final MarketDepthEncoder marketDepthEncoder;
     private final TakeSnapShotDecoder takeSnapShotDecoder;
-    private final TakeSnapShotEncoder takeSnapShotEncoder;
+    private final TakeSnapShotResponseEncoder takeSnapShotResponseEncoder;
 
 
     private final EngineService engineService;
@@ -36,7 +37,7 @@ public class RequestHandlerService {
         orderBookDepthDecoder = new OrderBookDepthDecoder();
         marketDepthEncoder = new MarketDepthEncoder();
         takeSnapShotDecoder = new TakeSnapShotDecoder();
-        takeSnapShotEncoder = new TakeSnapShotEncoder();
+        takeSnapShotResponseEncoder = new TakeSnapShotResponseEncoder();
 
         engineService = new EngineService();
     }
@@ -167,7 +168,11 @@ public class RequestHandlerService {
         System.out.println("snapshot request received");
         takeSnapShotDecoder.wrap(buffer, offset + headerLength, actingLength, actingVersion);
         System.out.println("before snapshot");
-        ClusterTool.snapshot(new File("./cluster-data/cluster"), System.out);
+
+        CompletableFuture.runAsync(() ->{
+            ClusterTool.snapshot(new File("./cluster-data/cluster"), System.out);
+        });
+
 
         File dir = new File("./cluster-data/cluster");
 
@@ -175,12 +180,12 @@ public class RequestHandlerService {
         System.out.println(dir.exists());
         System.out.println("after snapshot");
 
-        takeSnapShotEncoder.wrapAndApplyHeader(respondBuffer, 0, messageHeaderEncoder)
+        takeSnapShotResponseEncoder.wrapAndApplyHeader(respondBuffer, 0, messageHeaderEncoder)
                 .correlationId(takeSnapShotDecoder.correlationId());
 
         System.out.println("snapshot response encoded");
 
-        return takeSnapShotEncoder.encodedLength() + messageHeaderEncoder.encodedLength();
+        return takeSnapShotResponseEncoder.encodedLength() + messageHeaderEncoder.encodedLength();
 
     }
 

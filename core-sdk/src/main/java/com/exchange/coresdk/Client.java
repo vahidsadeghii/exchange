@@ -62,6 +62,7 @@ public class Client implements EgressListener, AutoCloseable {
     private final ExpandableArrayBuffer sendBuffer = new ExpandableArrayBuffer();
     private final OrderBookDepthEncoder orderBookDepthEncoder = new OrderBookDepthEncoder();
     private final MarketDepthDecoder marketDepthDecoder = new MarketDepthDecoder();
+    private final TakeSnapShotResponseDecoder takeSnapShotResponseDecoder = new TakeSnapShotResponseDecoder();
 
     private final MessageHeaderDecoder messageHeaderDecoder = new MessageHeaderDecoder();
     private final OrderInfoDecoder orderInfoDecoder = new OrderInfoDecoder();
@@ -451,6 +452,17 @@ public class Client implements EgressListener, AutoCloseable {
                 if (future != null) {
                     future.complete(
                             new Response(errorMessageDecoder.code()));
+                }
+                break;
+            }
+
+            case TakeSnapShotResponseDecoder.TEMPLATE_ID: {
+                takeSnapShotResponseDecoder.wrap(buffer, offset + headerLength, actingBlockLength, actingVersion);
+                final CompletableFuture<Response> future =
+                        pendingRequests.remove(takeSnapShotResponseDecoder.correlationId());
+                if (future != null) {
+                    future.complete(
+                            new Response(0));
                 }
                 break;
             }

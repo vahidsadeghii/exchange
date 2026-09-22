@@ -12,4 +12,28 @@ public class Asset {
 
     @Enumerated(EnumType.STRING)
     private AssetType assetType;
+
+    public BigDecimal getBalance() {
+        return balance;
+    }
+
+    public void setBalance(BigDecimal balance) {
+        this.balance = balance;
+    }
+
+    public BigDecimal getBlockedBalance() {
+        return blockedBalance;
+    }
+
+    public void setBlockedBalance(BigDecimal blockedBalance) {
+        this.blockedBalance = blockedBalance;
+    }
+
+    public AssetType getAssetType() {
+        return assetType;
+    }
+
+    public void setAssetType(AssetType assetType) {
+        this.assetType = assetType;
+    }
 }
