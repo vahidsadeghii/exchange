@@ -3,10 +3,8 @@ package com.exchange.wallet.service.serviceImpl;
 import com.exchange.wallet.client.profileclient.ProfileClient;
 import com.exchange.wallet.controller.wallet.AssetDTO;
 import com.exchange.wallet.domain.*;
-import com.exchange.wallet.exception.AmountMustBePositiveException;
 import com.exchange.wallet.exception.AssetNotFoundException;
 import com.exchange.wallet.exception.WalletNotFoundException;
-import com.exchange.wallet.repository.InMemoryWalletRepository;
 import com.exchange.wallet.service.TransactionService;
 import com.exchange.wallet.service.WalletService;
 import lombok.RequiredArgsConstructor;
@@ -20,106 +18,75 @@ import java.util.stream.Collectors;
 @Service
 @RequiredArgsConstructor
 public class WalletServiceImpl implements WalletService {
-    private final InMemoryWalletRepository repository;
+    private final WalletStore walletStore;
     private final ProfileClient profileClient;
     private final TransactionService transactionService;
 
 
     @Override
+
     public Wallet save(Long userId, List<AssetDTO> assets) {
-        Optional<Wallet> walletOptional = repository.findByUserId(userId);
+        for (AssetDTO asset : assets) {
+            Optional<Wallet> existingWallet =
+                    findWalletByUserIdAndAssetType(userId, asset.assetType());
 
-        // Create new wallet
-        if (walletOptional.isEmpty()) {
-
-            Wallet wallet = createWallet(userId, assets);
-
-            repository.save(wallet);
-
-            return wallet;
+            if (existingWallet.isPresent()) {
+                throw new IllegalArgumentException(
+                        "Wallet already contains asset type: " + asset.assetType());
+            }
         }
 
-        Wallet wallet = walletOptional.get();
+        Wallet wallet = createWallet(userId, assets);
+        return walletStore.save(wallet);
+    }
 
-        // Keep old values for transaction audit
-        Map<AssetType, BigDecimal> oldBalances =
-                wallet.getAssets()
-                        .stream()
-                        .collect(Collectors.toMap(
-                                Asset::getAssetType,
-                                Asset::getBalance
-                        ));
+    @Override
+    public Wallet updateWallet(String walletId, List<AssetDTO> assets) {
+        Wallet wallet = findWalletById(walletId);
 
-        Map<AssetType, BigDecimal> oldBlockedBalances =
-                wallet.getAssets()
-                        .stream()
-                        .collect(Collectors.toMap(
-                                Asset::getAssetType,
-                                Asset::getBlockedBalance
-                        ));
+        Map<AssetType, BigDecimal> oldBalances = wallet.getAssets().stream()
+                        .collect(Collectors.toMap(Asset::getAssetType, Asset::getBalance));
 
+        Map<AssetType, BigDecimal> oldBlockedBalances = wallet.getAssets().stream()
+                        .collect(Collectors.toMap(Asset::getAssetType, Asset::getBlockedBalance));
 
         mergeAssets(wallet, assets);
 
         wallet.setUpdatedAt(LocalDateTime.now());
-
         wallet.getAssets().forEach(asset -> {
-
-            BigDecimal balanceBefore =
-                    oldBalances.getOrDefault(
-                            asset.getAssetType(),
-                            BigDecimal.ZERO
-                    );
-
+            BigDecimal balanceBefore = oldBalances.getOrDefault(asset.getAssetType(), BigDecimal.ZERO);
             BigDecimal balanceAfter = asset.getBalance();
-
-            BigDecimal blockedBefore =
-                    oldBlockedBalances.getOrDefault(
-                            asset.getAssetType(),
-                            BigDecimal.ZERO
-                    );
+            BigDecimal blockedBefore = oldBlockedBalances.getOrDefault(asset.getAssetType(), BigDecimal.ZERO);
 
             BigDecimal blockedAfter = asset.getBlockedBalance();
-
             if (balanceBefore.compareTo(balanceAfter) == 0 &&
                     blockedBefore.compareTo(blockedAfter) == 0) {
                 return;
             }
-
             TransactionType type;
             if (balanceAfter.compareTo(balanceBefore) > 0) {
-
                 type = TransactionType.DEPOSIT;
-
             } else if (balanceAfter.compareTo(balanceBefore) < 0) {
-
                 type = TransactionType.WITHDRAW;
-
             } else if (blockedAfter.compareTo(blockedBefore) > 0) {
-
                 type = TransactionType.BLOCK;
-
             } else {
-
                 type = TransactionType.UNBLOCK;
             }
+
             transactionService.createTransaction(
                     wallet.getUserId(),
                     wallet.getWalletId(),
                     asset.getAssetType(),
                     type,
-
                     balanceBefore,
                     balanceAfter,
-
                     blockedBefore,
                     blockedAfter
             );
         });
 
-
-        repository.save(wallet);
-
+        walletStore.save(wallet);
 
         return wallet;
     }
@@ -153,7 +120,7 @@ public class WalletServiceImpl implements WalletService {
 
     @Override
     public Wallet withdrawWallet(String walletId, AssetType type, BigDecimal amount) {
-        Wallet wallet = repository.findById(walletId)
+        Wallet wallet = walletStore.findById(walletId)
                 .orElseThrow(WalletNotFoundException::new);
 
 
@@ -170,7 +137,7 @@ public class WalletServiceImpl implements WalletService {
         BigDecimal blockedBalanceAfter = asset.getBlockedBalance();
 
         wallet.setUpdatedAt(LocalDateTime.now());
-        repository.save(wallet);
+        walletStore.save(wallet);
 
         transactionService.createTransaction(
                 wallet.getUserId(),
@@ -184,26 +151,25 @@ public class WalletServiceImpl implements WalletService {
                 blockedBalanceBefore,
                 blockedBalanceAfter
         );
-
-
         return wallet;
     }
 
     @Override
     public Wallet userWalletInfo(Long onlineUser, AssetType assetType) {
-        return repository.findByUserIdAndAssetType(onlineUser, assetType)
-                 .orElseThrow(WalletNotFoundException::new);
+        return walletStore.findByUserIdAndAssetType(onlineUser, assetType)
+                .orElseThrow(WalletNotFoundException::new);
     }
 
     @Override
     public Wallet findWalletById(String walletId) {
-        return repository.findById(walletId)
+        return walletStore.findById(walletId)
                 .orElseThrow(WalletNotFoundException::new);
     }
 
     @Override
     public BigDecimal findBalanceByUserId(Long onlineUser, AssetType assetType) {
-        Wallet wallet = findWalletByUserId(onlineUser);
+        Wallet wallet = findWalletByUserIdAndAssetType(onlineUser, assetType)
+                .orElseThrow(WalletNotFoundException::new);
 
         return wallet.getAssets()
                 .stream()
@@ -215,7 +181,8 @@ public class WalletServiceImpl implements WalletService {
 
     @Override
     public void blockWalletAmount(Long userId, AssetType assetType, BigDecimal amount) {
-        Wallet wallet = findWalletByUserId(userId);
+        Wallet wallet = findWalletByUserIdAndAssetType(userId, assetType)
+                .orElseThrow(WalletNotFoundException::new);
 
         Asset asset = getAsset(wallet, assetType);
 
@@ -229,7 +196,7 @@ public class WalletServiceImpl implements WalletService {
         BigDecimal blockedAfter = asset.getBlockedBalance();
 
         wallet.setUpdatedAt(LocalDateTime.now());
-        repository.save(wallet);
+        walletStore.save(wallet);
 
         transactionService.createTransaction(
                 wallet.getUserId(),
@@ -247,7 +214,8 @@ public class WalletServiceImpl implements WalletService {
 
     @Override
     public void consumeBlockedAmount(Long userId, AssetType assetType, BigDecimal amount) {
-        Wallet wallet = findWalletByUserId(userId);
+        Wallet wallet = findWalletByUserIdAndAssetType(userId, assetType)
+                .orElseThrow(WalletNotFoundException::new);
 
         Asset asset = getAsset(wallet, assetType);
 
@@ -275,7 +243,8 @@ public class WalletServiceImpl implements WalletService {
 
     public void unblockWalletAmount(Long userId, AssetType assetType, BigDecimal amount) {
 
-        Wallet wallet = findWalletByUserId(userId);
+        Wallet wallet = findWalletByUserIdAndAssetType(userId, assetType)
+                .orElseThrow(WalletNotFoundException::new);
         Asset asset = getAsset(wallet, assetType);
 
         BigDecimal balanceBefore = asset.getBalance();
@@ -385,12 +354,16 @@ public class WalletServiceImpl implements WalletService {
 
     private Wallet saveWallet(Wallet wallet) {
         wallet.setUpdatedAt(LocalDateTime.now());
-        return repository.save(wallet);
+        return walletStore.save(wallet);
     }
 
-    private Wallet findWalletByUserId(Long userId) {
+    private List<Wallet> findWalletByUserId(Long userId) {
 
-        return repository.findByUserId(userId)
-                .orElseThrow(WalletNotFoundException::new);
+        return walletStore.findByUserId(userId);
+    }
+
+    private Optional<Wallet> findWalletByUserIdAndAssetType(Long userId, AssetType assetType) {
+
+        return walletStore.findByUserIdAndAssetType(userId, assetType);
     }
 }

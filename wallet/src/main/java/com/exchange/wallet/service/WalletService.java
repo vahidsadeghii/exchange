@@ -12,6 +12,8 @@ public interface WalletService {
 
     Wallet save(Long userId, List<AssetDTO> assets);
 
+     Wallet updateWallet(String walletId, List<AssetDTO> assets);
+
     Wallet withdrawWallet(String walletId, AssetType type, BigDecimal amount);
 
     Wallet depositWallet(String walletId, AssetType assetType, BigDecimal amount);

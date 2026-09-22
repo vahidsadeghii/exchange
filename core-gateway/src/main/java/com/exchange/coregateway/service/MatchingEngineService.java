@@ -1,5 +1,6 @@
 package com.exchange.coregateway.service;
 
+import com.exchange.coresdk.domain.TakeSnapshotResponse;
 import com.exchange.me.sbe.*;
 import com.exchange.coresdk.Client;
 import com.exchange.coresdk.domain.OrderBookDepthResponse;
@@ -76,6 +77,19 @@ public class MatchingEngineService {
                     .get(5, TimeUnit.SECONDS);
         } catch (Exception e) {
             logger.error("Error while new order {}, {}", orderId, tradePair, e);
+            return null;
+        }
+    }
+
+    public TakeSnapshotResponse takeSnapShot(){
+
+            try {
+            return client
+                    .takeSnapShot()
+                    .get(5, TimeUnit.SECONDS);
+        } catch (Exception e) {
+            logger.error("Error while new snapshot", e);
+
             return null;
         }
     }

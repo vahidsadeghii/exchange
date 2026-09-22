@@ -3,20 +3,7 @@ package com.exchange.me;
 
 import com.exchange.me.domain.EngineSnapshot;
 import com.exchange.me.domain.Order;
-import com.exchange.me.sbe.CancelOrderDecoder;
-import com.exchange.me.sbe.GetOrderInfoDecoder;
-import com.exchange.me.sbe.MarketType;
-import com.exchange.me.sbe.MatchStatus;
-import com.exchange.me.sbe.MessageHeaderEncoder;
-import com.exchange.me.sbe.OrderBookDepthDecoder;
-import com.exchange.me.sbe.OrderType;
-import com.exchange.me.sbe.PutOrderDecoder;
-import com.exchange.me.sbe.SnapshotOrderBookDecoder;
-import com.exchange.me.sbe.SnapshotOrderBookEncoder;
-import com.exchange.me.sbe.SnapshotOrderDecoder;
-import com.exchange.me.sbe.SnapshotOrderEncoder;
-import com.exchange.me.sbe.TradePair;
-import com.exchange.me.sbe.TradeSide;
+import com.exchange.me.sbe.*;
 import com.exchange.me.service.EngineService;
 import com.exchange.me.service.RequestFunction;
 import com.exchange.me.service.RequestHandlerService;
@@ -80,6 +67,7 @@ public class CoreClusteredService implements ClusteredService {
         requestMap.put(GetOrderInfoDecoder.TEMPLATE_ID, requestHandlerService::handleGetOrderInfo);
         requestMap.put(CancelOrderDecoder.TEMPLATE_ID, requestHandlerService::handleCancelOrder);
         requestMap.put(OrderBookDepthDecoder.TEMPLATE_ID, requestHandlerService::handleOrderBookDepth);
+        requestMap.put(TakeSnapShotDecoder.TEMPLATE_ID, requestHandlerService::handleTakeSnapShot);
 
     }
 

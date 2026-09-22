@@ -5,6 +5,4 @@ public enum WalletStatus {
     BLOCK,
     UNBLOCK,
     INACTIVE;
-
-
 }

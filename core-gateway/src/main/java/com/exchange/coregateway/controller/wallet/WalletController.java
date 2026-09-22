@@ -1,21 +1,23 @@
-package com.exchange.wallet.controller.wallet.withdrawwallet;
+package com.exchange.coregateway.controller.wallet;
 
-import com.exchange.wallet.domain.Wallet;
-import com.exchange.wallet.service.WalletService;
+
+
+
+import com.exchange.coregateway.service.WalletService;
+import com.exchange.coresdk.domain.WalletResponse;
 import lombok.RequiredArgsConstructor;
-import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
 @RequiredArgsConstructor
-public class WithdrawWalletController {
-    private final WalletService walletService;
+public class WalletController {
+        private final WalletService walletService;
 
     @PostMapping(value = "${api.prefix.secure}/withdraw")
-    @PreAuthorize("hasRole('CUSTOMER')")
-    public Wallet handle(@RequestBody WithdrawWalletRequest request) {
+    //@PreAuthorize("hasRole('CUSTOMER')")
+    public WalletResponse withdrawWallet(@RequestBody WalletRequest request) {
         return walletService.withdrawWallet(request.walletId(), request.type(), request.amount());
     }
 }

@@ -4,8 +4,11 @@ import com.exchange.me.domain.ErrorCode;
 import com.exchange.me.domain.Order;
 import com.exchange.me.handler.OrderBookHandler;
 import com.exchange.me.sbe.*;
+import io.aeron.cluster.ClusterTool;
 import org.agrona.DirectBuffer;
 import org.agrona.ExpandableDirectByteBuffer;
+
+import java.io.File;
 
 
 public class RequestHandlerService {
@@ -17,6 +20,9 @@ public class RequestHandlerService {
     private final CancelOrderDecoder cancelOrderDecoder;
     private final OrderBookDepthDecoder orderBookDepthDecoder;
     private final MarketDepthEncoder marketDepthEncoder;
+    private final TakeSnapShotDecoder takeSnapShotDecoder;
+    private final TakeSnapShotEncoder takeSnapShotEncoder;
+
 
     private final EngineService engineService;
 
@@ -29,6 +35,8 @@ public class RequestHandlerService {
         cancelOrderDecoder = new CancelOrderDecoder();
         orderBookDepthDecoder = new OrderBookDepthDecoder();
         marketDepthEncoder = new MarketDepthEncoder();
+        takeSnapShotDecoder = new TakeSnapShotDecoder();
+        takeSnapShotEncoder = new TakeSnapShotEncoder();
 
         engineService = new EngineService();
     }
@@ -143,6 +151,37 @@ public class RequestHandlerService {
         } else {
             return returnErrorMessage(respondBuffer, cancelOrderDecoder.correlationId(), ErrorCode.ORDER_NOT_FOUND);
         }
+    }
+
+
+    public int handleTakeSnapShot(
+            long sessionId,
+            long timestamp,
+            DirectBuffer buffer,
+            int offset,
+            int headerLength,
+            int actingLength,
+            int actingVersion,
+            ExpandableDirectByteBuffer respondBuffer) {
+
+        System.out.println("snapshot request received");
+        takeSnapShotDecoder.wrap(buffer, offset + headerLength, actingLength, actingVersion);
+        System.out.println("before snapshot");
+        ClusterTool.snapshot(new File("./cluster-data/cluster"), System.out);
+
+        File dir = new File("./cluster-data/cluster");
+
+        System.out.println(dir.getAbsolutePath());
+        System.out.println(dir.exists());
+        System.out.println("after snapshot");
+
+        takeSnapShotEncoder.wrapAndApplyHeader(respondBuffer, 0, messageHeaderEncoder)
+                .correlationId(takeSnapShotDecoder.correlationId());
+
+        System.out.println("snapshot response encoded");
+
+        return takeSnapShotEncoder.encodedLength() + messageHeaderEncoder.encodedLength();
+
     }
 
 

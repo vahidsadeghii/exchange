@@ -4,7 +4,6 @@ import com.exchange.wallet.domain.AssetType;
 import com.exchange.wallet.domain.TransactionInfo;
 import com.exchange.wallet.domain.TransactionStatus;
 import com.exchange.wallet.domain.TransactionType;
-import com.exchange.wallet.repository.InMemoryTransactionInfoRepository;
 import com.exchange.wallet.service.TransactionService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -20,7 +19,7 @@ import java.util.UUID;
 @RequiredArgsConstructor
 @Slf4j
 public class TransactionServiceImpl implements TransactionService {
-    private final InMemoryTransactionInfoRepository inMemoryTransactionInfoRepository;
+    private final TransactionInfoStore transactionInfoStore;
 
 
     @Override
@@ -62,13 +61,13 @@ public class TransactionServiceImpl implements TransactionService {
                 .build();
 
 
-        inMemoryTransactionInfoRepository.save(transaction);
+        transactionInfoStore.save(transaction);
 
     }
 
     @Override
     public List<TransactionInfo> findTransactions(String walletId) {
-        List<TransactionInfo> allByWalletId = inMemoryTransactionInfoRepository.findAllByWalletId(walletId);
+        List<TransactionInfo> allByWalletId = transactionInfoStore.findAllByWalletId(walletId);
         return allByWalletId;
     }
 }

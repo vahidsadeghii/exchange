@@ -144,4 +144,13 @@
             </group>
         </group>
     </sbe:message>
+
+    <sbe:message name="TakeSnapShot" id="108" description="take snapshot">
+        <field name="correlationId" id="1" type="uint64"/>
+    </sbe:message>
+
+        <sbe:message name="TakeSnapShotResponse" id="109" description=" response take snapshot">
+        <field name="correlationId" id="1" type="uint64"/>
+    </sbe:message>
+
 </sbe:messageSchema>

@@ -1,5 +1,6 @@
-package com.exchange.coregateway;
+package com.exchange.coregateway.controller;
 
+import com.exchange.coresdk.domain.TakeSnapshotResponse;
 import com.exchange.me.sbe.*;
 import com.exchange.coregateway.service.MatchingEngineService;
 import com.exchange.coresdk.domain.OrderBookDepthResponse;
@@ -23,7 +24,7 @@ public class MatchingEngineGateway {
 
     @GetMapping("/orders")
     public OrderInfoResponse getOrderInfo(@RequestParam("id") long orderId, @RequestParam("pair") String tradePair) {
-        return matchingEngineService.getOrder(orderId, TradePair.valueOf(tradePair));
+        return matchingEngineService.getOrder(orderId, com.exchange.me.sbe.TradePair.valueOf(tradePair));
     }
 
     @PostMapping("/orders")
@@ -42,12 +43,17 @@ public class MatchingEngineGateway {
 
     @DeleteMapping("/orders")
     public OrderInfoResponse cancelOrder(@RequestParam("id") long orderId, @RequestParam("pair") String tradePair) {
-        return matchingEngineService.cancelOrder(orderId, TradePair.valueOf(tradePair));
+        return matchingEngineService.cancelOrder(orderId, com.exchange.me.sbe.TradePair.valueOf(tradePair));
     }
 
     @GetMapping("/orderdepth")
     public OrderBookDepthResponse orderDepth(@RequestParam("pair") String pair, @RequestParam("depth") int depth) {
-        return matchingEngineService.orderBookDepth( TradePair.valueOf(pair), depth);
+        return matchingEngineService.orderBookDepth(com.exchange.me.sbe.TradePair.valueOf(pair), depth);
+    }
+
+    @GetMapping("/takesnapshot")
+    public TakeSnapshotResponse takeSnapShot() {
+        return matchingEngineService.takeSnapShot();
     }
 
     public record PutOrderRequest(long orderId, long userId, TradeSide tradeSide, OrderType orderType,

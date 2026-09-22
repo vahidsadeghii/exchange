@@ -11,9 +11,7 @@ application {
 
 repositories {
     mavenCentral()
-    maven {
-        url "https://maven.keycloak.org"
-    }
+    gradlePluginPortal() // Add this line to include the Gradle Plugin Portal
 }
 
 ext {
@@ -38,12 +36,29 @@ configurations.all {
 }
 
 
+repositories {
+    mavenCentral()
+    gradlePluginPortal() // Add this line to include the Gradle Plugin Portal
+}
+
+configurations {
+    sbeTool
+}
+
+
 dependencies {
     implementation 'org.springframework.boot:spring-boot-starter-web'
     implementation 'org.springframework.boot:spring-boot-starter-security'
     implementation 'org.springframework.boot:spring-boot-starter-aop'
     implementation 'org.springframework.boot:spring-boot-starter-actuator'
 
+    implementation 'com.fasterxml.jackson.datatype:jackson-datatype-jsr310:2.18.5'
+
+    // ---- Aeron (High-performance messaging) ----
+    implementation 'io.aeron:aeron-all:1.52.1'
+
+    // ---- SBE (message codec generator) ----
+    sbeTool 'uk.co.real-logic:sbe-tool:1.35.6'
 
     // Micrometer
     implementation 'io.micrometer:micrometer-registry-prometheus'
@@ -95,6 +110,32 @@ dependencies {
 
 }
 
+def sbeSchemaFile = "$projectDir/src/main/resources/sbe/message-schema.xml"
+def sbeOutputDir = "$buildDir/generated-src/sbe"
+
+tasks.register('generateSbe', JavaExec) {
+    group = 'build'
+    description = 'Generates Java message codecs from the SBE schema.'
+    classpath = configurations.sbeTool
+    mainClass = 'uk.co.real_logic.sbe.SbeTool'
+    systemProperty 'sbe.output.dir', sbeOutputDir
+    systemProperty 'sbe.target.language', 'Java'
+    args sbeSchemaFile
+    inputs.file(sbeSchemaFile)
+    outputs.dir(sbeOutputDir)
+}
+
+
+sourceSets {
+    main {
+        java {
+            srcDir sbeOutputDir
+        }
+    }
+}
+
+compileJava.dependsOn generateSbe
+
 java {
     toolchain {
         languageVersion = JavaLanguageVersion.of(21)
@@ -102,7 +143,14 @@ java {
 }
 
 application {
-    mainClass = 'com.exchange.wallet.WalletApp'
+    mainClass = 'com.exchange.wallet.Runner'
+}
+
+tasks.withType(JavaExec).configureEach {
+    jvmArgs(
+            '--add-exports=java.base/jdk.internal.misc=ALL-UNNAMED',
+            '--add-opens=java.base/jdk.internal.misc=ALL-UNNAMED'
+    )
 }
 
 tasks.named('test') {

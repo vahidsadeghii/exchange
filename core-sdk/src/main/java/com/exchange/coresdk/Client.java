@@ -1,11 +1,16 @@
 package com.exchange.coresdk;
 
+import com.exchange.coresdk.domain.*;
 import com.exchange.coresdk.domain.OrderBookDepthResponse;
 import com.exchange.coresdk.domain.OrderInfoResponse;
 import com.exchange.coresdk.domain.PriceLevelResponse;
-import com.exchange.coresdk.domain.Response;
+import com.exchange.coresdk.domain.WalletResponse;
 import com.exchange.me.sbe.*;
 import com.exchange.me.sbe.MessageHeaderEncoder;
+
+
+import com.exchange.wallet.sbe.AssetType;
+import com.exchange.wallet.sbe.WalletRequestEncoder;
 import io.aeron.Publication;
 import io.aeron.cluster.client.AeronCluster;
 import io.aeron.cluster.client.EgressListener;
@@ -19,6 +24,7 @@ import org.agrona.concurrent.Agent;
 import org.agrona.concurrent.AgentRunner;
 import org.agrona.concurrent.SleepingMillisIdleStrategy;
 
+import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
@@ -61,6 +67,24 @@ public class Client implements EgressListener, AutoCloseable {
     private final OrderInfoDecoder orderInfoDecoder = new OrderInfoDecoder();
 
     private final CancelOrderEncoder cancelOrderEncoder = new CancelOrderEncoder();
+
+
+    /**
+     * =====================================================
+     * Wallet
+     * =====================================================
+     */
+    private final com.exchange.wallet.sbe.MessageHeaderEncoder walletMessageHeaderEncoder = new com.exchange.wallet.sbe.MessageHeaderEncoder();
+    private final WalletRequestEncoder walletRequestEncoder = new WalletRequestEncoder();
+
+    /**
+     * =====================================================
+     * Snapshot
+     * =====================================================
+     */
+
+    private final TakeSnapShotDecoder takeSnapShotDecoder = new TakeSnapShotDecoder();
+    private final TakeSnapShotEncoder takeSnapShotEncoder = new TakeSnapShotEncoder();
 
     private final ExecutorService virtualThreadExecutor = Executors.newVirtualThreadPerTaskExecutor();
 
@@ -162,7 +186,7 @@ public class Client implements EgressListener, AutoCloseable {
         return future.thenApplyAsync(
                 response -> {
                     if (response instanceof OrderInfoResponse orderInfoResponse) {
-                        System.out.println("SBE CLIENT orderInfoResponse"+ orderInfoResponse);
+                        System.out.println("SBE CLIENT orderInfoResponse" + orderInfoResponse);
                         return orderInfoResponse;
                     } else {
                         return new OrderInfoResponse(response.getErrorCode());
@@ -246,6 +270,78 @@ public class Client implements EgressListener, AutoCloseable {
                 }, virtualThreadExecutor
         );
     }
+
+    /***
+     *
+     *  ==========================================================
+     *
+     *  Wallet Client
+     *
+     *   ==========================================================
+     */
+
+    public CompletableFuture<WalletResponse> withdrawWallet(
+            String walletId, AssetType assetType, BigDecimal amount) {
+
+        final long correlationId = nextCorrelationId();
+
+        walletRequestEncoder
+                .wrapAndApplyHeader(sendBuffer, 0, walletMessageHeaderEncoder)
+                .correlationId(correlationId)
+                .assetType(assetType);
+
+        walletRequestEncoder.amount()
+                .mantissa(amount.unscaledValue().longValue())
+                .exponent((byte) -amount.scale());
+
+        walletRequestEncoder.walletId(walletId);
+
+        final CompletableFuture<Response> future = new CompletableFuture<>();
+        pendingRequests.put(correlationId, future);
+        System.out.println("SBE CLIENT");
+        sendRequest(future,
+                correlationId, messageHeaderEncoder.encodedLength() + walletRequestEncoder.encodedLength());
+        System.out.println("SBE CLIENT after sendRequest");
+        return future.thenApplyAsync(
+                response -> {
+                    if (response instanceof WalletResponse walletResponse) {
+                        System.out.println("SBE CLIENT Wallet Response" + walletResponse);
+                        return walletResponse;
+                    } else {
+                        return new WalletResponse(response.getErrorCode());
+                    }
+                }, virtualThreadExecutor
+        );
+    }
+
+
+    public CompletableFuture<TakeSnapshotResponse> takeSnapShot() {
+        final CompletableFuture<Response> future = new CompletableFuture<>();
+
+        final long correlationId = nextCorrelationId();
+
+        pendingRequests.put(correlationId, future);
+        System.out.println("takesnapshot-----------------------");
+        takeSnapShotEncoder
+                .wrapAndApplyHeader(sendBuffer, 0, messageHeaderEncoder)
+                .correlationId(correlationId);
+        sendRequest(future,
+                correlationId, messageHeaderEncoder.encodedLength() + takeSnapShotEncoder.encodedLength());
+
+        System.out.println("takesnapshot2222222222222-----------------------");
+        return future.thenApplyAsync(
+                response -> {
+                    if (response instanceof TakeSnapshotResponse takeSnapshotResponse) {
+                        System.out.println("takesnapshot-----------------------");
+                        return takeSnapshotResponse;
+                    } else {
+                        return new TakeSnapshotResponse(response.getErrorCode());
+                    }
+                }, virtualThreadExecutor
+        );
+
+    }
+
 
     private long nextCorrelationId() {
         return correlationIdSequence.incrementAndGet();
