@@ -5,6 +5,12 @@ plugins {
     id 'org.flywaydb.flyway' version '10.20.0'
 }
 
+group = 'com.exchange.profile'
+version = '1.0.0'
+
+springBoot {
+    buildInfo()
+}
 
 application {
     mainClass = 'com.exchange.profile.ProfileApp'

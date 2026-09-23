@@ -5,6 +5,7 @@ import com.exchange.me.sbe.*;
 import com.exchange.coregateway.service.MatchingEngineService;
 import com.exchange.coresdk.domain.OrderBookDepthResponse;
 import com.exchange.coresdk.domain.OrderInfoResponse;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -15,6 +16,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 @RestController
 @RequestMapping("/api/v1/me")
+@Slf4j
 public class MatchingEngineGateway {
     private final MatchingEngineService matchingEngineService;
 
@@ -29,16 +31,45 @@ public class MatchingEngineGateway {
 
     @PostMapping("/orders")
     public OrderInfoResponse putOrder(@RequestBody PutOrderRequest request) {
-        return matchingEngineService.putOrder(
-                request.orderId,
-                request.userId,
-                request.tradeSide,
-                request.orderType,
-                request.pair,
-                request.marketType,
-                request.quantity,
-                request.price
-        );
+        long start = System.nanoTime();
+
+        try {
+            log.info("putOrder START orderId={}", request.orderId);
+
+            OrderInfoResponse response = matchingEngineService.putOrder(
+                    request.orderId,
+                    request.userId,
+                    request.tradeSide,
+                    request.orderType,
+                    request.pair,
+                    request.marketType,
+                    request.quantity,
+                    request.price
+            );
+
+            long durationMs = (System.nanoTime() - start) / 1_000_000;
+
+            log.info(
+                    "putOrder END orderId={}, duration={} ms, responseId={}",
+                    request.orderId,
+                    durationMs,
+                    response != null ? response.getId() : null
+            );
+
+            return response;
+
+        } catch (Exception e) {
+            long durationMs = (System.nanoTime() - start) / 1_000_000;
+
+            log.error(
+                    "putOrder FAILED orderId={}, duration={} ms",
+                    request.orderId,
+                    durationMs,
+                    e
+            );
+
+            throw e;
+        }
     }
 
     @DeleteMapping("/orders")
