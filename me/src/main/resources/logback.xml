@@ -18,7 +18,7 @@
 
         <rollingPolicy
                 class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
-            <fileNamePattern>logs/flow-management-%d{yyyy-MM-dd}.log</fileNamePattern>
+            <fileNamePattern>logs/machting-engin-%d{yyyy-MM-dd}.log</fileNamePattern>
         </rollingPolicy>
     </appender>
 

@@ -89,7 +89,8 @@ public class Client implements EgressListener, AutoCloseable {
 
     private final ExecutorService virtualThreadExecutor = Executors.newVirtualThreadPerTaskExecutor();
 
-    private final Map<Long, CompletableFuture<Response>> pendingRequests = new ConcurrentHashMap<>();
+    private final ConcurrentHashMap<Long, CompletableFuture<Response>> pendingRequests = new ConcurrentHashMap<>();
+    //  private final Map<Long, CompletableFuture<Response>> pendingRequests = new ConcurrentHashMap<>();
     private final AtomicLong correlationIdSequence = new AtomicLong();
     private final AgentRunner egressPollerRunner;
 
@@ -97,7 +98,7 @@ public class Client implements EgressListener, AutoCloseable {
         this.mediaDriver =
                 MediaDriver.launchEmbedded(
                         new MediaDriver.Context()
-                                .threadingMode(ThreadingMode.SHARED)
+                                .threadingMode(ThreadingMode.DEDICATED)
                                 .dirDeleteOnStart(true)
                                 .dirDeleteOnShutdown(true));
 
@@ -105,7 +106,7 @@ public class Client implements EgressListener, AutoCloseable {
 
         this.egressPollerRunner =
                 new AgentRunner(
-                        new SleepingMillisIdleStrategy(1),
+                        new org.agrona.concurrent.BusySpinIdleStrategy(),
                         Throwable::printStackTrace,
                         null,
                         new Agent() {
@@ -235,6 +236,10 @@ public class Client implements EgressListener, AutoCloseable {
 
     public CompletableFuture<OrderInfoResponse> getOrder(final long orderId, final TradePair tradePair) {
         final long correlationId = nextCorrelationId();
+        final ExpandableArrayBuffer sendBuffer = new ExpandableArrayBuffer();
+        final MessageHeaderEncoder messageHeaderEncoder = new MessageHeaderEncoder();
+        final GetOrderInfoEncoder getOrderInfoEncoder = new GetOrderInfoEncoder();
+
 
         final CompletableFuture<Response> future = new CompletableFuture<>();
         pendingRequests.put(correlationId, future);
@@ -246,7 +251,7 @@ public class Client implements EgressListener, AutoCloseable {
                 .tradePair(tradePair);
 
         sendRequest(future,
-                correlationId, messageHeaderEncoder.encodedLength() + getOrderInfoEncoder.encodedLength(), null);
+                correlationId, messageHeaderEncoder.encodedLength() + getOrderInfoEncoder.encodedLength(), sendBuffer);
 
         return future.thenApplyAsync(
                 response -> {
@@ -342,8 +347,6 @@ public class Client implements EgressListener, AutoCloseable {
                 .correlationId(correlationId);
         sendRequest(future,
                 correlationId, messageHeaderEncoder.encodedLength() + takeSnapShotEncoder.encodedLength(), null);
-
-        System.out.println("takesnapshot2222222222222-----------------------");
         return future.thenApplyAsync(
                 response -> {
                     if (response instanceof TakeSnapshotResponse takeSnapshotResponse) {
@@ -365,7 +368,7 @@ public class Client implements EgressListener, AutoCloseable {
     private void sendRequest(CompletableFuture<Response> future, final long correlationId, final int length, final DirectBuffer sendBuffer) {
         System.out.println("AERON SEND START correlationId=" + correlationId);
 
-        long result = offer(sendBuffer, length);
+        long result = offer(length);
 
         System.out.println(
                 "AERON SEND END correlationId=" + correlationId +
@@ -378,7 +381,7 @@ public class Client implements EgressListener, AutoCloseable {
             // The cluster connection died (e.g. the cluster node was restarted) - reconnect once
             // and retry before giving up.
             reconnect();
-            result = offer(sendBuffer, length);
+            result = offer(length);
         }
 
 
@@ -388,45 +391,17 @@ public class Client implements EgressListener, AutoCloseable {
             future.completeExceptionally(
                     new IllegalStateException("offer failed: " + describeOfferResult(result)));
         }
-        System.out.println(
-                "AERON OFFER " +
-                        ", correlationId=" + correlationId +
-                        ", result=" + result
-        );
     }
 
-    private long offer(
-            final DirectBuffer sendBuffer,
-            final int length) {
-
+    private long offer(final int length) {
         long result;
-        int attempts = 0;
         do {
-            result = aeronCluster.offer(
-                    sendBuffer,
-                    0,
-                    length
-            );
-            attempts++;
-            if (result == Publication.BACK_PRESSURED ||
-                    result == Publication.ADMIN_ACTION) {
-
-                if (attempts % 1000 == 0) {
-                    System.out.println(
-                            "AERON OFFER RETRY " +
-                                    "result=" + result +
-                                    ", attempts=" + attempts
-                    );
-                }
-            }
-
-        } while (
-                result == Publication.ADMIN_ACTION ||
-                        result == Publication.BACK_PRESSURED
-        );
+            result = aeronCluster.offer(sendBuffer, 0, length);
+        } while (result == Publication.ADMIN_ACTION || result == Publication.BACK_PRESSURED);
 
         return result;
     }
+
 
     @Override
     public void onMessage(
@@ -443,37 +418,34 @@ public class Client implements EgressListener, AutoCloseable {
         final int actingBlockLength = messageHeaderDecoder.blockLength();
         final int actingVersion = messageHeaderDecoder.version();
 
+        System.out.println(
+                "AERON INCOMING " +
+                        "templateId=" + messageHeaderDecoder.templateId() +
+                        ", blockLength=" + messageHeaderDecoder.blockLength() +
+                        ", version=" + messageHeaderDecoder.version() +
+                        ", offset=" + offset +
+                        ", length=" + length);
+
         switch (messageHeaderDecoder.templateId()) {
             case OrderInfoDecoder.TEMPLATE_ID: {
 
-                orderInfoDecoder.wrap(
-                        buffer,
-                        offset + headerLength,
-                        actingBlockLength,
-                        actingVersion
-                );
+                orderInfoDecoder.wrap(buffer, offset + headerLength, actingBlockLength, actingVersion);
 
                 long correlationId = orderInfoDecoder.correlationId();
                 long orderId = orderInfoDecoder.orderId();
 
-                System.out.println( "AERON RESPONSE " +
-                                "correlationId=" + correlationId +
-                                ", orderId=" + orderId +
-                                ", pending=" + pendingRequests.containsKey(correlationId)
-                );
-
-                final CompletableFuture<Response> future =
-                        pendingRequests.remove(correlationId);
-
+                System.out.println("AERON RESPONSE " + "correlationId=" + correlationId +
+                        ", orderId=" + orderId + ", pending=" + pendingRequests.containsKey(correlationId));
                 System.out.println(
-                        "AERON COMPLETE " +
-                                "correlationId=" + correlationId +
-                                ", futureFound=" + (future != null)
+                        "PENDING SIZE=" + pendingRequests.size()
                 );
+
+                final CompletableFuture<Response> future = pendingRequests.remove(correlationId);
+
+                System.out.println("AERON COMPLETE " + "correlationId=" + correlationId + ", futureFound=" + (future != null));
 
                 if (future != null) {
-                    future.complete(
-                            new OrderInfoResponse(
+                    future.complete(new OrderInfoResponse(
                                     orderId,
                                     orderInfoDecoder.timestamp(),
                                     orderInfoDecoder.userId(),
@@ -489,8 +461,17 @@ public class Client implements EgressListener, AutoCloseable {
             case MarketDepthDecoder.TEMPLATE_ID: {
                 marketDepthDecoder.wrap(buffer, offset + headerLength, actingBlockLength, actingVersion);
 
-                final CompletableFuture<Response> future =
-                        pendingRequests.remove(marketDepthDecoder.correlationId());
+                System.out.println(
+                        "PENDING SIZE=" + pendingRequests.size()
+                );
+                long correlationId = marketDepthDecoder.correlationId();
+                final CompletableFuture<Response> future = pendingRequests.remove(marketDepthDecoder.correlationId());
+                System.out.println(
+                        "RESPONSE correlationId=" + correlationId +
+                                ", futureFound=" + (future != null) +
+                                ", pendingSize=" + pendingRequests.size()
+                );
+
                 if (future != null) {
                     MarketDepthDecoder.BidsDecoder bids = marketDepthDecoder.bids();
                     Iterator<MarketDepthDecoder.BidsDecoder> bidsIterator = bids.iterator();
@@ -510,10 +491,8 @@ public class Client implements EgressListener, AutoCloseable {
                         MarketDepthDecoder.AsksDecoder askDecoder = asksIterator.next();
                         asksList.add(new PriceLevelResponse(askDecoder.price(), askDecoder.volume(), askDecoder.orderCount()));
                     }
-                    future.complete(
-                            new OrderBookDepthResponse(bidsList, asksList)
-                    );
 
+                    future.complete(new OrderBookDepthResponse(bidsList, asksList));
                 }
 
                 break;
@@ -521,6 +500,9 @@ public class Client implements EgressListener, AutoCloseable {
 
             case ErrorMessageDecoder.TEMPLATE_ID: {
                 errorMessageDecoder.wrap(buffer, offset + headerLength, actingBlockLength, actingVersion);
+                System.out.println(
+                        "PENDING SIZE=" + pendingRequests.size()
+                );
                 final CompletableFuture<Response> future =
                         pendingRequests.remove(errorMessageDecoder.correlationId());
                 if (future != null) {
@@ -532,6 +514,9 @@ public class Client implements EgressListener, AutoCloseable {
 
             case TakeSnapShotResponseDecoder.TEMPLATE_ID: {
                 takeSnapShotResponseDecoder.wrap(buffer, offset + headerLength, actingBlockLength, actingVersion);
+                System.out.println(
+                        "PENDING SIZE=" + pendingRequests.size()
+                );
                 final CompletableFuture<Response> future =
                         pendingRequests.remove(takeSnapShotResponseDecoder.correlationId());
                 if (future != null) {

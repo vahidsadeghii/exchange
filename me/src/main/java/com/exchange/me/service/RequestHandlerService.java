@@ -213,7 +213,7 @@ public class RequestHandlerService {
             marketDepth = null;
         }
 
-        System.out.println("OrderBookDepth request received");
+        //System.out.println("OrderBookDepth request received");
 
         if (marketDepth != null) {
             marketDepthEncoder.wrapAndApplyHeader(respondBuffer, 0, messageHeaderEncoder)
