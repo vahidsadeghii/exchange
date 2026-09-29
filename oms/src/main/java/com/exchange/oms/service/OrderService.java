@@ -3,6 +3,7 @@ package com.exchange.oms.service;
 import com.exchange.oms.domain.*;
 
 import java.math.BigDecimal;
+import java.util.Optional;
 
 public interface OrderService {
 
@@ -16,4 +17,8 @@ public interface OrderService {
     void matchEngineStatus(long orderId, long userId, MatchEventStatus matchEngineStatus);
 
     OrderBookDepth getOrderBookDepth(TradePair pair, int depth);
+
+    Optional<Order> findByOrderIdAndTradePair(long orderId, TradePair pair);
+
+    void cancelOrder(long orderId, TradePair pair);
 }

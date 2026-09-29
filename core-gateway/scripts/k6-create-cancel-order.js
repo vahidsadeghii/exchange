@@ -1,5 +1,5 @@
 import http from 'k6/http';
-import { check } from 'k6';
+import { check, sleep} from 'k6';
 import exec from 'k6/execution';
 
 export const options = {
@@ -80,6 +80,7 @@ export default function () {
         return;
     }
 
+    sleep(0.2);
 
     //  CANCEL ORDER
     const cancelUrl =

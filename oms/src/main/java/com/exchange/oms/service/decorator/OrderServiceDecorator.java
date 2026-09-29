@@ -12,6 +12,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.util.Optional;
 
 @RequiredArgsConstructor
 @Service
@@ -73,17 +74,13 @@ public class OrderServiceDecorator implements OrderService {
 
     @Override
     public Order getOrder(long orderId) {
-        if (orderId == 0L) {
-            throw new MissingOrderIdException();
-        }
+        notFoundOrderId(orderId);
         return orderService.getOrder(orderId);
     }
 
     @Override
     public void matchEngineStatus(long orderId, long userId, MatchEventStatus matchEngineStatus) {
-        if (orderId <= 0) {
-            throw new MissingOrderIdException();
-        }
+        notFoundOrderId(orderId);
         orderService.matchEngineStatus(orderId, userId, matchEngineStatus);
 
     }
@@ -91,6 +88,26 @@ public class OrderServiceDecorator implements OrderService {
     @Override
     public OrderBookDepth getOrderBookDepth(TradePair pair, int depth) {
         return orderService.getOrderBookDepth(pair, depth);
+    }
+
+    @Override
+    public Optional<Order> findByOrderIdAndTradePair(long orderId, TradePair pair) {
+        notFoundOrderId(orderId);
+        return orderService.findByOrderIdAndTradePair(orderId, pair);
+    }
+
+    @Override
+    public void cancelOrder(long orderId, TradePair pair) {
+        orderService.findByOrderIdAndTradePair(orderId, pair)
+                .orElseThrow(OrderNotFoundException::new);
+
+        orderService.cancelOrder(orderId, pair);
+    }
+
+    private void notFoundOrderId(long orderId) {
+        if (orderId <= 0) {
+            throw new MissingOrderIdException();
+        }
     }
 
 

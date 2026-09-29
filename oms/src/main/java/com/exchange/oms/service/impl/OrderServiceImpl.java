@@ -17,6 +17,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.Optional;
 
 @Service
 @Transactional
@@ -51,7 +52,7 @@ public class OrderServiceImpl implements OrderService {
             oldOrder.setExpireDays(expireDays);
 
             //oldOrder.setStatus(OrderStatus.CANCELED);
-           // orderRepository.save(oldOrder);
+            // orderRepository.save(oldOrder);
         }
 
         validateSufficientBalance(onlineUser, assetType, quantity, price);
@@ -107,11 +108,21 @@ public class OrderServiceImpl implements OrderService {
         );
     }
 
-    private void validateSufficientBalance(Long userId,
-                                           AssetType assetType,
-                                           BigDecimal quantity,
-                                           BigDecimal price) {
+    @Override
+    public Optional<Order> findByOrderIdAndTradePair(long orderId, TradePair pair) {
+        return orderRepository.findByOrderIdAndTradePair(orderId, pair);
+    }
 
+
+    @Override
+    public void cancelOrder(long orderId, TradePair pair) {
+        Optional<Order> order = findByOrderIdAndTradePair(orderId, pair);
+
+
+
+    }
+
+    private void validateSufficientBalance(Long userId, AssetType assetType, BigDecimal quantity, BigDecimal price) {
         BigDecimal userWalletBalance = walletClient.findUserWalletBalance(userId, assetType);
 
         BigDecimal orderValue = quantity.multiply(price);

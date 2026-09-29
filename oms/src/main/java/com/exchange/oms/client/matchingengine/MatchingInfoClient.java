@@ -20,8 +20,8 @@ import org.springframework.web.bind.annotation.RequestParam;
 
 
 @FeignClient(
-        name = "matchingengine",
-        url = "http://localhost:8094/matchingengine"
+        name = "core-gateway",
+        url = "http://localhost:8089"
 )
 public interface MatchingInfoClient {
 
@@ -69,13 +69,7 @@ public interface MatchingInfoClient {
     OrderBookDepthResponseClient getOrderBookDepth(@RequestParam TradePair pair, @RequestParam int orderDepth);
 
     default MatchEngineResponse getOrderBookDepthFallback(@RequestParam  TradePair pair, @RequestParam int orderDepth, Throwable t) {
-        logger.error(
-                "ME service unavailable, order dropped. orderType={}",
-                pair,
-                orderDepth,
-                t
-        );
-
+        logger.error("ME service unavailable, order dropped. orderType={}", pair, orderDepth, t);
         return null;
 
     }
