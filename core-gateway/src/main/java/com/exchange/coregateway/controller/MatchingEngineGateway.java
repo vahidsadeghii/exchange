@@ -14,6 +14,8 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.util.concurrent.TimeoutException;
+
 @RestController
 @RequestMapping("/api/v1/me")
 @Slf4j
@@ -30,7 +32,7 @@ public class MatchingEngineGateway {
     }
 
     @PostMapping("/orders")
-    public OrderInfoResponse putOrder(@RequestBody PutOrderRequest request) {
+    public OrderInfoResponse putOrder(@RequestBody PutOrderRequest request) throws TimeoutException {
         long start = System.nanoTime();
 
         try {
