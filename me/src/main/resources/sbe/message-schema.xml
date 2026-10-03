@@ -120,4 +120,37 @@
             <field name="orderCount" id="3" type="int32"/>
         </group>
     </sbe:message>
+    <sbe:message name="SnapshotOrder" id="500">
+        <field name="orderId" id="1" type="uint64"/>
+        <field name="timestamp" id="2" type="uint64"/>
+        <field name="userId" id="3" type="uint64"/>
+        <field name="tradeSide" id="4" type="tradeSide"/>
+        <field name="orderType" id="5" type="orderType"/>
+        <field name="tradePair" id="6" type="tradePair"/>
+        <field name="marketType" id="7" type="marketType"/>
+        <field name="matchStatus" id="8" type="matchStatus"/>
+        <field name="quantity" id="9" type="uint64"/>
+        <field name="price" id="10" type="uint64"/>
+        <field name="filled" id="11" type="uint64"/>
+        <field name="expireDays" id="12" type="int64"/>
+    </sbe:message>
+    <sbe:message name="SnapshotOrderBook" id="5001">
+        <field name="pair" id="1" type="tradePair"/>
+        <field name="side" id="2" type="tradeSide"/>
+        <group name="level" id="3" dimensionType="groupSizeEncoding">
+            <field name="price" id="1" type="uint64"/>
+            <group name="levelOrders" id="2" dimensionType="groupSizeEncoding">
+                <field name="orderId" id="1" type="uint64"/>
+            </group>
+        </group>
+    </sbe:message>
+
+    <sbe:message name="TakeSnapShot" id="108" description="take snapshot">
+        <field name="correlationId" id="1" type="uint64"/>
+    </sbe:message>
+
+        <sbe:message name="TakeSnapShotResponse" id="109" description=" response take snapshot">
+        <field name="correlationId" id="1" type="uint64"/>
+    </sbe:message>
+
 </sbe:messageSchema>

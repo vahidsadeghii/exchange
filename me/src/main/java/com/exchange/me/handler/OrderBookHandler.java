@@ -166,12 +166,8 @@ public class OrderBookHandler {
         return buildLevels(asks, depth);
     }
 
-    private List<PriceLevel> buildLevels(
-            TreeMap<Long, Deque<Order>> book,
-            int depth) {
-
+    private List<PriceLevel> buildLevels(TreeMap<Long, Deque<Order>> book, int depth) {
         List<PriceLevel> result = new ArrayList<>();
-
         int count = 0;
 
         for (Map.Entry<Long, Deque<Order>> entry : book.entrySet()) {
@@ -185,17 +181,28 @@ public class OrderBookHandler {
                     .mapToDouble(Order::getRemainingQuantity)
                     .sum();
 
-            result.add(new PriceLevel(
-                    entry.getKey(),
-                    volume,
-                    entry.getValue().size()));
+            result.add(new PriceLevel(entry.getKey(), volume, entry.getValue().size()));
         }
 
         return result;
     }
 
+    public List<Order> getAllOrders() {
+        List<Order> orders = new ArrayList<>();
+
+        for (Deque<Order> queue : bids.values()) {
+            orders.addAll(queue);
+        }
+
+        for (Deque<Order> queue : asks.values()) {
+            orders.addAll(queue);
+        }
+        return orders;
+    }
+
+
     public record OrderLocation(
-            double price,
+            long price,
             TradeSide side,
             Order order) {
     }
@@ -209,6 +216,22 @@ public class OrderBookHandler {
             long price,
             double volume,
             int orderCount) {
+    }
+
+    public void restoreOrder(Order order) {
+        if (order == null) {
+            throw new OrderCanNotBeNullException();
+        }
+        if (!tradePair.equals(order.getTradePair())) {
+            throw new InvalidTradePairException();
+        }
+
+        TreeMap<Long, Deque<Order>> book = order.getTradeSide() == TradeSide.BUY ? bids : asks;
+
+        Deque<Order> ordersAtPrice = book.computeIfAbsent(order.getPrice(), price -> new java.util.ArrayDeque<>());
+        ordersAtPrice.addLast(order);
+
+        orderIndex.put(order.getId(), new OrderLocation(order.getPrice(), order.getTradeSide(), order));
     }
 
 }

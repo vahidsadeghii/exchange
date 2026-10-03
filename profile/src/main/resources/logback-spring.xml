@@ -1,6 +1,8 @@
 <?xml version="1.0" encoding="UTF-8" ?>
 
 <configuration scan="true">
+  <springProperty scope="context" name="applicationName" source="spring.application.name"/>
+    <springProperty scope="context" name="applicationVersion" source="app.version"/>
 
     <timestamp key="time" datePattern="yyyy-MM-dd'--'HH:mm:ss"/>
 
@@ -10,7 +12,7 @@
         </encoder>
     </appender>
     <appender name="File" class="ch.qos.logback.core.rolling.RollingFileAppender">
-        <file>logs/oms.log</file>
+        <file>logs/profile.log</file>
         <encoder
                 class="ch.qos.logback.classic.encoder.PatternLayoutEncoder">
             <pattern>${time} - %-4r [%t] %5p %c{1} - %m - %X{requestId} %X{ip}%n</pattern>
@@ -18,7 +20,7 @@
 
         <rollingPolicy
                 class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
-            <fileNamePattern>logs/flow-management-%d{yyyy-MM-dd}.log</fileNamePattern>
+            <fileNamePattern>logs/flow-profile-%d{yyyy-MM-dd}.log</fileNamePattern>
         </rollingPolicy>
     </appender>
 
@@ -27,7 +29,7 @@
         <appender-ref ref="Console"/>
         <appender-ref ref="File"/>
     </root>
-    <logger name="com.exchange.oms" level="INFO" additivity="false">
+    <logger name="com.profile.prfile" level="INFO" additivity="false">
         <!--     <appender-ref ref="GRAYLOG" />-->
         <appender-ref ref="Console"/>
         <appender-ref ref="File"/>

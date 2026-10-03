@@ -4,8 +4,12 @@ import com.exchange.me.domain.ErrorCode;
 import com.exchange.me.domain.Order;
 import com.exchange.me.handler.OrderBookHandler;
 import com.exchange.me.sbe.*;
+import io.aeron.cluster.ClusterTool;
 import org.agrona.DirectBuffer;
 import org.agrona.ExpandableDirectByteBuffer;
+
+import java.io.File;
+import java.util.concurrent.CompletableFuture;
 
 
 public class RequestHandlerService {
@@ -17,6 +21,9 @@ public class RequestHandlerService {
     private final CancelOrderDecoder cancelOrderDecoder;
     private final OrderBookDepthDecoder orderBookDepthDecoder;
     private final MarketDepthEncoder marketDepthEncoder;
+    private final TakeSnapShotDecoder takeSnapShotDecoder;
+    private final TakeSnapShotResponseEncoder takeSnapShotResponseEncoder;
+
 
     private final EngineService engineService;
 
@@ -29,6 +36,8 @@ public class RequestHandlerService {
         cancelOrderDecoder = new CancelOrderDecoder();
         orderBookDepthDecoder = new OrderBookDepthDecoder();
         marketDepthEncoder = new MarketDepthEncoder();
+        takeSnapShotDecoder = new TakeSnapShotDecoder();
+        takeSnapShotResponseEncoder = new TakeSnapShotResponseEncoder();
 
         engineService = new EngineService();
     }
@@ -146,6 +155,41 @@ public class RequestHandlerService {
     }
 
 
+    public int handleTakeSnapShot(
+            long sessionId,
+            long timestamp,
+            DirectBuffer buffer,
+            int offset,
+            int headerLength,
+            int actingLength,
+            int actingVersion,
+            ExpandableDirectByteBuffer respondBuffer) {
+
+        System.out.println("snapshot request received");
+        takeSnapShotDecoder.wrap(buffer, offset + headerLength, actingLength, actingVersion);
+        System.out.println("before snapshot");
+
+        CompletableFuture.runAsync(() ->{
+            ClusterTool.snapshot(new File("./cluster-data/cluster"), System.out);
+        });
+
+
+        File dir = new File("./cluster-data/cluster");
+
+        System.out.println(dir.getAbsolutePath());
+        System.out.println(dir.exists());
+        System.out.println("after snapshot");
+
+        takeSnapShotResponseEncoder.wrapAndApplyHeader(respondBuffer, 0, messageHeaderEncoder)
+                .correlationId(takeSnapShotDecoder.correlationId());
+
+        System.out.println("snapshot response encoded");
+
+        return takeSnapShotResponseEncoder.encodedLength() + messageHeaderEncoder.encodedLength();
+
+    }
+
+
     public int handleOrderBookDepth(
             long sessionId,
             long timestamp,
@@ -169,7 +213,7 @@ public class RequestHandlerService {
             marketDepth = null;
         }
 
-        System.out.println("OrderBookDepth request received");
+        //System.out.println("OrderBookDepth request received");
 
         if (marketDepth != null) {
             marketDepthEncoder.wrapAndApplyHeader(respondBuffer, 0, messageHeaderEncoder)

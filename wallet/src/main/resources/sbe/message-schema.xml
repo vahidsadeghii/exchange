@@ -1,0 +1,170 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<sbe:messageSchema xmlns:sbe="http://fixprotocol.io/2016/sbe"
+                   package="com.exchange.wallet.sbe"
+                   id="1"
+                   version="0"
+                   semanticVersion="0.1"
+                   description="Exchange wallet message schema"
+                   byteOrder="littleEndian">
+    <types>
+
+        <!-- Message Header -->
+        <composite name="messageHeader" description="Message identifiers and length of message root">
+            <type name="blockLength" primitiveType="uint16"/>
+            <type name="templateId" primitiveType="uint16"/>
+            <type name="schemaId" primitiveType="uint16"/>
+            <type name="version" primitiveType="uint16"/>
+        </composite>
+
+        <!-- Group Header -->
+        <composite name="groupSizeEncoding" description="Repeating group dimensions">
+            <type name="blockLength" primitiveType="uint16"/>
+            <type name="numInGroup" primitiveType="uint16"/>
+        </composite>
+
+        <!-- Variable String -->
+        <composite name="varStringEncoding">
+            <type name="length" primitiveType="uint32" maxValue="1073741824"/>
+            <type name="varData" primitiveType="uint8" length="0" characterEncoding="UTF-8"/>
+        </composite>
+
+        <!-- Decimal -->
+        <composite name="DecimalValue">
+            <type name="mantissa" primitiveType="int64"/>
+            <type name="exponent" primitiveType="int8"/>
+        </composite>
+
+
+        <!-- UUID -->
+        <composite name="uuid">
+            <type name="mostSignificantBits" primitiveType="uint64"/>
+            <type name="leastSignificantBits" primitiveType="uint64"/>
+        </composite>
+
+        <!-- Wallet Status -->
+        <enum name="walletStatus" encodingType="uint8">
+            <validValue name="ACTIVE">1</validValue>
+            <validValue name="BLOCK">2</validValue>
+            <validValue name="UNBLOCK">3</validValue>
+            <validValue name="INACTIVE">4</validValue>
+        </enum>
+
+        <!-- Asset Type -->
+        <enum name="assetType" encodingType="uint8">
+            <validValue name="BTC">1</validValue>
+            <validValue name="ETH">2</validValue>
+            <validValue name="USDT">3</validValue>
+            <validValue name="BNB">4</validValue>
+            <validValue name="XRP">5</validValue>
+            <validValue name="ADA">6</validValue>
+            <validValue name="SOL">7</validValue>
+            <validValue name="DOGE">8</validValue>
+            <validValue name="DOT">9</validValue>
+            <validValue name="MATIC">10</validValue>
+            <validValue name="LTC">11</validValue>
+            <validValue name="TRX">12</validValue>
+            <validValue name="AVAX">13</validValue>
+            <validValue name="USDC">14</validValue>
+            <validValue name="DAI">15</validValue>
+            <validValue name="EUR">16</validValue>
+            <validValue name="USD">17</validValue>
+            <validValue name="GBP">18</validValue>
+            <validValue name="CHF">19</validValue>
+        </enum>
+
+        <!-- Transaction Status -->
+        <enum name="transactionStatus" encodingType="uint8">
+            <validValue name="PENDING">1</validValue>
+            <validValue name="SUCCESS">2</validValue>
+            <validValue name="FAILED">3</validValue>
+        </enum>
+
+        <!-- Transaction Status -->
+        <enum name="transactionType" encodingType="uint8">
+            <validValue name="DEPOSIT">1</validValue>
+            <validValue name="WITHDRAW">2</validValue>
+            <validValue name="TRANSFER">3</validValue>
+            <validValue name="BLOCK">4</validValue>
+            <validValue name="UNBLOCK">5</validValue>
+            <validValue name="REFUND">6</validValue>
+            <validValue name="ADJUSTMENT">7</validValue>
+        </enum>
+
+    </types>
+
+    <!-- Heartbeat -->
+    <sbe:message name="Heartbeat" id="1" description="Placeholder message; replace with real domain messages">
+        <field name="timestamp" id="1" type="int64"/>
+    </sbe:message>
+
+    <!-- Error -->
+    <sbe:message name="WalletErrorMessage" id="2" description="When error happened">
+        <field name="correlationId" id="1" type="uint64"/>
+        <field name="code" id="2" type="int32"/>
+    </sbe:message>
+
+    <sbe:message name="TransactionInfoMessage" id="3">
+        <field name="correlationId" id="1" type="uint64"/>
+        <field name="code" id="2" type="int32"/>
+    </sbe:message>
+
+
+    <!-- TransactionInfo Response -->
+    <sbe:message name="TransactionInfo" id="4">
+        <field name="correlationId" id="1" type="uint64"/>
+        <field name="userId" id="2" type="uint64"/>
+        <field name="assetType" id="3" type="assetType"/>
+        <field name="status" id="4" type="transactionStatus"/>
+        <field name="transactionType" id="5" type="transactionType"/>
+
+        <field name="amount" id="6" type="DecimalValue"/>
+        <field name="balanceBefore" id="7" type="DecimalValue"/>
+        <field name="balanceAfter" id="8" type="DecimalValue"/>
+        <field name="blockedBalanceBefore" id="9" type="DecimalValue"/>
+        <field name="blockedBalanceAfter" id="10" type="DecimalValue"/>
+        <field name="createdAt" id="11" type="uint64"/>
+        <data name="id" id="12" type="varStringEncoding"/>
+        <data name="walletId" id="13" type="varStringEncoding"/>
+    </sbe:message>
+
+    <!--  Wallet Request-->
+    <sbe:message name="WalletRequest" id="5" description="Withdraw asset from wallet">
+        <field name="correlationId" id="1" type="uint64"/>
+        <field name="assetType" id="2" type="assetType"/>
+        <field name="amount" id="3" type="DecimalValue"/>
+        <data name="walletId" id="4" type="varStringEncoding"/>
+    </sbe:message>
+
+    <sbe:message name="WalletResponse" id="6">
+        <field name="correlationId" id="1" type="uint64"/>
+        <field name="status" id="2" type="transactionStatus"/>
+        <field name="balance" id="3" type="DecimalValue"/>
+        <field name="blockedBalance" id="4" type="DecimalValue"/>
+        <field name="timestampEpochMillis" id="5" type="uint64"/>
+        <data name="walletId" id="6" type="varStringEncoding"/>
+    </sbe:message>
+
+
+    <!-- Wallet Snapshot-->
+    <sbe:message name="SnapshotWallet" id="500">
+        <field name="walletId" id="1" type="uuid"/>
+        <field name="userId" id="2" type="uint64"/>
+        <field name="status" id="3" type="walletStatus"/>
+        <field name="timestamp" id="4" type="uint64"/>
+
+        <group name="assets" id="501" dimensionType="groupSizeEncoding">
+            <field name="assetType" id="1" type="assetType"/>
+            <field name="balance" id="2" type="DecimalValue"/>
+            <field name="blockedBalance" id="3" type="DecimalValue"/>
+        </group>
+    </sbe:message>
+
+    <sbe:message name="TakeSnapShot" id="5002" description="take snapshot">
+        <field name="correlationId" id="1" type="uint64"/>
+    </sbe:message>
+
+    <sbe:message name="TakeSnapShotResponse" id="5003" description=" response take snapshot">
+        <field name="correlationId" id="1" type="uint64"/>
+    </sbe:message>
+
+</sbe:messageSchema>

@@ -1,0 +1,61 @@
+@startuml
+
+top to bottom direction
+
+title Aeron Cluster Snapshot Architecture
+
+component "Aeron Cluster" as AC
+
+component "Event Log" as EventLog
+component "Snapshot Storage" as Snapshot
+
+component "CoreClusteredService" as Core
+
+component "onSessionMessage()" as Session
+component "onTakeSnapshot()" as TakeSnapshot
+component "onStart()" as Start
+component "loadSnapshot()" as LoadSnapshot
+
+component "SBE Encoder" as Encoder
+component "SBE Decoder" as Decoder
+
+component "EngineService" as Engine
+
+component "Matching State" as State
+
+component "OrderBook BTC/USD" as BTC
+component "OrderBook ETH/USD" as ETH
+
+
+AC --> EventLog
+AC --> Snapshot
+
+
+EventLog --> Session
+Session --> Core
+
+
+Snapshot --> Start
+Start --> LoadSnapshot
+
+LoadSnapshot --> Decoder
+Decoder --> LoadSnapshot
+
+LoadSnapshot --> Engine : restoreOrders()
+
+
+Core --> TakeSnapshot
+
+TakeSnapshot --> Engine : createSnapshot()
+Engine --> TakeSnapshot : EngineSnapshot
+
+TakeSnapshot --> Encoder
+Encoder --> Snapshot : snapshotPublication.offer()
+
+
+Engine --> State
+
+State --> BTC : BUY / SELL orders
+State --> ETH : BUY / SELL orders
+
+@enduml

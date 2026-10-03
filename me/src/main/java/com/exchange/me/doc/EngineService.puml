@@ -1,135 +1,52 @@
 @startuml
 
-skinparam classAttributeIconSize 0
-skinparam linetype ortho
+top to bottom direction
 
-package "Service Layer" {
+title EngineService Snapshot Architecture
 
-interface EngineService
-interface MatchEventService
+class EngineService {
+    - orderBooks : Map<TradePair, OrderBookHandler>
 
-class EngineServiceImpl {
-  - MatchEventService matchEventService
-  - OrderHandlerFactory orderHandlerFactory
-  - Map<TradePair, OrderBookHandler> orderBooks
-
-  + createUpdateOrder(...)
-  + deleteOrder(...)
-  + getOrder(...)
-  + getMarketDepth(...)
-  + getOrderBookDepth(...)
-  + resetAll()
+    + createSnapshot() : EngineSnapshot
+    + getAllOrders() : List<Order>
+    + restoreOrders(orders : List<Order>)
+    + resetAll()
+    - getOrCreateBook(pair : TradePair)
 }
 
-class MatchEventServiceImpl {
-  - KafkaTemplate kafkaTemplate
-  - String eventTopic
-  - String createUpdateMeMessage
-
-  + saveMatchEvent(Order)
-  - validateOrder(Order)
-  - sendMatchEvent(...)
+class EngineSnapshot {
+    - orders : List<Order>
 }
-
-EngineServiceImpl ..|> EngineService
-MatchEventServiceImpl ..|> MatchEventService
-
-EngineServiceImpl --> MatchEventService
-EngineServiceImpl --> OrderHandlerFactory
-EngineServiceImpl --> OrderBookHandler
-
-MatchEventServiceImpl --> KafkaTemplate
-MatchEventServiceImpl --> Order
-MatchEventServiceImpl --> MatchEngine
-}
-
-package "Handler Layer" {
-
-interface OrderHandler {
-    + supports()
-    + execute(...)
-}
-
-class OrderHandlerFactory {
-    - Map<OrderType, OrderHandler> handlers
-    + get(OrderType)
-}
-
-class OrderBookHandler {
-    - TradePair tradePair
-    - TreeMap bids
-    - TreeMap asks
-    - Map orderIndex
-    - MatchingContext matchingContext
-    - OrderHandlerFactory handlerFactory
-
-    + matchOrder(...)
-    + deleteOrder(...)
-    + getOrder(...)
-    + reset()
-    + getMarketDepth(...)
-}
-
-class LimitOrderHandler
-class MarketOrderHandler
-class FokOderHandler
-
-OrderHandlerFactory --> OrderHandler
-
-LimitOrderHandler ..|> OrderHandler
-MarketOrderHandler ..|> OrderHandler
-FokOderHandler ..|> OrderHandler
-
-OrderBookHandler --> MatchingContext
-OrderBookHandler --> OrderHandlerFactory
-OrderBookHandler --> Order
-
-}
-
-package "Matching Layer" {
-
-class MatchingEngine {
-    + executeBuyOrder(...)
-    + executeSellOrder(...)
-    + matchOrdersAtLevel(...)
-    + createMatch(...)
-}
-
-class MatchingContext {
-    - TreeMap bids
-    - TreeMap asks
-    - Map orderIndex
-
-    + addOrder(...)
-}
-
-MatchingContext --> Order
-MatchingEngine --> MatchingContext
-MatchingEngine --> MatchInfo
-
-LimitOrderHandler --> MatchingEngine
-MarketOrderHandler --> MatchingEngine
-FokOderHandler --> MatchingEngine
-
-}
-
-package "Domain" {
 
 class Order
-class MatchInfo
-class MatchEngine
-class TradePair
-class OrderType
-class TradeSide
-class MatchEventStatus
 
+class OrderBookHandler {
+    + getAllOrders() : List<Order>
+    + restoreOrder(order : Order)
+    + reset()
 }
 
-EngineServiceImpl --> Order
-EngineServiceImpl --> MatchEngine
-EngineServiceImpl --> TradePair
+class OrderIndex
 
-MatchingContext --> TradeSide
-OrderBookHandler --> TradePair
+class "Bids TreeMap" as Bids
+
+class "Asks TreeMap" as Asks
+
+
+EngineService "1" o-- "*" OrderBookHandler : orderBooks
+
+EngineService --> EngineSnapshot : createSnapshot()
+EngineService --> Order : getAllOrders()
+
+EngineSnapshot "1" *-- "*" Order : orders
+
+EngineService --> EngineSnapshot : restoreOrders()
+EngineService --> OrderBookHandler : restoreOrder()
+
+OrderBookHandler --> Bids
+OrderBookHandler --> Asks
+OrderBookHandler --> OrderIndex
+
+OrderBookHandler --> Order : stores
 
 @enduml

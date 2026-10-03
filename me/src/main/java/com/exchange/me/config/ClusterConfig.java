@@ -13,7 +13,7 @@ import java.io.File;
 
 public class ClusterConfig {
     private static final String AERON_DIR_NAME = "./media-driver";
-    private static final File BASE_DIR = new File("./cluster-data");
+    private static final File BASE_DIR = new File("../cluster-data");
 
     private static final String CLUSTER_MEMBERS =
             "0,localhost:9002,localhost:9003,localhost:9004,localhost:9005,localhost:9001";
