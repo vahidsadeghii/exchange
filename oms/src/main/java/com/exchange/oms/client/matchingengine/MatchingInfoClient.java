@@ -6,7 +6,6 @@ import com.exchange.oms.config.exception.FallBackException;
 import com.exchange.oms.config.feign.FeignException;
 import com.exchange.oms.controller.order.findorderbook.OrderBookResponse;
 import com.exchange.oms.domain.MatchEngineResponse;
-import com.exchange.oms.domain.OrderType;
 import com.exchange.oms.domain.TradePair;
 import io.github.resilience4j.circuitbreaker.annotation.CircuitBreaker;
 import io.github.resilience4j.retry.annotation.Retry;

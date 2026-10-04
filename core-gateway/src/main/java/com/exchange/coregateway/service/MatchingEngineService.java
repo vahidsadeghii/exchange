@@ -69,14 +69,36 @@ public class MatchingEngineService {
 
     public OrderInfoResponse putOrder(long orderId, long userId, TradeSide tradeSide,
                                       OrderType orderType, TradePair tradePair, MarketType marketType,
-                                      long quantity, long price) {
+                                      long quantity, long price) throws TimeoutException {
         try {
             return client
                     .putOrder(orderId, System.currentTimeMillis(), userId, tradeSide, orderType, tradePair,
                             marketType, quantity, price)
                     .get(5, TimeUnit.SECONDS);
+        } catch (TimeoutException e) {
+            logger.error(
+                    "TIMEOUT orderId={}, pendingIds={}",
+                    orderId,
+                    client.getPendingCorrelationIds()
+            );
+
+            throw e;
+        } catch (ExecutionException e) {
+            throw new RuntimeException(e);
+        } catch (InterruptedException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    public TakeSnapshotResponse takeSnapShot(){
+
+            try {
+            return client
+                    .takeSnapShot()
+                    .get(5, TimeUnit.SECONDS);
         } catch (Exception e) {
-            logger.error("Error while new order {}, {}", orderId, tradePair, e);
+            logger.error("Error while new snapshot", e);
+
             return null;
         }
     }
