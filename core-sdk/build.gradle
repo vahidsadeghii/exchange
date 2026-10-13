@@ -11,9 +11,8 @@ configurations {
 }
 
 dependencies {
-    // Use JUnit Jupiter for testing.
-    testImplementation libs.junit.jupiter
-    testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+    // SLF4J
+    implementation 'org.slf4j:slf4j-api:2.0.17'
 
     //jakarta
     implementation 'jakarta.persistence:jakarta.persistence-api:3.1.0'
@@ -23,6 +22,11 @@ dependencies {
 
     // ---- Aeron (High-performance messaging) ----
     implementation 'io.aeron:aeron-all:1.52.1'
+
+
+    // Use JUnit Jupiter for testing.
+    testImplementation libs.junit.jupiter
+    testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
 }
 
 

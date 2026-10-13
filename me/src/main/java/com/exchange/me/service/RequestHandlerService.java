@@ -75,6 +75,7 @@ public class RequestHandlerService {
                     .userId(order.getUserId())
                     .matchStatus(order.getMatchStatus())
                     .filledQuantity(order.getQuantity() - order.getRemainingQuantity());
+            System.out.println("====================================================================================" + putOrderDecoder.orderId());
 
             return orderInfoEncoder.encodedLength() + messageHeaderEncoder.encodedLength();
         } else {

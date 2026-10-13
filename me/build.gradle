@@ -38,6 +38,11 @@ dependencies {
     // ---- SBE (message codec generator) ----
     sbeTool 'uk.co.real-logic:sbe-tool:1.35.6'
 
+    // ---- Metric----
+    implementation 'io.micrometer:micrometer-core:1.17.1'
+    implementation 'io.micrometer:micrometer-registry-prometheus:1.13.5'
+
+
 
     // Use JUnit Jupiter for testing.
     testImplementation libs.junit.jupiter

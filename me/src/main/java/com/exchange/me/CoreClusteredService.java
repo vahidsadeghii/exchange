@@ -1,6 +1,7 @@
 package com.exchange.me;
 
 
+import com.exchange.me.config.ClusterMetrics;
 import com.exchange.me.domain.EngineSnapshot;
 import com.exchange.me.domain.Order;
 import com.exchange.me.sbe.*;
@@ -17,8 +18,11 @@ import io.aeron.cluster.service.Cluster;
 import io.aeron.cluster.service.ClusteredService;
 import io.aeron.logbuffer.FragmentHandler;
 import io.aeron.logbuffer.Header;
+import io.micrometer.core.instrument.Counter;
+import io.micrometer.core.instrument.Timer;
 import lombok.extern.slf4j.Slf4j;
 import org.agrona.DirectBuffer;
+import org.agrona.ExpandableArrayBuffer;
 import org.agrona.ExpandableDirectByteBuffer;
 
 import java.util.ArrayDeque;
@@ -29,7 +33,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.TreeMap;
-
 
 
 @Slf4j
@@ -44,12 +47,27 @@ public class CoreClusteredService implements ClusteredService {
     private final MessageHeaderEncoder messageHeaderEncoder;
     private final ExpandableDirectByteBuffer snapshotBuffer;
 
+    private final Counter receivedMessages;
+    private final Counter failedResponses;
+    private final Counter successfulResponses;
+    private final Counter backPressuredResponses;
+    private final Counter adminActionResponses;
+    private final Timer requestProcessingTimer;
+
+
     private final HashMap<Integer, RequestFunction> requestMap;
     private Cluster cluster;
 
 
-    public CoreClusteredService() {
+    public CoreClusteredService(ClusterMetrics metrics) {
         log.info("Initializing CoreClusteredService");
+
+        this.receivedMessages = metrics.receivedMessages;
+        this.failedResponses = metrics.failedResponses;
+        this.successfulResponses = metrics.successfulResponses;
+        this.backPressuredResponses = metrics.backPressuredResponses;
+        this.adminActionResponses = metrics.adminActionResponses;
+        this.requestProcessingTimer = metrics.requestProcessingTimer;
 
         RequestHandlerService requestHandlerService = new RequestHandlerService();
         engineService = new EngineService();
@@ -104,6 +122,10 @@ public class CoreClusteredService implements ClusteredService {
             final int length,
             final Header header) {
 
+        receivedMessages.increment();
+
+        long startTime = System.nanoTime();
+
         if (session == null) {
             log.warn("Received message with null session: offset={}, length={}", offset, length);
             return;
@@ -132,51 +154,94 @@ public class CoreClusteredService implements ClusteredService {
                 actingLength,
                 actingVersion);
 
-        int responseLen =
-                requestMap
-                        .get(templateId)
-                        .handleRequest(
-                                session.id(),
-                                timestamp,
-                                buffer,
-                                offset,
-                                headerLength,
-                                actingLength,
-                                actingVersion,
-                                respondBuffer);
+        Timer.Sample sample = Timer.start();
+        try {
 
-        log.debug("Request handled successfully: sessionId={}, templateId={}, responseLength={}",
-                session.id(),
-                templateId,
-                responseLen);
+            int responseLen =
+                    requestMap
+                            .get(templateId)
+                            .handleRequest(
+                                    session.id(),
+                                    timestamp,
+                                    buffer,
+                                    offset,
+                                    headerLength,
+                                    actingLength,
+                                    actingVersion,
+                                    respondBuffer);
+            System.out.println("====================================HANDLE DONE templateId===============");
+            System.out.println(
+                    "HANDLE DONE templateId=" +
+                            templateId +
+                            ", responseLen=" +
+                            responseLen
+            );
 
-        long result;
-        do {
-            result = session.offer(respondBuffer, 0, responseLen);
-            if (result == io.aeron.Publication.ADMIN_ACTION) {
-                log.debug("Session offer returned ADMIN_ACTION: sessionId={}, templateId={}",
+            log.debug("Request handled successfully: sessionId={}, templateId={}, responseLength={}",
+                    session.id(),
+                    templateId,
+                    responseLen);
+            // TODO: histogram metric
+            sample.stop(requestProcessingTimer);
+            long result;
+            do {
+                result = session.offer(respondBuffer, 0, responseLen);
+                System.out.println("==================================== result after session.offer==============");
+
+                System.out.println(
+                        "SESSION OFFER result=" +
+                                result
+                );
+
+                if (result > 0) {
+                    log.info(
+                            "RESPONSE SENT templateId={}, result={}",
+                            templateId,
+                            result
+                    );
+                }
+
+                if (result == io.aeron.Publication.ADMIN_ACTION) {
+                    adminActionResponses.increment();
+                    log.debug("Session offer returned ADMIN_ACTION: sessionId={}, templateId={}",
+                            session.id(),
+                            templateId);
+
+                } else if (result == io.aeron.Publication.BACK_PRESSURED) {
+                    backPressuredResponses.increment();
+                    log.debug("Session offer back pressured: sessionId={}, templateId={}",
+                            session.id(),
+                            templateId);
+                }
+
+            } while (result == io.aeron.Publication.ADMIN_ACTION
+                    || result == io.aeron.Publication.BACK_PRESSURED);
+
+            if (result < 0) {
+                failedResponses.increment();
+                log.error("Failed to send response: sessionId={}, templateId={}, result={}",
                         session.id(),
-                        templateId);
-            } else if (result == io.aeron.Publication.BACK_PRESSURED) {
-                log.debug("Session offer back pressured: sessionId={}, templateId={}",
+                        templateId,
+                        result);
+            } else {
+                successfulResponses.increment();
+                log.debug("Response sent successfully: sessionId={}, templateId={}, result={}",
                         session.id(),
-                        templateId);
+                        templateId,
+                        result);
             }
 
-        } while (result == io.aeron.Publication.ADMIN_ACTION
-                || result == io.aeron.Publication.BACK_PRESSURED);
+        } catch (Exception e) {
 
-        if (result < 0) {
-            log.error("Failed to send response: sessionId={}, templateId={}, result={}",
-                    session.id(),
+            log.error(
+                    "HANDLE REQUEST FAILED templateId={}",
                     templateId,
-                    result);
-        } else {
-            log.debug("Response sent successfully: sessionId={}, templateId={}, result={}",
-                    session.id(),
-                    templateId,
-                    result);
+                    e
+            );
+
+            throw e;
         }
+
 
     }
 

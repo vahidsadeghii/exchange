@@ -13,7 +13,7 @@ import java.io.File;
 
 public class ClusterConfig {
     private static final String AERON_DIR_NAME = "./media-driver";
-    private static final File BASE_DIR = new File("../cluster-data");
+    private static final File BASE_DIR = new File("../cluster-data-me");
 
     private static final String CLUSTER_MEMBERS =
             "0,localhost:9002,localhost:9003,localhost:9004,localhost:9005,localhost:9001";
@@ -26,7 +26,7 @@ public class ClusterConfig {
     private final ConsensusModule.Context consensusContext;
     private final ClusteredServiceContainer.Context clusteredServiceContext;
 
-    public ClusterConfig(Environment env, ShutdownSignalBarrier barrier) {
+    public ClusterConfig(Environment env, ShutdownSignalBarrier barrier, ClusterMetrics metrics) {
         mediaDriverContext =
                 new MediaDriver.Context()
                         .aeronDirectoryName(AERON_DIR_NAME)
@@ -37,6 +37,7 @@ public class ClusterConfig {
 
         archiveContext = new Archive.Context()
                 .aeronDirectoryName(AERON_DIR_NAME)
+                .segmentFileLength(1024 * 64)
                 .archiveDir(new File(BASE_DIR, "archive"))
                 .controlChannel(ARCHIVE_CONTROL_CHANNEL)
                 .replicationChannel("aeron:udp?endpoint=localhost:0")
@@ -62,7 +63,10 @@ public class ClusterConfig {
                 .aeronDirectoryName(AERON_DIR_NAME)
                 .clusterDir(new File(BASE_DIR, "cluster"))
                 .archiveContext(aeronContext.clone())
-                .clusteredService(new CoreClusteredService());
+                .clusteredService(new CoreClusteredService(metrics));
+
+
+
     }
 
     public MediaDriver.Context getMediaDriverContext() {
