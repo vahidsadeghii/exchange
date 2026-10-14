@@ -5,13 +5,14 @@ import com.exchange.me.domain.Order;
 import com.exchange.me.handler.OrderBookHandler;
 import com.exchange.me.sbe.*;
 import io.aeron.cluster.ClusterTool;
+import lombok.extern.slf4j.Slf4j;
 import org.agrona.DirectBuffer;
 import org.agrona.ExpandableDirectByteBuffer;
 
 import java.io.File;
 import java.util.concurrent.CompletableFuture;
 
-
+@Slf4j
 public class RequestHandlerService {
     private final PutOrderDecoder putOrderDecoder;
     private final OrderInfoEncoder orderInfoEncoder;
@@ -75,7 +76,7 @@ public class RequestHandlerService {
                     .userId(order.getUserId())
                     .matchStatus(order.getMatchStatus())
                     .filledQuantity(order.getQuantity() - order.getRemainingQuantity());
-            System.out.println("====================================================================================" + putOrderDecoder.orderId());
+            log.info("====================================================================================" + putOrderDecoder.orderId());
 
             return orderInfoEncoder.encodedLength() + messageHeaderEncoder.encodedLength();
         } else {
@@ -166,9 +167,9 @@ public class RequestHandlerService {
             int actingVersion,
             ExpandableDirectByteBuffer respondBuffer) {
 
-        System.out.println("snapshot request received");
+        log.info("snapshot request received");
         takeSnapShotDecoder.wrap(buffer, offset + headerLength, actingLength, actingVersion);
-        System.out.println("before snapshot");
+        log.info("before snapshot");
 
         CompletableFuture.runAsync(() ->{
             ClusterTool.snapshot(new File("./cluster-data/cluster"), System.out);
@@ -177,14 +178,14 @@ public class RequestHandlerService {
 
         File dir = new File("./cluster-data/cluster");
 
-        System.out.println(dir.getAbsolutePath());
-        System.out.println(dir.exists());
-        System.out.println("after snapshot");
+        log.info(dir.getAbsolutePath());
+        log.info(String.valueOf(dir.exists()));
+        log.info("after snapshot");
 
         takeSnapShotResponseEncoder.wrapAndApplyHeader(respondBuffer, 0, messageHeaderEncoder)
                 .correlationId(takeSnapShotDecoder.correlationId());
 
-        System.out.println("snapshot response encoded");
+        log.info("snapshot response encoded");
 
         return takeSnapShotResponseEncoder.encodedLength() + messageHeaderEncoder.encodedLength();
 

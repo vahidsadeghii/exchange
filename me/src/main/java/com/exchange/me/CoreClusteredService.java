@@ -22,7 +22,6 @@ import io.micrometer.core.instrument.Counter;
 import io.micrometer.core.instrument.Timer;
 import lombok.extern.slf4j.Slf4j;
 import org.agrona.DirectBuffer;
-import org.agrona.ExpandableArrayBuffer;
 import org.agrona.ExpandableDirectByteBuffer;
 
 import java.util.ArrayDeque;
@@ -37,6 +36,7 @@ import java.util.TreeMap;
 
 @Slf4j
 public class CoreClusteredService implements ClusteredService {
+
     private final MessageHeaderDecoder messageHeaderDecoder;
     private final ExpandableDirectByteBuffer respondBuffer;
     private final SnapshotOrderEncoder snapshotOrderEncoder;
@@ -144,6 +144,21 @@ public class CoreClusteredService implements ClusteredService {
         final int actingLength = messageHeaderDecoder.blockLength();
         final int actingVersion = messageHeaderDecoder.version();
 
+        long requestCorrelationId = -1;
+        long requestOrderId = -1;
+        if (templateId == PutOrderDecoder.TEMPLATE_ID) {
+            final PutOrderDecoder putOrderDecoder = new PutOrderDecoder();
+            putOrderDecoder.wrap(buffer, offset + headerLength, actingLength, actingVersion);
+            requestCorrelationId = putOrderDecoder.correlationId();
+            requestOrderId = putOrderDecoder.orderId();
+            log.info(
+                    "PUT ORDER RECEIVED sessionId={}, orderId={}, correlationId={}",
+                    session.id(),
+                    requestOrderId,
+                    requestCorrelationId
+            );
+        }
+
         log.debug("Received cluster message: sessionId={}, templateId={}, timestamp={}, offset={}, length={}, headerLength={}, blockLength={}, version={}",
                 session.id(),
                 templateId,
@@ -156,7 +171,6 @@ public class CoreClusteredService implements ClusteredService {
 
         Timer.Sample sample = Timer.start();
         try {
-
             int responseLen =
                     requestMap
                             .get(templateId)
@@ -169,14 +183,6 @@ public class CoreClusteredService implements ClusteredService {
                                     actingLength,
                                     actingVersion,
                                     respondBuffer);
-            System.out.println("====================================HANDLE DONE templateId===============");
-            System.out.println(
-                    "HANDLE DONE templateId=" +
-                            templateId +
-                            ", responseLen=" +
-                            responseLen
-            );
-
             log.debug("Request handled successfully: sessionId={}, templateId={}, responseLength={}",
                     session.id(),
                     templateId,
@@ -186,19 +192,9 @@ public class CoreClusteredService implements ClusteredService {
             long result;
             do {
                 result = session.offer(respondBuffer, 0, responseLen);
-                System.out.println("==================================== result after session.offer==============");
-
-                System.out.println(
-                        "SESSION OFFER result=" +
-                                result
-                );
 
                 if (result > 0) {
-                    log.info(
-                            "RESPONSE SENT templateId={}, result={}",
-                            templateId,
-                            result
-                    );
+                    log.info("RESPONSE SENT templateId={}, result={}", templateId, result);
                 }
 
                 if (result == io.aeron.Publication.ADMIN_ACTION) {
@@ -214,31 +210,34 @@ public class CoreClusteredService implements ClusteredService {
                             templateId);
                 }
 
-            } while (result == io.aeron.Publication.ADMIN_ACTION
-                    || result == io.aeron.Publication.BACK_PRESSURED);
+            } while (result == io.aeron.Publication.ADMIN_ACTION || result == io.aeron.Publication.BACK_PRESSURED);
 
             if (result < 0) {
                 failedResponses.increment();
-                log.error("Failed to send response: sessionId={}, templateId={}, result={}",
-                        session.id(),
-                        templateId,
-                        result);
+                if (templateId == PutOrderDecoder.TEMPLATE_ID) {
+                    log.error(
+                            "PUT ORDER RESPONSE FAILED sessionId={}, orderId={}, correlationId={}, result={}",
+                            session.id(),
+                            requestOrderId,
+                            requestCorrelationId,
+                            result
+                    );
+                }
             } else {
                 successfulResponses.increment();
-                log.debug("Response sent successfully: sessionId={}, templateId={}, result={}",
-                        session.id(),
-                        templateId,
-                        result);
+                if (templateId == PutOrderDecoder.TEMPLATE_ID) {
+                    log.info(
+                            "PUT ORDER RESPONSE SENT sessionId={}, orderId={}, correlationId={}, result={}",
+                            session.id(),
+                            requestOrderId,
+                            requestCorrelationId,
+                            result
+                    );
+                }
             }
 
         } catch (Exception e) {
-
-            log.error(
-                    "HANDLE REQUEST FAILED templateId={}",
-                    templateId,
-                    e
-            );
-
+            log.error("HANDLE REQUEST FAILED templateId={}", templateId, e);
             throw e;
         }
 
@@ -252,8 +251,6 @@ public class CoreClusteredService implements ClusteredService {
 
     @Override
     public void onTakeSnapshot(final ExclusivePublication snapshotPublication) {
-
-        System.out.println("!!!!!!!!!! SNAPSHOT CALLBACK !!!!!!!!!!!");
 
         log.info("========== TAKING SNAPSHOT ==========");
         log.info("Starting engine snapshot");
@@ -303,15 +300,9 @@ public class CoreClusteredService implements ClusteredService {
         SnapshotOrderBookEncoder.LevelEncoder levelEncoder =
                 snapshotOrderBookEncoder.pair(pair).side(side).levelCount(levels.size());
         levels.forEach((price, orders) -> {
-            var levelOrders = levelEncoder.next()
-                    .price(price)
-                    .levelOrdersCount(orders.size());
-
-            orders.forEach(order ->
-                    levelOrders.next()
-                            .orderId(order.getId()));
+            var levelOrders = levelEncoder.next().price(price).levelOrdersCount(orders.size());
+            orders.forEach(order -> levelOrders.next().orderId(order.getId()));
         });
-
         int length = messageHeaderEncoder.encodedLength() + snapshotOrderBookEncoder.encodedLength();
 
         offerSnapshot(publication, length);
@@ -320,15 +311,12 @@ public class CoreClusteredService implements ClusteredService {
     private void offerSnapshot(final ExclusivePublication snapshotPublication, int length) {
         while (true) {
             long result = snapshotPublication.offer(snapshotBuffer, 0, length);
-
             if (result > 0) {
                 break;
             }
-
             if (result == Publication.CLOSED || result == Publication.MAX_POSITION_EXCEEDED) {
                 throw new IllegalStateException("Snapshot offer failed: " + result);
             }
-
             log.debug("========== TAKING SNAPSHOT ==========");
             Thread.yield();
         }
@@ -360,7 +348,6 @@ public class CoreClusteredService implements ClusteredService {
                 log.warn("Ignoring snapshot template {}", templateId);
                 return;
             }
-
 
             int headerLength = messageHeaderDecoder.encodedLength();
 
