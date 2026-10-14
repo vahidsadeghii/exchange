@@ -5,7 +5,6 @@ import com.exchange.wallet.domain.ErrorCode;
 import com.exchange.wallet.domain.Wallet;
 import com.exchange.wallet.sbe.*;
 
-import com.exchange.wallet.service.WalletService;
 import lombok.RequiredArgsConstructor;
 import org.agrona.DirectBuffer;
 import org.agrona.ExpandableDirectByteBuffer;

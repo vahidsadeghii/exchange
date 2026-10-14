@@ -6,24 +6,22 @@ import com.exchange.wallet.domain.*;
 import com.exchange.wallet.exception.AssetNotFoundException;
 import com.exchange.wallet.exception.WalletNotFoundException;
 import com.exchange.wallet.service.TransactionService;
-import com.exchange.wallet.service.WalletService;
 import lombok.RequiredArgsConstructor;
-import org.springframework.stereotype.Service;
+import lombok.extern.slf4j.Slf4j;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.*;
 import java.util.stream.Collectors;
 
-@Service
+@Slf4j
 @RequiredArgsConstructor
-public class WalletServiceImpl implements WalletService {
+public class WalletService {
     private final WalletStore walletStore;
     private final ProfileClient profileClient;
     private final TransactionService transactionService;
 
 
-    @Override
 
     public Wallet save(Long userId, List<AssetDTO> assets) {
         for (AssetDTO asset : assets) {
@@ -40,7 +38,6 @@ public class WalletServiceImpl implements WalletService {
         return walletStore.save(wallet);
     }
 
-    @Override
     public Wallet updateWallet(String walletId, List<AssetDTO> assets) {
         Wallet wallet = findWalletById(walletId);
 
@@ -91,7 +88,6 @@ public class WalletServiceImpl implements WalletService {
         return wallet;
     }
 
-    @Override
     public Wallet depositWallet(String walletId, AssetType assetType, BigDecimal amount) {
         Wallet wallet = findWalletById(walletId);
 
@@ -118,7 +114,6 @@ public class WalletServiceImpl implements WalletService {
         return wallet;
     }
 
-    @Override
     public Wallet withdrawWallet(String walletId, AssetType type, BigDecimal amount) {
         Wallet wallet = walletStore.findById(walletId)
                 .orElseThrow(WalletNotFoundException::new);
@@ -154,19 +149,16 @@ public class WalletServiceImpl implements WalletService {
         return wallet;
     }
 
-    @Override
     public Wallet userWalletInfo(Long onlineUser, AssetType assetType) {
         return walletStore.findByUserIdAndAssetType(onlineUser, assetType)
                 .orElseThrow(WalletNotFoundException::new);
     }
 
-    @Override
     public Wallet findWalletById(String walletId) {
         return walletStore.findById(walletId)
                 .orElseThrow(WalletNotFoundException::new);
     }
 
-    @Override
     public BigDecimal findBalanceByUserId(Long onlineUser, AssetType assetType) {
         Wallet wallet = findWalletByUserIdAndAssetType(onlineUser, assetType)
                 .orElseThrow(WalletNotFoundException::new);
@@ -179,7 +171,6 @@ public class WalletServiceImpl implements WalletService {
                 .orElse(BigDecimal.ZERO);
     }
 
-    @Override
     public void blockWalletAmount(Long userId, AssetType assetType, BigDecimal amount) {
         Wallet wallet = findWalletByUserIdAndAssetType(userId, assetType)
                 .orElseThrow(WalletNotFoundException::new);
@@ -212,7 +203,6 @@ public class WalletServiceImpl implements WalletService {
         );
     }
 
-    @Override
     public void consumeBlockedAmount(Long userId, AssetType assetType, BigDecimal amount) {
         Wallet wallet = findWalletByUserIdAndAssetType(userId, assetType)
                 .orElseThrow(WalletNotFoundException::new);
@@ -238,8 +228,6 @@ public class WalletServiceImpl implements WalletService {
                 asset.getBlockedBalance()
         );
     }
-
-    @Override
 
     public void unblockWalletAmount(Long userId, AssetType assetType, BigDecimal amount) {
 
