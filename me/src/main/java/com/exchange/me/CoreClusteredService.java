@@ -32,10 +32,12 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.TreeMap;
+import java.util.concurrent.TimeUnit;
 
 
 @Slf4j
 public class CoreClusteredService implements ClusteredService {
+    private static final long METRICS_LOG_INTERVAL_NS = TimeUnit.SECONDS.toNanos(10);
 
     private final MessageHeaderDecoder messageHeaderDecoder;
     private final ExpandableDirectByteBuffer respondBuffer;
@@ -57,6 +59,8 @@ public class CoreClusteredService implements ClusteredService {
 
     private final HashMap<Integer, RequestFunction> requestMap;
     private Cluster cluster;
+    private long nextMetricsLogNs;
+    private final Timer responseOfferTimer;
 
 
     public CoreClusteredService(ClusterMetrics metrics) {
@@ -68,6 +72,7 @@ public class CoreClusteredService implements ClusteredService {
         this.backPressuredResponses = metrics.backPressuredResponses;
         this.adminActionResponses = metrics.adminActionResponses;
         this.requestProcessingTimer = metrics.requestProcessingTimer;
+        this.responseOfferTimer = metrics.responseOfferTimer;
 
         RequestHandlerService requestHandlerService = new RequestHandlerService();
         engineService = new EngineService();
@@ -187,30 +192,35 @@ public class CoreClusteredService implements ClusteredService {
                     session.id(),
                     templateId,
                     responseLen);
-            // TODO: histogram metric
+
             sample.stop(requestProcessingTimer);
             long result;
-            do {
-                result = session.offer(respondBuffer, 0, responseLen);
+            Timer.Sample sampleOffer = Timer.start();
+            try {
+                do {
+                    result = session.offer(respondBuffer, 0, responseLen);
 
-                if (result > 0) {
-                    log.info("RESPONSE SENT templateId={}, result={}", templateId, result);
-                }
+                    if (result > 0) {
+                        log.info("RESPONSE SENT templateId={}, result={}", templateId, result);
+                    }
 
-                if (result == io.aeron.Publication.ADMIN_ACTION) {
-                    adminActionResponses.increment();
-                    log.debug("Session offer returned ADMIN_ACTION: sessionId={}, templateId={}",
-                            session.id(),
-                            templateId);
+                    if (result == io.aeron.Publication.ADMIN_ACTION) {
+                        adminActionResponses.increment();
+                        log.debug("Session offer returned ADMIN_ACTION: sessionId={}, templateId={}",
+                                session.id(),
+                                templateId);
 
-                } else if (result == io.aeron.Publication.BACK_PRESSURED) {
-                    backPressuredResponses.increment();
-                    log.debug("Session offer back pressured: sessionId={}, templateId={}",
-                            session.id(),
-                            templateId);
-                }
+                    } else if (result == io.aeron.Publication.BACK_PRESSURED) {
+                        backPressuredResponses.increment();
+                        log.debug("Session offer back pressured: sessionId={}, templateId={}",
+                                session.id(),
+                                templateId);
+                    }
 
-            } while (result == io.aeron.Publication.ADMIN_ACTION || result == io.aeron.Publication.BACK_PRESSURED);
+                } while (result == io.aeron.Publication.ADMIN_ACTION || result == io.aeron.Publication.BACK_PRESSURED);
+            } finally {
+                sampleOffer.stop(responseOfferTimer);
+            }
 
             if (result < 0) {
                 failedResponses.increment();
@@ -235,13 +245,39 @@ public class CoreClusteredService implements ClusteredService {
                     );
                 }
             }
+            logMetricsIfDue();
 
         } catch (Exception e) {
             log.error("HANDLE REQUEST FAILED templateId={}", templateId, e);
             throw e;
         }
 
+    }
 
+    private void logMetricsIfDue() {
+        final long nowNs = System.nanoTime();
+        if (nowNs < nextMetricsLogNs) {
+            return;
+        }
+        nextMetricsLogNs = nowNs + METRICS_LOG_INTERVAL_NS;
+
+        log.info(
+                "AERON METRICS received={}, responsesSuccess={}, responsesFailed={}, " +
+                        "responsesBackPressured={}, responsesAdminAction={}, requestCount={}, " +
+                        "requestMeanMs={}, requestMaxMs={}, responseOfferCount={}, " +
+                        "responseOfferMeanMs={}, responseOfferMaxMs={}",
+                receivedMessages.count(),
+                successfulResponses.count(),
+                failedResponses.count(),
+                backPressuredResponses.count(),
+                adminActionResponses.count(),
+                requestProcessingTimer.count(),
+                requestProcessingTimer.mean(TimeUnit.MILLISECONDS),
+                requestProcessingTimer.max(TimeUnit.MILLISECONDS),
+                responseOfferTimer.count(),
+                responseOfferTimer.mean(TimeUnit.MILLISECONDS),
+                responseOfferTimer.max(TimeUnit.MILLISECONDS)
+        );
     }
 
     @Override

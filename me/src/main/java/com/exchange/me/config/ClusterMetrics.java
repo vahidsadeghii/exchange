@@ -16,6 +16,7 @@ public class ClusterMetrics {
     public final Counter adminActionResponses;
 
     public final Timer requestProcessingTimer;
+    public final Timer responseOfferTimer;
 
     public ClusterMetrics(PrometheusMeterRegistry registry) {
         this.registry = registry;
@@ -39,6 +40,11 @@ public class ClusterMetrics {
 
         requestProcessingTimer = Timer.builder("aeron.request.processing")
                 .description("Time spent handling an Aeron request")
+                .publishPercentileHistogram()
+                .register(registry);
+
+        responseOfferTimer = Timer.builder("aeron.response.offer")
+                .description("Time spent offering a response to an Aeron client session")
                 .publishPercentileHistogram()
                 .register(registry);
     }
