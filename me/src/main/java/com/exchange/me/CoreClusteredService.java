@@ -1,6 +1,7 @@
 package com.exchange.me;
 
 
+import com.exchange.me.config.ClusterMetrics;
 import com.exchange.me.domain.EngineSnapshot;
 import com.exchange.me.domain.Order;
 import com.exchange.me.sbe.*;
@@ -17,6 +18,8 @@ import io.aeron.cluster.service.Cluster;
 import io.aeron.cluster.service.ClusteredService;
 import io.aeron.logbuffer.FragmentHandler;
 import io.aeron.logbuffer.Header;
+import io.micrometer.core.instrument.Counter;
+import io.micrometer.core.instrument.Timer;
 import lombok.extern.slf4j.Slf4j;
 import org.agrona.DirectBuffer;
 import org.agrona.ExpandableDirectByteBuffer;
@@ -27,13 +30,14 @@ import java.util.Deque;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.TreeMap;
-
+import java.util.concurrent.TimeUnit;
 
 
 @Slf4j
 public class CoreClusteredService implements ClusteredService {
+    private static final long METRICS_LOG_INTERVAL_NS = TimeUnit.SECONDS.toNanos(10);
+
     private final MessageHeaderDecoder messageHeaderDecoder;
     private final ExpandableDirectByteBuffer respondBuffer;
     private final SnapshotOrderEncoder snapshotOrderEncoder;
@@ -44,12 +48,30 @@ public class CoreClusteredService implements ClusteredService {
     private final MessageHeaderEncoder messageHeaderEncoder;
     private final ExpandableDirectByteBuffer snapshotBuffer;
 
+    private final Counter receivedMessages;
+    private final Counter failedResponses;
+    private final Counter successfulResponses;
+    private final Counter backPressuredResponses;
+    private final Counter adminActionResponses;
+    private final Timer requestProcessingTimer;
+
+
     private final HashMap<Integer, RequestFunction> requestMap;
     private Cluster cluster;
+    private long nextMetricsLogNs;
+    private final Timer responseOfferTimer;
 
 
-    public CoreClusteredService() {
+    public CoreClusteredService(ClusterMetrics metrics) {
         log.info("Initializing CoreClusteredService");
+
+        this.receivedMessages = metrics.receivedMessages;
+        this.failedResponses = metrics.failedResponses;
+        this.successfulResponses = metrics.successfulResponses;
+        this.backPressuredResponses = metrics.backPressuredResponses;
+        this.adminActionResponses = metrics.adminActionResponses;
+        this.requestProcessingTimer = metrics.requestProcessingTimer;
+        this.responseOfferTimer = metrics.responseOfferTimer;
 
         RequestHandlerService requestHandlerService = new RequestHandlerService();
         engineService = new EngineService();
@@ -104,6 +126,10 @@ public class CoreClusteredService implements ClusteredService {
             final int length,
             final Header header) {
 
+        receivedMessages.increment();
+
+        long startTime = System.nanoTime();
+
         if (session == null) {
             log.warn("Received message with null session: offset={}, length={}", offset, length);
             return;
@@ -122,6 +148,21 @@ public class CoreClusteredService implements ClusteredService {
         final int actingLength = messageHeaderDecoder.blockLength();
         final int actingVersion = messageHeaderDecoder.version();
 
+        long requestCorrelationId = -1;
+        long requestOrderId = -1;
+        if (templateId == PutOrderDecoder.TEMPLATE_ID) {
+            final PutOrderDecoder putOrderDecoder = new PutOrderDecoder();
+            putOrderDecoder.wrap(buffer, offset + headerLength, actingLength, actingVersion);
+            requestCorrelationId = putOrderDecoder.correlationId();
+            requestOrderId = putOrderDecoder.orderId();
+            log.info(
+                    "PUT ORDER RECEIVED sessionId={}, orderId={}, correlationId={}",
+                    session.id(),
+                    requestOrderId,
+                    requestCorrelationId
+            );
+        }
+
         log.debug("Received cluster message: sessionId={}, templateId={}, timestamp={}, offset={}, length={}, headerLength={}, blockLength={}, version={}",
                 session.id(),
                 templateId,
@@ -132,52 +173,110 @@ public class CoreClusteredService implements ClusteredService {
                 actingLength,
                 actingVersion);
 
-        int responseLen =
-                requestMap
-                        .get(templateId)
-                        .handleRequest(
+        Timer.Sample sample = Timer.start();
+        try {
+            int responseLen =
+                    requestMap
+                            .get(templateId)
+                            .handleRequest(
+                                    session.id(),
+                                    timestamp,
+                                    buffer,
+                                    offset,
+                                    headerLength,
+                                    actingLength,
+                                    actingVersion,
+                                    respondBuffer);
+            log.debug("Request handled successfully: sessionId={}, templateId={}, responseLength={}",
+                    session.id(),
+                    templateId,
+                    responseLen);
+
+            sample.stop(requestProcessingTimer);
+            long result;
+            Timer.Sample sampleOffer = Timer.start();
+            try {
+                do {
+                    result = session.offer(respondBuffer, 0, responseLen);
+
+                    if (result > 0) {
+                        log.info("RESPONSE SENT templateId={}, result={}", templateId, result);
+                    }
+
+                    if (result == io.aeron.Publication.ADMIN_ACTION) {
+                        adminActionResponses.increment();
+                        log.debug("Session offer returned ADMIN_ACTION: sessionId={}, templateId={}",
                                 session.id(),
-                                timestamp,
-                                buffer,
-                                offset,
-                                headerLength,
-                                actingLength,
-                                actingVersion,
-                                respondBuffer);
+                                templateId);
 
-        log.debug("Request handled successfully: sessionId={}, templateId={}, responseLength={}",
-                session.id(),
-                templateId,
-                responseLen);
+                    } else if (result == io.aeron.Publication.BACK_PRESSURED) {
+                        backPressuredResponses.increment();
+                        log.debug("Session offer back pressured: sessionId={}, templateId={}",
+                                session.id(),
+                                templateId);
+                    }
 
-        long result;
-        do {
-            result = session.offer(respondBuffer, 0, responseLen);
-            if (result == io.aeron.Publication.ADMIN_ACTION) {
-                log.debug("Session offer returned ADMIN_ACTION: sessionId={}, templateId={}",
-                        session.id(),
-                        templateId);
-            } else if (result == io.aeron.Publication.BACK_PRESSURED) {
-                log.debug("Session offer back pressured: sessionId={}, templateId={}",
-                        session.id(),
-                        templateId);
+                } while (result == io.aeron.Publication.ADMIN_ACTION || result == io.aeron.Publication.BACK_PRESSURED);
+            } finally {
+                sampleOffer.stop(responseOfferTimer);
             }
 
-        } while (result == io.aeron.Publication.ADMIN_ACTION
-                || result == io.aeron.Publication.BACK_PRESSURED);
+            if (result < 0) {
+                failedResponses.increment();
+                if (templateId == PutOrderDecoder.TEMPLATE_ID) {
+                    log.error(
+                            "PUT ORDER RESPONSE FAILED sessionId={}, orderId={}, correlationId={}, result={}",
+                            session.id(),
+                            requestOrderId,
+                            requestCorrelationId,
+                            result
+                    );
+                }
+            } else {
+                successfulResponses.increment();
+                if (templateId == PutOrderDecoder.TEMPLATE_ID) {
+                    log.info(
+                            "PUT ORDER RESPONSE SENT sessionId={}, orderId={}, correlationId={}, result={}",
+                            session.id(),
+                            requestOrderId,
+                            requestCorrelationId,
+                            result
+                    );
+                }
+            }
+            logMetricsIfDue();
 
-        if (result < 0) {
-            log.error("Failed to send response: sessionId={}, templateId={}, result={}",
-                    session.id(),
-                    templateId,
-                    result);
-        } else {
-            log.debug("Response sent successfully: sessionId={}, templateId={}, result={}",
-                    session.id(),
-                    templateId,
-                    result);
+        } catch (Exception e) {
+            log.error("HANDLE REQUEST FAILED templateId={}", templateId, e);
+            throw e;
         }
 
+    }
+
+    private void logMetricsIfDue() {
+        final long nowNs = System.nanoTime();
+        if (nowNs < nextMetricsLogNs) {
+            return;
+        }
+        nextMetricsLogNs = nowNs + METRICS_LOG_INTERVAL_NS;
+
+        log.info(
+                "AERON METRICS received={}, responsesSuccess={}, responsesFailed={}, " +
+                        "responsesBackPressured={}, responsesAdminAction={}, requestCount={}, " +
+                        "requestMeanMs={}, requestMaxMs={}, responseOfferCount={}, " +
+                        "responseOfferMeanMs={}, responseOfferMaxMs={}",
+                receivedMessages.count(),
+                successfulResponses.count(),
+                failedResponses.count(),
+                backPressuredResponses.count(),
+                adminActionResponses.count(),
+                requestProcessingTimer.count(),
+                requestProcessingTimer.mean(TimeUnit.MILLISECONDS),
+                requestProcessingTimer.max(TimeUnit.MILLISECONDS),
+                responseOfferTimer.count(),
+                responseOfferTimer.mean(TimeUnit.MILLISECONDS),
+                responseOfferTimer.max(TimeUnit.MILLISECONDS)
+        );
     }
 
     @Override
@@ -187,8 +286,6 @@ public class CoreClusteredService implements ClusteredService {
 
     @Override
     public void onTakeSnapshot(final ExclusivePublication snapshotPublication) {
-
-        System.out.println("!!!!!!!!!! SNAPSHOT CALLBACK !!!!!!!!!!!");
 
         log.info("========== TAKING SNAPSHOT ==========");
         log.info("Starting engine snapshot");
@@ -238,15 +335,9 @@ public class CoreClusteredService implements ClusteredService {
         SnapshotOrderBookEncoder.LevelEncoder levelEncoder =
                 snapshotOrderBookEncoder.pair(pair).side(side).levelCount(levels.size());
         levels.forEach((price, orders) -> {
-            var levelOrders = levelEncoder.next()
-                    .price(price)
-                    .levelOrdersCount(orders.size());
-
-            orders.forEach(order ->
-                    levelOrders.next()
-                            .orderId(order.getId()));
+            var levelOrders = levelEncoder.next().price(price).levelOrdersCount(orders.size());
+            orders.forEach(order -> levelOrders.next().orderId(order.getId()));
         });
-
         int length = messageHeaderEncoder.encodedLength() + snapshotOrderBookEncoder.encodedLength();
 
         offerSnapshot(publication, length);
@@ -255,17 +346,13 @@ public class CoreClusteredService implements ClusteredService {
     private void offerSnapshot(final ExclusivePublication snapshotPublication, int length) {
         while (true) {
             long result = snapshotPublication.offer(snapshotBuffer, 0, length);
-
             if (result > 0) {
                 break;
             }
-
-            if (result == Publication.CLOSED || result == Publication.MAX_POSITION_EXCEEDED) {
+            if (result != Publication.ADMIN_ACTION && result != Publication.BACK_PRESSURED) {
                 throw new IllegalStateException("Snapshot offer failed: " + result);
             }
-
-            log.debug("========== TAKING SNAPSHOT ==========");
-            Thread.yield();
+            cluster.idleStrategy().idle();
         }
     }
 
@@ -295,7 +382,6 @@ public class CoreClusteredService implements ClusteredService {
                 log.warn("Ignoring snapshot template {}", templateId);
                 return;
             }
-
 
             int headerLength = messageHeaderDecoder.encodedLength();
 
@@ -339,9 +425,9 @@ public class CoreClusteredService implements ClusteredService {
                         }
 
                         if (side == TradeSide.BUY) {
-                            Objects.requireNonNull(bids.putIfAbsent(pair, new TreeMap<>())).putIfAbsent(price, orderIds);
+                            bids.computeIfAbsent(pair, ignored -> new TreeMap<>()).putIfAbsent(price, orderIds);
                         } else {
-                            Objects.requireNonNull(asks.putIfAbsent(pair, new TreeMap<>())).putIfAbsent(price, orderIds);
+                            asks.computeIfAbsent(pair, ignored -> new TreeMap<>()).putIfAbsent(price, orderIds);
                         }
                     }
                 }

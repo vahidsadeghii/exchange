@@ -74,12 +74,18 @@ public class MatchingEngineService {
             return client
                     .putOrder(orderId, System.currentTimeMillis(), userId, tradeSide, orderType, tradePair,
                             marketType, quantity, price)
-                    .get(5, TimeUnit.SECONDS);
+                    .get(10, TimeUnit.SECONDS);
         } catch (TimeoutException e) {
             logger.error(
-                    "TIMEOUT orderId={}, pendingIds={}",
+                    "TIMEOUT orderId={}, correlationIds={}",
                     orderId,
                     client.getPendingCorrelationIds()
+            );
+
+            logger.info(
+                    "REGISTER future correlationId={}, orderId={}",
+                    client.getPendingCorrelationIds(),
+                    orderId
             );
 
             throw e;
@@ -91,15 +97,17 @@ public class MatchingEngineService {
     }
 
     public TakeSnapshotResponse takeSnapShot(){
-
-            try {
+        try {
             return client
                     .takeSnapShot()
                     .get(5, TimeUnit.SECONDS);
-        } catch (Exception e) {
-            logger.error("Error while new snapshot", e);
-
-            return null;
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            throw new IllegalStateException("Interrupted while requesting snapshot", e);
+        } catch (ExecutionException e) {
+            throw new IllegalStateException("Failed to request snapshot", e.getCause());
+        } catch (TimeoutException e) {
+            throw new IllegalStateException("Timed out while requesting snapshot", e);
         }
     }
 }

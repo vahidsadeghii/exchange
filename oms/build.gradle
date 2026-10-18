@@ -68,8 +68,6 @@ dependencies {
         // Config client
         implementation 'org.springframework.cloud:spring-cloud-config-client'
 
-
-
         // Resilience4j
         implementation "io.github.resilience4j:resilience4j-spring-boot3:${resilience4jVersion}"
 

@@ -5,6 +5,7 @@ import com.exchange.wallet.sbe.MessageHeaderDecoder;
 import com.exchange.wallet.service.RequestFunction;
 import io.aeron.ExclusivePublication;
 import io.aeron.Image;
+import io.aeron.Publication;
 import io.aeron.cluster.codecs.CloseReason;
 import io.aeron.cluster.service.ClientSession;
 import io.aeron.cluster.service.Cluster;
@@ -116,6 +117,23 @@ public class CoreClusteredService implements ClusteredService {
     private void loadSnapshot(final Image snapshotImage) {
         log.info("Loading engine snapshot");
 
+    }
+
+    private void offerSnapshot(final ExclusivePublication snapshotPublication, int length) {
+        while (true) {
+            long result = snapshotPublication.offer(snapshotBuffer, 0, length);
+
+            if (result > 0) {
+                break;
+            }
+
+            if (result == Publication.CLOSED || result == Publication.MAX_POSITION_EXCEEDED) {
+                throw new IllegalStateException("Snapshot offer failed: " + result);
+            }
+
+            log.debug("========== TAKING SNAPSHOT ==========");
+            Thread.yield();
+        }
     }
 
 }

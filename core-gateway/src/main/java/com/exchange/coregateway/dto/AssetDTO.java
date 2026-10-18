@@ -1,4 +1,4 @@
-package com.exchange.coregateway.controller.wallet;
+package com.exchange.coregateway.dto;
 
 
 

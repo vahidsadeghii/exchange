@@ -7,7 +7,7 @@ public class TakeSnapshotResponse extends Response {
         super(errorCode);
     }
 
-    private TakeSnapshotResponse(long correlationId) {
+    public TakeSnapshotResponse(long correlationId) {
         super(0);
         this.correlationId = correlationId;
     }
