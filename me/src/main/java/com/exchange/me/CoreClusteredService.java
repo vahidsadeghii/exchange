@@ -30,7 +30,6 @@ import java.util.Deque;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.TreeMap;
 import java.util.concurrent.TimeUnit;
 
@@ -350,11 +349,10 @@ public class CoreClusteredService implements ClusteredService {
             if (result > 0) {
                 break;
             }
-            if (result == Publication.CLOSED || result == Publication.MAX_POSITION_EXCEEDED) {
+            if (result != Publication.ADMIN_ACTION && result != Publication.BACK_PRESSURED) {
                 throw new IllegalStateException("Snapshot offer failed: " + result);
             }
-            log.debug("========== TAKING SNAPSHOT ==========");
-            Thread.yield();
+            cluster.idleStrategy().idle();
         }
     }
 
@@ -427,9 +425,9 @@ public class CoreClusteredService implements ClusteredService {
                         }
 
                         if (side == TradeSide.BUY) {
-                            Objects.requireNonNull(bids.putIfAbsent(pair, new TreeMap<>())).putIfAbsent(price, orderIds);
+                            bids.computeIfAbsent(pair, ignored -> new TreeMap<>()).putIfAbsent(price, orderIds);
                         } else {
-                            Objects.requireNonNull(asks.putIfAbsent(pair, new TreeMap<>())).putIfAbsent(price, orderIds);
+                            asks.computeIfAbsent(pair, ignored -> new TreeMap<>()).putIfAbsent(price, orderIds);
                         }
                     }
                 }
