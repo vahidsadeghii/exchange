@@ -135,6 +135,7 @@
         <data name="walletId" id="4" type="varStringEncoding"/>
     </sbe:message>
 
+    <!--  Wallet Response-->
     <sbe:message name="WalletResponse" id="6">
         <field name="correlationId" id="1" type="uint64"/>
         <field name="status" id="2" type="transactionStatus"/>
@@ -145,14 +146,31 @@
     </sbe:message>
 
 
+    <!--  Wallet -->
+    <sbe:message name="Wallet" id="7">
+        <field name="correlationId" id="1" type="uint64"/>
+        <field name="walletId" id="2" type="uuid"/>
+        <field name="userId" id="3" type="uint64"/>
+        <field name="status" id="4" type="walletStatus"/>
+        <field name="createdAt" id="5" type="uint64"/>
+        <field name="updatedAt" id="6" type="uint64"/>
+
+        <group name="assets" id="7" dimensionType="groupSizeEncoding">
+            <field name="assetType" id="1" type="assetType"/>
+            <field name="balance" id="2" type="DecimalValue"/>
+            <field name="blockedBalance" id="3" type="DecimalValue"/>
+        </group>
+    </sbe:message>
+
     <!-- Wallet Snapshot-->
     <sbe:message name="SnapshotWallet" id="500">
-        <field name="walletId" id="1" type="uuid"/>
-        <field name="userId" id="2" type="uint64"/>
-        <field name="status" id="3" type="walletStatus"/>
-        <field name="timestamp" id="4" type="uint64"/>
+        <field name="correlationId" id="1" type="uint64"/>
+        <field name="walletId" id="2" type="uuid"/>
+        <field name="userId" id="3" type="uint64"/>
+        <field name="status" id="4" type="walletStatus"/>
+        <field name="timestamp" id="5" type="uint64"/>
 
-        <group name="assets" id="501" dimensionType="groupSizeEncoding">
+        <group name="assets" id="6" dimensionType="groupSizeEncoding">
             <field name="assetType" id="1" type="assetType"/>
             <field name="balance" id="2" type="DecimalValue"/>
             <field name="blockedBalance" id="3" type="DecimalValue"/>

@@ -80,31 +80,28 @@ services:
   # ---------------- Prometheus ----------------
   prometheus:
     image: prom/prometheus
-    container_name: prometheus
-    ports:
-      - "9090:9090"
+    container_name: exchange-prometheus
     volumes:
       - ./prometheus.yml:/etc/prometheus/prometheus.yml
-    networks:
-      - exchange-network
+    network_mode: host
     restart: unless-stopped
 
 # ---------------- Grafana ----------------
   grafana:
     image: grafana/grafana
-    container_name: grafana
-    ports:
-      - "3003:3000"
+    container_name: exchange-grafana
     environment:
       - GF_SECURITY_ADMIN_USER=admin
       - GF_SECURITY_ADMIN_PASSWORD=admin
+      - GF_SERVER_HTTP_PORT=3003
     depends_on:
       - prometheus
-    networks:
-      - exchange-network
+    network_mode: host
     restart: unless-stopped
     volumes:
       - grafana-data:/var/lib/grafana
+      - ./grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./grafana/dashboards:/var/lib/grafana/dashboards:ro
 
 
 
@@ -221,4 +218,3 @@ volumes:
 networks:
   exchange-network:
     external: true
-
