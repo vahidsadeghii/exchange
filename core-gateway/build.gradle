@@ -39,6 +39,13 @@ application {
     mainClass = 'com.exchange.coregateway.CoreGatewayApp'
 }
 
+tasks.withType(JavaExec).configureEach {
+    jvmArgs(
+            '--add-exports=java.base/jdk.internal.misc=ALL-UNNAMED',
+            '--add-opens=java.base/jdk.internal.misc=ALL-UNNAMED'
+    )
+}
+
 tasks.named('test') {
     useJUnitPlatform()
 }

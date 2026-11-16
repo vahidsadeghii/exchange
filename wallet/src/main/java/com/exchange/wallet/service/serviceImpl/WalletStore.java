@@ -2,7 +2,7 @@ package com.exchange.wallet.service.serviceImpl;
 
 import com.exchange.wallet.domain.AssetType;
 import com.exchange.wallet.domain.Wallet;
-import org.springframework.stereotype.Component;
+
 
 import java.util.List;
 import java.util.Map;
@@ -10,7 +10,6 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 
-@Component
 public class WalletStore {
 
     private final Map<String, Wallet> wallets = new ConcurrentHashMap<>();

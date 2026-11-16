@@ -8,9 +8,9 @@ export const options = {
   scenarios: {
     orders: {
       executor: 'shared-iterations',
-      vus: 15,
-      iterations: 100,
-      maxDuration: '30s',
+      vus: 1000,
+      iterations: 100000,
+      maxDuration: '2m',
     },
   },
 
@@ -22,6 +22,7 @@ export const options = {
     http_req_failed: [
       'rate<0.01',
     ],
+    checks: ['rate>0.99'],
   },
 
   summaryTrendStats: [
@@ -39,7 +40,7 @@ export default function () {
   const orderId = exec.scenario.iterationInTest + 1;
 
   const payload = JSON.stringify({
-    orderId: orderId,
+    orderId,
     userId: 5,
     tradeSide: 'SELL',
     orderType: 'LIMIT',
@@ -52,27 +53,17 @@ export default function () {
   const params = {
     headers: {
       'Content-Type': 'application/json',
-      'Accept': 'application/json',
+      Accept: 'application/json',
     },
   };
 
   const res = http.post(
-    'http://localhost:8089/api/v1/me/orders',
-    payload,
-    params
+      'http://localhost:8089/api/v1/me/orders',
+      payload,
+      params,
   );
 
   check(res, {
     'status is 200': (r) => r.status === 200,
-
   });
-
-  const body = res.body ? res.body.trim() : '';
-
-  console.log(
-    `requestOrderId=${orderId}, ` +
-    `status=${res.status}, ` +
-    `duration=${res.timings.duration}ms, ` +
-    `body=${body || '<EMPTY>'}`
-  );
 }

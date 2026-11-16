@@ -4,8 +4,6 @@ package com.exchange.wallet.domain;
 import com.exchange.wallet.exception.AmountMustBePositiveException;
 import com.exchange.wallet.exception.InsufficientBalanceException;
 import com.exchange.wallet.exception.InsufficientBlockedBalanceException;
-import jakarta.persistence.EnumType;
-import jakarta.persistence.Enumerated;
 import lombok.*;
 
 import java.math.BigDecimal;
@@ -19,7 +17,6 @@ public class Asset {
     private BigDecimal balance = BigDecimal.ZERO;
     private BigDecimal blockedBalance = BigDecimal.ZERO;
 
-    @Enumerated(EnumType.STRING)
     private AssetType assetType;
 
 
@@ -106,4 +103,3 @@ public class Asset {
         }
     }
 }
-

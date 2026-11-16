@@ -2,14 +2,14 @@ package com.exchange.wallet.service.serviceImpl;
 
 
 import com.exchange.wallet.domain.TransactionInfo;
-import org.springframework.stereotype.Component;
+
 
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 
-@Component
+@Componet
 public class TransactionInfoStore {
 
     private final Map<String, TransactionInfo> transactions =

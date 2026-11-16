@@ -1,40 +1,16 @@
 plugins {
     id 'application'
-    id 'org.springframework.boot' version '3.3.4'
-    id 'io.spring.dependency-management' version '1.1.4'
 }
 
-
-application {
-    mainClass = 'com.exchange.wallet.WalletApp'
-}
-
-repositories {
-    mavenCentral()
-    gradlePluginPortal() // Add this line to include the Gradle Plugin Portal
-}
-
-ext {
-    springCloudVersion = "2023.0.3"   // Latest compatible with Spring Boot 3.5.x
-    resilience4jVersion = "2.2.0"
-}
-
-dependencyManagement {
-    imports {
-        mavenBom "org.springframework.cloud:spring-cloud-dependencies:${springCloudVersion}"
-    }
-}
+group = 'com.exchange'
+version = '0.0.1-SNAPSHOT'
+description = 'wallet'
 
 java {
     toolchain {
         languageVersion = JavaLanguageVersion.of(21)
     }
 }
-
-configurations.all {
-    exclude group: 'commons-logging', module: 'commons-logging'
-}
-
 
 repositories {
     mavenCentral()
@@ -45,14 +21,18 @@ configurations {
     sbeTool
 }
 
-
 dependencies {
-    implementation 'org.springframework.boot:spring-boot-starter-web'
-    implementation 'org.springframework.boot:spring-boot-starter-security'
-    implementation 'org.springframework.boot:spring-boot-starter-aop'
-    implementation 'org.springframework.boot:spring-boot-starter-actuator'
+    implementation project(':metrics-common')
 
     implementation 'com.fasterxml.jackson.datatype:jackson-datatype-jsr310:2.18.5'
+
+    // Lombok
+    compileOnly 'org.projectlombok:lombok:1.18.42'
+    annotationProcessor 'org.projectlombok:lombok:1.18.42'
+
+    // SLF4J
+    implementation 'org.slf4j:slf4j-api:2.0.17'
+    runtimeOnly 'ch.qos.logback:logback-classic:1.5.18'
 
     // ---- Aeron (High-performance messaging) ----
     implementation 'io.aeron:aeron-all:1.52.1'
@@ -60,53 +40,21 @@ dependencies {
     // ---- SBE (message codec generator) ----
     sbeTool 'uk.co.real-logic:sbe-tool:1.35.6'
 
-    // Micrometer
-    implementation 'io.micrometer:micrometer-registry-prometheus'
-
-    // Spring Cloud
-    implementation 'org.springframework.cloud:spring-cloud-starter-netflix-eureka-client'
-    implementation 'org.springframework.cloud:spring-cloud-starter-openfeign'
-    implementation 'org.springframework.cloud:spring-cloud-config-client'
-
-    // Resilience4j
-    implementation "io.github.resilience4j:resilience4j-spring-boot3:${resilience4jVersion}"
-
-    // Jackson
-    implementation 'com.fasterxml.jackson.datatype:jackson-datatype-jsr310'
-
-    //jakarta
-    implementation 'jakarta.persistence:jakarta.persistence-api:3.1.0'
-
-    // Kafka
-    implementation 'org.springframework.kafka:spring-kafka'
-
-    // OAuth2
-    implementation 'org.springframework.boot:spring-boot-starter-oauth2-resource-server'
-
-    // Lombok
-    compileOnly 'org.projectlombok:lombok'
-    annotationProcessor 'org.projectlombok:lombok'
-
-    // logs
-    implementation 'de.siegmar:logback-gelf:4.0.0'
-    implementation("org.zalando:logbook-spring-boot-starter:3.12.0")
-    implementation("org.zalando:logbook-json:3.12.0")
-    implementation("org.zalando:logbook-core:3.12.0")
-
-    // Keycloak
-    implementation 'org.keycloak:keycloak-spring-boot-starter:21.1.1'
-    implementation 'org.keycloak:keycloak-admin-client:26.0.6'
+    // ---- Metric----
+    implementation 'io.micrometer:micrometer-core:1.17.1'
+    implementation 'io.micrometer:micrometer-registry-prometheus:1.13.5'
 
 
-    // Guava
-    implementation 'com.opencsv:opencsv:5.9'
-    implementation libs.guava
 
-    // Tests
+    // Use JUnit Jupiter for testing.
     testImplementation libs.junit.jupiter
     testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
-    testImplementation 'org.springframework.cloud:spring-cloud-starter-contract-stub-runner'
-    testImplementation 'org.springframework.security:spring-security-test'
+
+    // Benchmark Testing
+    implementation 'org.openjdk.jmh:jmh-core:1.37'
+    annotationProcessor 'org.openjdk.jmh:jmh-generator-annprocess:1.37'
+    // Guava
+    implementation libs.guava
 
 }
 

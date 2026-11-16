@@ -162,6 +162,18 @@
         </group>
     </sbe:message>
 
+    <!-- Create a wallet with its initial assets -->
+    <sbe:message name="CreateWalletRequest" id="8">
+        <field name="correlationId" id="1" type="uint64"/>
+        <field name="userId" id="2" type="uint64"/>
+
+        <group name="assets" id="3" dimensionType="groupSizeEncoding">
+            <field name="assetType" id="1" type="assetType"/>
+            <field name="balance" id="2" type="DecimalValue"/>
+            <field name="blockedBalance" id="3" type="DecimalValue"/>
+        </group>
+    </sbe:message>
+
     <!-- Wallet Snapshot-->
     <sbe:message name="SnapshotWallet" id="500">
         <field name="correlationId" id="1" type="uint64"/>

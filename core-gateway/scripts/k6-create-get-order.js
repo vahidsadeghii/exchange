@@ -1,4 +1,3 @@
-
 import http from 'k6/http';
 import { check } from 'k6';
 import exec from 'k6/execution';
@@ -9,9 +8,9 @@ export const options = {
   scenarios: {
     orders: {
       executor: 'shared-iterations',
-      vus: 15,
-      iterations: 100,
-      maxDuration: '30s',
+      vus: 1000,
+      iterations: 100000,
+      maxDuration: '5m',
     },
   },
 
@@ -23,6 +22,7 @@ export const options = {
     http_req_failed: [
       'rate<0.01',
     ],
+    checks: ['rate>0.99'],
   },
 
   summaryTrendStats: [
@@ -37,17 +37,12 @@ export const options = {
 };
 
 export default function () {
-  // Globally unique order ID across all VUs
   const orderId = exec.scenario.iterationInTest + 1;
-
   const baseUrl = 'http://localhost:8089/api/v1/me/orders';
 
-  // --------------------------------------------------
-  // 1. CREATE ORDER
-  // --------------------------------------------------
-
+  // CREATE ORDER
   const payload = JSON.stringify({
-    orderId: orderId,
+    orderId,
     userId: 5,
     tradeSide: 'SELL',
     orderType: 'LIMIT',
@@ -60,19 +55,19 @@ export default function () {
   const params = {
     headers: {
       'Content-Type': 'application/json',
-      'Accept': 'application/json',
+      Accept: 'application/json',
     },
   };
 
   const createRes = http.post(
-    baseUrl,
-    payload,
-    params
+      baseUrl,
+      payload,
+      params
   );
 
   const createBody = createRes.body
-    ? createRes.body.trim()
-    : '';
+      ? createRes.body.trim()
+      : '';
 
   let createResponse = null;
 
@@ -84,36 +79,30 @@ export default function () {
     }
   }
 
-  check(createRes, {
+  const createOk = check(createRes, {
     'CREATE - status is 200': (r) => r.status === 200,
     'CREATE - response body is not empty': () => createBody !== '',
     'CREATE - errorCode is 0': () =>
-      createResponse !== null &&
-      createResponse.errorCode === 0,
+        createResponse !== null &&
+        createResponse.errorCode === 0,
     'CREATE - response id matches orderId': () =>
-      createResponse !== null &&
-      createResponse.id === orderId,
+        createResponse !== null &&
+        createResponse.id === orderId,
   });
 
-  console.log(
-    `CREATE orderId=${orderId}, ` +
-    `status=${createRes.status}, ` +
-    `duration=${createRes.timings.duration}ms, ` +
-    `body=${createBody || '<EMPTY>'}`
-  );
+  if (!createOk) {
+    return;
+  }
 
-  // --------------------------------------------------
-  // 2. GET ORDER
-  // --------------------------------------------------
-
+  // GET ORDER
   const getUrl =
-    `${baseUrl}?id=${orderId}&pair=BTC_EURO`;
+      `${baseUrl}?id=${orderId}&pair=BTC_EURO`;
 
   const getRes = http.get(getUrl, params);
 
   const getBody = getRes.body
-    ? getRes.body.trim()
-    : '';
+      ? getRes.body.trim()
+      : '';
 
   let getResponse = null;
 
@@ -130,12 +119,4 @@ export default function () {
     'GET - response body is not empty': () => getBody !== '',
     'GET - response is valid JSON': () => getResponse !== null,
   });
-
-  console.log(
-    `GET orderId=${orderId}, ` +
-    `status=${getRes.status}, ` +
-    `duration=${getRes.timings.duration}ms, ` +
-    `body=${getBody || '<EMPTY>'}`
-  );
 }
-

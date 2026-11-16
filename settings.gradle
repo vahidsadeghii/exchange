@@ -14,6 +14,7 @@ rootProject.name = 'exchange'
 include('oms')
 include('me')
 include('wallet')
+include('metrics-common')
 include('dp')
 include('emailmanager')
 include('profile')
@@ -25,4 +26,3 @@ include('core-sdk')
 include('core-gateway')
 include('event')
 include('Discovery')
-

@@ -1,6 +1,7 @@
 package com.exchange.me.config;
 
 import com.exchange.me.CoreClusteredService;
+import com.exchange.metrics.ClusterMetrics;
 import io.aeron.archive.Archive;
 import io.aeron.archive.client.AeronArchive;
 import io.aeron.cluster.ConsensusModule;

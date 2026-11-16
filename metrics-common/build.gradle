@@ -1,0 +1,24 @@
+plugins {
+    id 'java-library'
+}
+
+group = 'com.exchange'
+version = '0.0.1-SNAPSHOT'
+description = 'Shared metrics definitions'
+
+java {
+    toolchain {
+        languageVersion = JavaLanguageVersion.of(21)
+    }
+}
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    api 'io.micrometer:micrometer-core:1.17.1'
+    implementation "io.prometheus:prometheus-metrics-core:1.3.5"
+    implementation "io.prometheus:prometheus-metrics-instrumentation-jvm:1.3.5"
+    implementation "io.prometheus:prometheus-metrics-exporter-httpserver:1.3.5"
+}

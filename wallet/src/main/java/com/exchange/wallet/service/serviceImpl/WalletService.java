@@ -1,51 +1,39 @@
 package com.exchange.wallet.service.serviceImpl;
 
-import com.exchange.wallet.client.profileclient.ProfileClient;
 import com.exchange.wallet.controller.wallet.AssetDTO;
 import com.exchange.wallet.domain.*;
 import com.exchange.wallet.exception.AssetNotFoundException;
 import com.exchange.wallet.exception.WalletNotFoundException;
 import com.exchange.wallet.service.TransactionService;
 import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.*;
 import java.util.stream.Collectors;
 
-@Slf4j
 @RequiredArgsConstructor
-public class WalletService {
+public class WalletService implements AutoCloseable {
     private final WalletStore walletStore;
-    private final ProfileClient profileClient;
     private final TransactionService transactionService;
+    private WalletClusterClient walletClusterClient;
 
 
-
-    public Wallet save(Long userId, List<AssetDTO> assets) {
-        for (AssetDTO asset : assets) {
-            Optional<Wallet> existingWallet =
-                    findWalletByUserIdAndAssetType(userId, asset.assetType());
-
-            if (existingWallet.isPresent()) {
-                throw new IllegalArgumentException(
-                        "Wallet already contains asset type: " + asset.assetType());
-            }
+    public synchronized Wallet save(Long userId, List<AssetDTO> assets) {
+        if (walletClusterClient == null) {
+            walletClusterClient = new WalletClusterClient();
         }
-
-        Wallet wallet = createWallet(userId, assets);
-        return walletStore.save(wallet);
+        return walletClusterClient.createWallet(userId, assets);
     }
 
     public Wallet updateWallet(String walletId, List<AssetDTO> assets) {
         Wallet wallet = findWalletById(walletId);
 
         Map<AssetType, BigDecimal> oldBalances = wallet.getAssets().stream()
-                        .collect(Collectors.toMap(Asset::getAssetType, Asset::getBalance));
+                .collect(Collectors.toMap(Asset::getAssetType, Asset::getBalance));
 
         Map<AssetType, BigDecimal> oldBlockedBalances = wallet.getAssets().stream()
-                        .collect(Collectors.toMap(Asset::getAssetType, Asset::getBlockedBalance));
+                .collect(Collectors.toMap(Asset::getAssetType, Asset::getBlockedBalance));
 
         mergeAssets(wallet, assets);
 
@@ -264,44 +252,6 @@ public class WalletService {
                 .toList();
     }
 
-    private Wallet createWallet(long userId, List<AssetDTO> assets) {
-        String walletId = UUID.randomUUID().toString();
-        LocalDateTime now = LocalDateTime.now();
-
-        List<Asset> assetEntities = assetEntities(assets);
-
-        Wallet wallet = Wallet.builder()
-                .walletId(walletId)
-                .userId(userId)
-                .assets(assetEntities)
-                .status(WalletStatus.ACTIVE)
-                .createdAt(now)
-                .updatedAt(now)
-                .build();
-
-
-        for (Asset asset : assetEntities) {
-
-            if (asset.getBalance().compareTo(BigDecimal.ZERO) > 0) {
-
-                transactionService.createTransaction(
-                        wallet.getUserId(),
-                        wallet.getWalletId(),
-                        asset.getAssetType(),
-                        TransactionType.DEPOSIT,
-
-                        BigDecimal.ZERO,              // balance before
-                        asset.getBalance(),            // balance after
-
-                        BigDecimal.ZERO,              // blocked before
-                        asset.getBlockedBalance()     // blocked after
-                );
-            }
-        }
-
-        return wallet;
-    }
-
     private void mergeAssets(Wallet wallet, List<AssetDTO> assets) {
         List<Asset> newAssets = assetEntities(assets);
         if (wallet.getAssets() == null) {
@@ -353,5 +303,13 @@ public class WalletService {
     private Optional<Wallet> findWalletByUserIdAndAssetType(Long userId, AssetType assetType) {
 
         return walletStore.findByUserIdAndAssetType(userId, assetType);
+    }
+
+    @Override
+    public synchronized void close() {
+        if (walletClusterClient != null) {
+            walletClusterClient.close();
+            walletClusterClient = null;
+        }
     }
 }

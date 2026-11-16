@@ -1,6 +1,5 @@
 package com.exchange.wallet.domain;
-import jakarta.persistence.EnumType;
-import jakarta.persistence.Enumerated;
+
 import lombok.*;
 
 import java.time.LocalDateTime;
@@ -16,7 +15,6 @@ public class Wallet {
     private Long userId;
     private List<Asset> assets;
 
-    @Enumerated(EnumType.STRING)
     private WalletStatus status;
 
     private LocalDateTime createdAt;

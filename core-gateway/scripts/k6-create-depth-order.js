@@ -6,16 +6,16 @@ export const options = {
     scenarios: {
         createOrders: {
             executor: 'shared-iterations',
-            vus: 15,
-            iterations: 100,
-            maxDuration: '30s',
+            vus: 1000,
+            iterations: 100000,
+            maxDuration: '5m',
             exec: 'createOrders',
         },
 
         orderDepth: {
             executor: 'constant-vus',
             vus: 2,
-            duration: '30s',
+            duration: '5m',
             startTime: '2s',
             exec: 'readOrderDepth',
         },
@@ -29,27 +29,39 @@ export const options = {
         http_req_failed: [
             'rate<0.01',
         ],
+        checks: ['rate>0.99'],
     },
+
+    summaryTrendStats: [
+        'min',
+        'avg',
+        'med',
+        'p(90)',
+        'p(95)',
+        'p(99)',
+        'max',
+    ],
 };
 
 const BASE_URL = 'http://localhost:8089';
 
 export function createOrders() {
-
     const orderId = exec.scenario.iterationInTest + 1;
+    const pair = 'BTC_EURO';
 
+    // CREATE ORDER
     const payload = JSON.stringify({
         orderId,
         userId: 5,
         tradeSide: 'SELL',
         orderType: 'LIMIT',
-        pair: 'BTC_EURO',
+        pair,
         marketType: 'SPOT',
         quantity: 6,
         price: 800,
     });
 
-    const res = http.post(
+    const createRes = http.post(
         `${BASE_URL}/api/v1/me/orders`,
         payload,
         {
@@ -60,13 +72,35 @@ export function createOrders() {
         }
     );
 
-    check(res, {
-        'order status is 200': (r) => r.status === 200,
+    const createOk = check(createRes, {
+        'create status is 200': (r) => r.status === 200,
+    });
+
+    if (!createOk) {
+        return;
+    }
+
+    // CANCEL ORDER
+    const cancelUrl =
+        `${BASE_URL}/api/v1/me/orders` +
+        `?id=${orderId}&pair=${encodeURIComponent(pair)}`;
+
+    const cancelRes = http.del(
+        cancelUrl,
+        null,
+        {
+            headers: {
+                Accept: 'application/json',
+            },
+        }
+    );
+
+    check(cancelRes, {
+        'cancel status is 200': (r) => r.status === 200,
     });
 }
 
 export function readOrderDepth() {
-
     const res = http.get(
         `${BASE_URL}/api/v1/me/orderdepth?pair=BTC_EURO&depth=10`
     );
@@ -75,35 +109,16 @@ export function readOrderDepth() {
         'depth status is 200': (r) => r.status === 200,
     });
 
-    if (res.status !== 200) {
-        console.error(
-            `DEPTH ERROR status=${res.status} body=${res.body}`
-        );
+    if (res.status !== 200 || !res.body) {
         return;
     }
 
-    if (!res.body) {
-        console.error('DEPTH EMPTY BODY');
-        return;
-    }
-
-    let book;
-
-    try {
-        book = JSON.parse(res.body);
-    } catch (e) {
-        console.error(`INVALID JSON => ${res.body}`);
-        return;
-    }
+    const book = JSON.parse(res.body);
 
     check(book, {
         'depth has bids': (d) => Array.isArray(d.bids),
         'depth has asks': (d) => Array.isArray(d.asks),
     });
-
-    console.log(
-        `[DEPTH] bids=${book.bids?.length || 0}, asks=${book.asks?.length || 0}`
-    );
 }
 
 export default function () {}

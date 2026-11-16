@@ -1,7 +1,7 @@
 package com.exchange.me;
 
 
-import com.exchange.me.config.ClusterMetrics;
+import com.exchange.metrics.ClusterMetrics;
 import com.exchange.me.domain.EngineSnapshot;
 import com.exchange.me.domain.Order;
 import com.exchange.me.sbe.*;
@@ -54,24 +54,22 @@ public class CoreClusteredService implements ClusteredService {
     private final Counter backPressuredResponses;
     private final Counter adminActionResponses;
     private final Timer requestProcessingTimer;
-
+    private final Timer responseOfferTimer;
 
     private final HashMap<Integer, RequestFunction> requestMap;
     private Cluster cluster;
     private long nextMetricsLogNs;
-    private final Timer responseOfferTimer;
-
 
     public CoreClusteredService(ClusterMetrics metrics) {
         log.info("Initializing CoreClusteredService");
 
-        this.receivedMessages = metrics.receivedMessages;
-        this.failedResponses = metrics.failedResponses;
-        this.successfulResponses = metrics.successfulResponses;
-        this.backPressuredResponses = metrics.backPressuredResponses;
-        this.adminActionResponses = metrics.adminActionResponses;
-        this.requestProcessingTimer = metrics.requestProcessingTimer;
-        this.responseOfferTimer = metrics.responseOfferTimer;
+        receivedMessages = metrics.receivedMessages;
+        failedResponses = metrics.failedResponses;
+        successfulResponses = metrics.successfulResponses;
+        backPressuredResponses = metrics.backPressuredResponses;
+        adminActionResponses = metrics.adminActionResponses;
+        requestProcessingTimer = metrics.requestProcessingTimer;
+        responseOfferTimer = metrics.responseOfferTimer;
 
         RequestHandlerService requestHandlerService = new RequestHandlerService();
         engineService = new EngineService();
