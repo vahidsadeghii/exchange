@@ -21,7 +21,6 @@ public class Runner {
      final ClusterMetrics metrics = new ClusterMetrics(registry);
      final ClusterConfig clusterConfig = new ClusterConfig(Environment.getInstance(), barrier, metrics);
 
-     //clusterConfig.getClusteredServiceContext().clusteredService(new CoreClusteredService(metrics));
 
         try (
                 MetricsHttpServer metricsServer = new MetricsHttpServer(registry, 9400);
