@@ -12,6 +12,7 @@ import io.micrometer.prometheusmetrics.PrometheusMeterRegistry;
 import org.agrona.concurrent.ShutdownSignalBarrier;
 
 public class Runner {
+
  public static void main(String[] args) {
         System.out.println("Starting core service ...");
 
