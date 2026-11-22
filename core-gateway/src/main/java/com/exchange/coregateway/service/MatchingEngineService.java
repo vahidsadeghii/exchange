@@ -1,14 +1,17 @@
 package com.exchange.coregateway.service;
 
+import com.exchange.coregateway.dto.MatchInfoResponse;
 import com.exchange.coresdk.domain.TakeSnapshotResponse;
 import com.exchange.me.sbe.*;
 import com.exchange.coresdk.Client;
 import com.exchange.coresdk.domain.OrderBookDepthResponse;
+import com.exchange.coresdk.domain.MatchInfoResponseList;
 import com.exchange.coresdk.domain.OrderInfoResponse;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
+import java.util.List;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
@@ -108,6 +111,39 @@ public class MatchingEngineService {
             throw new IllegalStateException("Failed to request snapshot", e.getCause());
         } catch (TimeoutException e) {
             throw new IllegalStateException("Timed out while requesting snapshot", e);
+        }
+    }
+
+    public List<MatchInfoResponse> getMatchInfo(int maxMatches) {
+        try {
+            MatchInfoResponseList response = client.getMatchInfo(maxMatches).get(5, TimeUnit.SECONDS);
+            if (response.getErrorCode() != 0) {
+                throw new IllegalStateException("Core returned error code " + response.getErrorCode());
+            }
+            return response.getMatches().stream()
+                    .map(match -> new MatchInfoResponse(
+                            match.id(),
+                            match.executionId(),
+                            match.timestamp(),
+                            match.makerSide(),
+                            match.takerOrderId(),
+                            match.makerOrderId(),
+                            match.takerUserId(),
+                            match.makerUserId(),
+                            match.quantity(),
+                            match.price(),
+                            match.takerOriginalQuantity(),
+                            match.takerRemain(),
+                            match.makerOriginalQuantity(),
+                            match.makerRemain()))
+                    .toList();
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            throw new IllegalStateException("Interrupted while requesting match info", e);
+        } catch (ExecutionException e) {
+            throw new IllegalStateException("Failed to request match info", e.getCause());
+        } catch (TimeoutException e) {
+            throw new IllegalStateException("Timed out while requesting match info", e);
         }
     }
 }

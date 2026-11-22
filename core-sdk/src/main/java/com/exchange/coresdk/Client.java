@@ -32,6 +32,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.UUID;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -357,6 +358,33 @@ public class Client implements EgressListener, AutoCloseable {
 
     }
 
+    public CompletableFuture<MatchInfoResponseList> getMatchInfo(int maxMatches) {
+        if (maxMatches < 1 || maxMatches > 0xFFFF) {
+            throw new IllegalArgumentException("maxMatches must be between 1 and 65535");
+        }
+
+        final CompletableFuture<Response> future = new CompletableFuture<>();
+        final GetMatchesEncoder getMatchesEncoder = new GetMatchesEncoder();
+        final long correlationId = nextCorrelationId();
+
+        final ExpandableArrayBuffer sendBuffer = new ExpandableArrayBuffer();
+        final MessageHeaderEncoder messageHeaderEncoder = new MessageHeaderEncoder();
+        pendingRequests.put(correlationId, future);
+        getMatchesEncoder
+                .wrapAndApplyHeader(sendBuffer, 0, messageHeaderEncoder)
+                .correlationId(correlationId)
+                .maxMatches(maxMatches);
+        sendRequest(future,
+                correlationId, messageHeaderEncoder.encodedLength() + getMatchesEncoder.encodedLength(), sendBuffer);
+        return future.thenApplyAsync(
+                response -> {
+                    return response instanceof MatchInfoResponseList matchInfoResponseList
+                            ? matchInfoResponseList
+                            : new MatchInfoResponseList(response.getErrorCode());
+                }, virtualThreadExecutor
+        );
+    }
+
 
     private long nextCorrelationId() {
         return correlationIdSequence.incrementAndGet();
@@ -430,6 +458,7 @@ public class Client implements EgressListener, AutoCloseable {
         final OrderInfoDecoder orderInfoDecoder = new OrderInfoDecoder();
         final ErrorMessageDecoder errorMessageDecoder = new ErrorMessageDecoder();
         final TakeSnapShotResponseDecoder takeSnapShotResponseDecoder = new TakeSnapShotResponseDecoder();
+        final MatchesResponseDecoder matchesResponseDecoder = new MatchesResponseDecoder();
         log.info("AERON INCOMING " +
                 "templateId=" + messageHeaderDecoder.templateId() +
                 ", blockLength=" + messageHeaderDecoder.blockLength() +
@@ -515,6 +544,37 @@ public class Client implements EgressListener, AutoCloseable {
                 if (future != null) {
                     future.complete(
                             new TakeSnapshotResponse(takeSnapShotResponseDecoder.correlationId()));
+                }
+                break;
+            }
+
+            case MatchesResponseDecoder.TEMPLATE_ID: {
+                matchesResponseDecoder.wrap(buffer, offset + headerLength, actingBlockLength, actingVersion);
+                final CompletableFuture<Response> future =
+                        pendingRequests.remove(matchesResponseDecoder.correlationId());
+                if (future != null) {
+                    final List<MatchInfoResponse> matches = new ArrayList<>();
+                    for (MatchesResponseDecoder.MatchesDecoder match : matchesResponseDecoder.matches()) {
+                        final UUID matchId = new UUID(
+                                match.matchIdMostSignificantBits(),
+                                match.matchIdLeastSignificantBits());
+                        matches.add(new MatchInfoResponse(
+                                matchId.toString(),
+                                match.executionId(),
+                                match.timestamp(),
+                                match.makerSide(),
+                                match.takerOrderId(),
+                                match.makerOrderId(),
+                                match.takerUserId(),
+                                match.makerUserId(),
+                                match.quantity(),
+                                match.price(),
+                                match.takerOriginalQuantity(),
+                                match.takerRemain(),
+                                match.makerOriginalQuantity(),
+                                match.makerRemain()));
+                    }
+                    future.complete(new MatchInfoResponseList(matches));
                 }
                 break;
             }

@@ -1,5 +1,6 @@
 package com.exchange.coregateway.controller;
 
+import com.exchange.coregateway.dto.MatchInfoResponse;
 import com.exchange.coresdk.domain.TakeSnapshotResponse;
 import com.exchange.me.sbe.*;
 import com.exchange.coregateway.service.MatchingEngineService;
@@ -14,6 +15,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.util.List;
 import java.util.concurrent.TimeoutException;
 
 @RestController
@@ -91,5 +93,11 @@ public class MatchingEngineGateway {
 
     public record PutOrderRequest(long orderId, long userId, TradeSide tradeSide, OrderType orderType,
                                   TradePair pair, MarketType marketType, long quantity, long price) {
+    }
+
+    @GetMapping("/matchinfo")
+    public List<MatchInfoResponse> getMatchInfo(
+            @RequestParam(value = "maxMatches", defaultValue = "100") int maxMatches) {
+        return matchingEngineService.getMatchInfo(maxMatches);
     }
 }

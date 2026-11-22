@@ -71,8 +71,8 @@ public class CoreClusteredService implements ClusteredService {
         requestProcessingTimer = metrics.requestProcessingTimer;
         responseOfferTimer = metrics.responseOfferTimer;
 
-        RequestHandlerService requestHandlerService = new RequestHandlerService();
         engineService = new EngineService();
+        RequestHandlerService requestHandlerService = new RequestHandlerService(engineService);
         messageHeaderDecoder = new MessageHeaderDecoder();
         this.snapshotOrderEncoder = new SnapshotOrderEncoder();
         this.snapshotOrderBookEncoder = new SnapshotOrderBookEncoder();
@@ -88,6 +88,7 @@ public class CoreClusteredService implements ClusteredService {
         requestMap.put(CancelOrderDecoder.TEMPLATE_ID, requestHandlerService::handleCancelOrder);
         requestMap.put(OrderBookDepthDecoder.TEMPLATE_ID, requestHandlerService::handleOrderBookDepth);
         requestMap.put(TakeSnapShotDecoder.TEMPLATE_ID, requestHandlerService::handleTakeSnapShot);
+        requestMap.put(GetMatchesDecoder.TEMPLATE_ID, requestHandlerService::handleGetMatches);
 
     }
 

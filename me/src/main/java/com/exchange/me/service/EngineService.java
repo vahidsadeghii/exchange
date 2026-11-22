@@ -1,10 +1,7 @@
 package com.exchange.me.service;
 
 
-import com.exchange.me.domain.EngineSnapshot;
-import com.exchange.me.domain.Order;
-import com.exchange.me.domain.OrderBookDepth;
-import com.exchange.me.domain.PriceLevel;
+import com.exchange.me.domain.*;
 import com.exchange.me.exception.InvalidTradPairException;
 import com.exchange.me.exception.NotFoundOrderBookHandlerException;
 import com.exchange.me.handler.OrderBookHandler;
@@ -32,6 +29,7 @@ import java.util.stream.Collectors;
 @Slf4j
 public class EngineService {
     private final Map<TradePair, OrderBookHandler> orderBooks = new ConcurrentHashMap<>();
+    private final List<MatchInfo> allMatches = new ArrayList<>();
 
     public Order createUpdateOrder(
             Long oldOrderId,
@@ -73,8 +71,11 @@ public class EngineService {
                 quantity,
                 price);
 
-        handler.matchOrder(
+        List<MatchInfo> matches =  handler.matchOrder(
                 LocalDateTime.now().atZone(ZoneId.systemDefault()).toInstant().toEpochMilli(), order);
+        synchronized (allMatches) {
+            allMatches.addAll(matches);
+        }
 
         order.setMatchStatus(MatchStatus.SUBMITED);
 
@@ -269,6 +270,25 @@ public class EngineService {
             });
         });
         log.info("Order books restored successfully");
+    }
+
+    public List<MatchInfo> getAllMatches() {
+        synchronized (allMatches) {
+            return new ArrayList<>(allMatches);
+        }
+    }
+
+    public List<MatchInfo> getAndRemoveMatches(int maxMatches) {
+        if (maxMatches < 0) {
+            throw new IllegalArgumentException("maxMatches must not be negative");
+        }
+
+        synchronized (allMatches) {
+            int count = Math.min(maxMatches, allMatches.size());
+            List<MatchInfo> matches = new ArrayList<>(allMatches.subList(0, count));
+            allMatches.subList(0, count).clear();
+            return matches;
+        }
     }
 
 }

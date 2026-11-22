@@ -1,6 +1,7 @@
 package com.exchange.me.service;
 
 import com.exchange.me.domain.ErrorCode;
+import com.exchange.me.domain.MatchInfo;
 import com.exchange.me.domain.Order;
 import com.exchange.me.config.ClusterConfig;
 import com.exchange.me.handler.OrderBookHandler;
@@ -10,10 +11,14 @@ import lombok.extern.slf4j.Slf4j;
 import org.agrona.DirectBuffer;
 import org.agrona.ExpandableDirectByteBuffer;
 
+import java.util.List;
+import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 
 @Slf4j
 public class RequestHandlerService {
+    private static final int MAX_MATCHES_PER_RESPONSE = 1000;
+
     private final PutOrderDecoder putOrderDecoder;
     private final OrderInfoEncoder orderInfoEncoder;
     private final MessageHeaderEncoder messageHeaderEncoder;
@@ -24,11 +29,17 @@ public class RequestHandlerService {
     private final MarketDepthEncoder marketDepthEncoder;
     private final TakeSnapShotDecoder takeSnapShotDecoder;
     private final TakeSnapShotResponseEncoder takeSnapShotResponseEncoder;
+    private final GetMatchesDecoder getMatchesDecoder;
+    private final MatchesResponseEncoder matchesResponseEncoder;
 
 
     private final EngineService engineService;
 
     public RequestHandlerService() {
+        this(new EngineService());
+    }
+
+    public RequestHandlerService(EngineService engineService) {
         putOrderDecoder = new PutOrderDecoder();
         orderInfoEncoder = new OrderInfoEncoder();
         messageHeaderEncoder = new MessageHeaderEncoder();
@@ -39,8 +50,9 @@ public class RequestHandlerService {
         marketDepthEncoder = new MarketDepthEncoder();
         takeSnapShotDecoder = new TakeSnapShotDecoder();
         takeSnapShotResponseEncoder = new TakeSnapShotResponseEncoder();
-
-        engineService = new EngineService();
+        getMatchesDecoder = new GetMatchesDecoder();
+        matchesResponseEncoder = new MatchesResponseEncoder();
+        this.engineService = engineService;
     }
 
     public int handlePutOrderRequest(
@@ -253,6 +265,55 @@ public class RequestHandlerService {
         } else {
             return returnErrorMessage(respondBuffer, orderBookDepthDecoder.correlationId(), ErrorCode.ORDER_NOT_FOUND);
         }
+    }
+
+    public int handleGetMatches(
+            long sessionId,
+            long timestamp,
+            DirectBuffer buffer,
+            int offset,
+            int headerLength,
+            int actingLength,
+            int actingVersion,
+            ExpandableDirectByteBuffer respondBuffer) {
+
+        getMatchesDecoder.wrap(buffer, offset + headerLength, actingLength, actingVersion);
+
+        int requestedMaxMatches = getMatchesDecoder.maxMatches();
+        if (requestedMaxMatches <= 0) {
+            return returnErrorMessage(respondBuffer, getMatchesDecoder.correlationId(), ErrorCode.INVALID_REQUEST);
+        }
+
+        List<MatchInfo> matches =
+                engineService.getAndRemoveMatches(Math.min(requestedMaxMatches, MAX_MATCHES_PER_RESPONSE));
+
+        matchesResponseEncoder.wrapAndApplyHeader(respondBuffer, 0, messageHeaderEncoder)
+                .correlationId(getMatchesDecoder.correlationId());
+
+        MatchesResponseEncoder.MatchesEncoder matchesEncoder =
+                matchesResponseEncoder.matchesCount(matches.size());
+        for (MatchInfo match : matches) {
+            UUID matchId = UUID.fromString(match.getId());
+            matchesEncoder.next()
+                    .timestamp(match.getTimestamp())
+                    .executionId(match.getExecutionId())
+                    .makerSide(match.getMakerSide())
+                    .takerOrderId(match.getTakerOrderId())
+                    .makerOrderId(match.getMakerOrderId())
+                    .takerUserId(match.getTakerUserId())
+                    .makerUserId(match.getMakerUserId())
+                    .quantity(match.getQuantity())
+                    .price(match.getPrice())
+                    .takerOriginalQuantity(match.getTakerOriginalQuantity())
+                    .takerRemain(match.getTakerRemain())
+                    .makerOriginalQuantity(match.getMakerOriginalQuantity())
+                    .makerRemain(match.getMakerRemain())
+                    .matchIdMostSignificantBits(matchId.getMostSignificantBits())
+                    .matchIdLeastSignificantBits(matchId.getLeastSignificantBits());
+        }
+
+        return matchesResponseEncoder.encodedLength()
+                + messageHeaderEncoder.encodedLength();
     }
 
 

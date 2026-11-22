@@ -153,4 +153,31 @@
         <field name="correlationId" id="1" type="uint64"/>
     </sbe:message>
 
+    <sbe:message name="GetMatches" id="110" description="Get pending matches">
+        <field name="correlationId" id="1" type="uint64"/>
+        <field name="maxMatches" id="2" type="uint16"/>
+    </sbe:message>
+
+    <sbe:message name="MatchesResponse" id="111" description="Pending matches response">
+        <field name="correlationId" id="1" type="uint64"/>
+
+        <group name="matches" id="2" dimensionType="groupSizeEncoding">
+            <field name="timestamp" id="1" type="int64"/>
+            <field name="executionId" id="2" type="uint64"/>
+            <field name="makerSide" id="3" type="tradeSide"/>
+            <field name="takerOrderId" id="4" type="uint64"/>
+            <field name="makerOrderId" id="5" type="uint64"/>
+            <field name="takerUserId" id="6" type="uint64"/>
+            <field name="makerUserId" id="7" type="uint64"/>
+            <field name="quantity" id="8" type="double"/>
+            <field name="price" id="9" type="double"/>
+            <field name="takerOriginalQuantity" id="10" type="double"/>
+            <field name="takerRemain" id="11" type="double"/>
+            <field name="makerOriginalQuantity" id="12" type="double"/>
+            <field name="makerRemain" id="13" type="double"/>
+            <field name="matchIdMostSignificantBits" id="14" type="uint64"/>
+            <field name="matchIdLeastSignificantBits" id="15" type="uint64"/>
+        </group>
+    </sbe:message>
+
 </sbe:messageSchema>
