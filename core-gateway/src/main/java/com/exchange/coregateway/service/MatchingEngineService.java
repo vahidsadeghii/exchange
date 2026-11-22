@@ -110,4 +110,17 @@ public class MatchingEngineService {
             throw new IllegalStateException("Timed out while requesting snapshot", e);
         }
     }
+
+//    public TakeSnapshotResponse takeSnapShot(){
+//
+//            try {
+//            return client
+//                    .takeSnapShot()
+//                    .get(5, TimeUnit.SECONDS);
+//        } catch (Exception e) {
+//            logger.error("Error while new snapshot", e);
+//
+//            return null;
+//        }
+//    }
 }
