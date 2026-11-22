@@ -2,6 +2,7 @@ package com.exchange.me.service;
 
 import com.exchange.me.domain.ErrorCode;
 import com.exchange.me.domain.Order;
+import com.exchange.me.config.ClusterConfig;
 import com.exchange.me.handler.OrderBookHandler;
 import com.exchange.me.sbe.*;
 import io.aeron.cluster.ClusterTool;
@@ -9,7 +10,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.agrona.DirectBuffer;
 import org.agrona.ExpandableDirectByteBuffer;
 
-import java.io.File;
 import java.util.concurrent.CompletableFuture;
 
 @Slf4j
@@ -171,16 +171,22 @@ public class RequestHandlerService {
         takeSnapShotDecoder.wrap(buffer, offset + headerLength, actingLength, actingVersion);
         log.info("before snapshot");
 
-        CompletableFuture.runAsync(() ->{
-            ClusterTool.snapshot(new File("./cluster-data/cluster"), System.out);
+        CompletableFuture.runAsync(() -> {
+            boolean requested = ClusterTool.snapshot(ClusterConfig.CLUSTER_DIR, System.out);
+            if (!requested) {
+                throw new IllegalStateException(
+                        "Aeron rejected snapshot request for " + ClusterConfig.CLUSTER_DIR.getAbsolutePath());
+            }
+        }).whenComplete((ignored, failure) -> {
+            if (failure != null) {
+                log.error("Failed to request Aeron cluster snapshot from {}",
+                        ClusterConfig.CLUSTER_DIR.getAbsolutePath(), failure);
+            } else {
+                log.info("Aeron cluster snapshot request completed successfully");
+            }
         });
 
-
-        File dir = new File("./cluster-data/cluster");
-
-        log.info(dir.getAbsolutePath());
-        log.info(String.valueOf(dir.exists()));
-        log.info("after snapshot");
+        log.info("Aeron snapshot request queued for {}", ClusterConfig.CLUSTER_DIR.getAbsolutePath());
 
         takeSnapShotResponseEncoder.wrapAndApplyHeader(respondBuffer, 0, messageHeaderEncoder)
                 .correlationId(takeSnapShotDecoder.correlationId());

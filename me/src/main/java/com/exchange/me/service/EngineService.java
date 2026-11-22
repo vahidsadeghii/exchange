@@ -223,11 +223,10 @@ public class EngineService {
 
         resetAll();
 
-        //Todo: just put orders in order list
-        /*for (Order order : orders) {
+        for (Order order : orders) {
             OrderBookHandler handler = getOrCreateBook(order.getTradePair());
             handler.restoreOrder(order);
-        }*/
+        }
 
         log.info("Orders restored successfully: orderCount={}, orderBookCount={}", orders.size(), orderBooks.size());
     }

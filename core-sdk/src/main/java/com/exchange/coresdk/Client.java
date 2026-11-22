@@ -72,9 +72,6 @@ public class Client implements EgressListener, AutoCloseable {
      * =====================================================
      */
 
-    private final TakeSnapShotDecoder takeSnapShotDecoder = new TakeSnapShotDecoder();
-    //private final TakeSnapShotEncoder takeSnapShotEncoder = new TakeSnapShotEncoder();
-
     private final ExecutorService virtualThreadExecutor = Executors.newVirtualThreadPerTaskExecutor();
 
     private final ConcurrentHashMap<Long, CompletableFuture<Response>> pendingRequests = new ConcurrentHashMap<>();
@@ -343,7 +340,6 @@ public class Client implements EgressListener, AutoCloseable {
         final ExpandableArrayBuffer sendBuffer = new ExpandableArrayBuffer();
         final MessageHeaderEncoder messageHeaderEncoder = new MessageHeaderEncoder();
         pendingRequests.put(correlationId, future);
-       log.info("takesnapshot-----------------------");
         takeSnapShotEncoder
                 .wrapAndApplyHeader(sendBuffer, 0, messageHeaderEncoder)
                 .correlationId(correlationId);
@@ -352,7 +348,6 @@ public class Client implements EgressListener, AutoCloseable {
         return future.thenApplyAsync(
                 response -> {
                     if (response instanceof TakeSnapshotResponse takeSnapshotResponse) {
-                        log.info("takesnapshot-----------------------");
                         return takeSnapshotResponse;
                     } else {
                         return new TakeSnapshotResponse(response.getErrorCode());
@@ -519,7 +514,7 @@ public class Client implements EgressListener, AutoCloseable {
                         pendingRequests.remove(takeSnapShotResponseDecoder.correlationId());
                 if (future != null) {
                     future.complete(
-                            new Response(0));
+                            new TakeSnapshotResponse(takeSnapShotResponseDecoder.correlationId()));
                 }
                 break;
             }

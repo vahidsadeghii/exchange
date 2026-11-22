@@ -12,6 +12,7 @@ import io.micrometer.prometheusmetrics.PrometheusMeterRegistry;
 import org.agrona.concurrent.ShutdownSignalBarrier;
 
 public class Runner {
+
  public static void main(String[] args) {
         System.out.println("Starting core service ...");
 
@@ -20,7 +21,6 @@ public class Runner {
      final ClusterMetrics metrics = new ClusterMetrics(registry);
      final ClusterConfig clusterConfig = new ClusterConfig(Environment.getInstance(), barrier, metrics);
 
-     //clusterConfig.getClusteredServiceContext().clusteredService(new CoreClusteredService(metrics));
 
         try (
                 MetricsHttpServer metricsServer = new MetricsHttpServer(registry, 9400);

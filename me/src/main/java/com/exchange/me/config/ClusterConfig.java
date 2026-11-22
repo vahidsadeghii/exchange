@@ -14,6 +14,7 @@ import java.io.File;
 public class ClusterConfig {
     private static final String AERON_DIR_NAME = "./media-driver";
     private static final File BASE_DIR = new File("./cluster-data-me");
+    public static final File CLUSTER_DIR = new File(BASE_DIR, "cluster");
 
     private static final String CLUSTER_MEMBERS =
             "0,localhost:9002,localhost:9003,localhost:9004,localhost:9005,localhost:9001";
@@ -50,7 +51,7 @@ public class ClusterConfig {
 
         consensusContext = new ConsensusModule.Context()
                 .aeronDirectoryName(AERON_DIR_NAME)
-                .clusterDir(new File(BASE_DIR, "cluster"))
+                .clusterDir(CLUSTER_DIR)
                 .clusterMemberId(0)
                 .clusterMembers(CLUSTER_MEMBERS)
                 .ingressChannel("aeron:udp?term-length=64k")
@@ -61,7 +62,7 @@ public class ClusterConfig {
 
         clusteredServiceContext = new ClusteredServiceContainer.Context()
                 .aeronDirectoryName(AERON_DIR_NAME)
-                .clusterDir(new File(BASE_DIR, "cluster"))
+                .clusterDir(CLUSTER_DIR)
                 .archiveContext(aeronContext.clone())
                 .clusteredService(new CoreClusteredService(metrics));
 
