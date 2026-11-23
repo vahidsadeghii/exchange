@@ -1,0 +1,93 @@
+server:
+  port: 7085
+  shutdown: graceful
+  servlet:
+    context-path: /core-dispatcher
+
+
+spring:
+  application:
+    name: core-dispatcher
+
+  cloud:
+    config:
+      enabled: false
+
+  kafka:
+    consumer:
+      group-id: profile
+    producer:
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
+
+core-gateway:
+  url: ${CORE_GATEWAY_URL:http://localhost:8089}
+#
+#eureka:
+#  instance:
+#    metadata-map:
+#      prometheus.path: /profile/actuator/prometheus
+#      context.path: /profile
+
+
+
+springdoc:
+  swagger-ui:
+    enabled: true
+    path: /swagger-ui.html
+
+
+
+api:
+  version: v1
+  prefix:
+    secure: /api/${api.version}
+    open: /open/${api.version}
+    internal: /_api/${api.version}
+
+logging:
+  level:
+    org.springframework.web.servlet.mvc.method.annotation.RequestMappingHandlerMapping: TRACE
+    feign: DEBUG
+    com.exchange: DEBUG
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: prometheus,health,info
+  endpoint:
+    prometheus:
+      enabled: true
+
+
+resilience4j:
+  circuitbreaker:
+    configs:
+      default:
+        sliding-window-type: COUNT_BASED
+        sliding-window-size: 20
+        minimum-number-of-calls: 10
+        failure-rate-threshold: 50
+        wait-duration-in-open-state: 5s
+
+
+    instances:
+      me-instance:
+        base-config: default
+      wallet-instance:
+        base-config: default
+
+  retry:
+    configs:
+      default:
+        max-attempts: 2
+        wait-duration: 500ms
+        exponential-backoff-multiplier: 2
+
+
+    instances:
+      me-instance:
+        base-config: default
+      wallet-instance:
+        base-config: default

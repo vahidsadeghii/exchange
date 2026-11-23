@@ -1,0 +1,21 @@
+spring:
+  cloud:
+    discovery:
+      client:
+        composite-indicator:
+          enabled: false
+    config:
+      enabled: false
+
+
+  kafka:
+    bootstrap-servers: localhost:9092
+
+
+eureka:
+  client:
+    enabled: false
+
+core-dispatcher:
+  match-info:
+    poll-interval-ms: 10000
